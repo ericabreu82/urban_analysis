@@ -25,7 +25,33 @@ TerraLib Team at <terralib-team@terralib.org>.
 
 #include "UrbanGrowth.h"
 
-void te::urban::teste()
-{
+#include <terralib/raster/Raster.h>
+#include <terralib/raster/Utils.h>
 
+te::rst::Raster* te::urban::classifyUrbanDensity(te::rst::Raster* inputRaster, double radius)
+{
+  assert(inputRaster);
+
+  unsigned int numRows = inputRaster->getNumberOfRows();
+  unsigned int numColumns = inputRaster->getNumberOfColumns();
+  double resX = inputRaster->getResolutionX();
+  double resY = inputRaster->getResolutionY();
+
+  int  maskSizeInPixelsX = te::rst::Round(radius / resX);
+  int  maskSizeInPixelsY = te::rst::Round(radius / resY);
+
+  size_t initRow = maskSizeInPixelsX;
+  size_t initCol = maskSizeInPixelsY;
+  size_t finalRow = numRows - maskSizeInPixelsX;
+  size_t finalCol = numColumns - maskSizeInPixelsY;
+
+  for (size_t currentRow = initRow; currentRow < finalRow; ++currentRow)
+  {
+    for (size_t currentColumn = initCol; currentColumn < finalCol; ++currentColumn)
+    {
+      double value = executeFunction(inputRaster, currentRow, currentColumn);
+    }
+  }
+
+  return 0;
 }

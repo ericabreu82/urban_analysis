@@ -30,9 +30,14 @@ TerraLib Team at <terralib-team@terralib.org>.
 
 namespace te
 {
+  namespace rst
+  {
+    class Raster;
+  }
+
   namespace urban
   {
-    void TEGROWTHEXPORT teste();
+    TEGROWTHEXPORT te::rst::Raster* classifyUrbanDensity(te::rst::Raster* inputRaster, double radius);
   }
 }
 

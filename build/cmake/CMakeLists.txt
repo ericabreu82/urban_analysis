@@ -16,6 +16,8 @@ set(URBANANALYSIS_ABSOLUTE_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 
 set_directory_properties(PROPERTIES CLEAN_NO_CUSTOM 1)
 
+include_directories(${CMAKE_BINARY_DIR})
+
 if(MSVC)
   set(CMAKE_DEBUG_POSTFIX "d")
 endif()
@@ -74,6 +76,11 @@ endif()
 if(NOT DEFINED URBANANALYSIS_DESTINATION_SHARE)
   set(URBANANALYSIS_DESTINATION_SHARE "${URBANANALYSIS_BASE_DESTINATION_DIR}share")
 endif()
+
+include_directories(${terralib_DIR}
+          ${terralib_INCLUDE_DIRS}
+          ${terralib_INCLUDE_DIRS}/terralib
+          )
 
  add_subdirectory(terralib_mod_growth)
 # add_subdirectory(app)
