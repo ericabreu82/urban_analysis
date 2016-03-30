@@ -28,6 +28,8 @@ TerraLib Team at <terralib-team@terralib.org>.
 
 #include "Config.h"
 
+#include <boost/numeric/ublas/matrix.hpp>
+
 namespace te
 {
   namespace rst
@@ -37,6 +39,12 @@ namespace te
 
   namespace urban
   {
+    TEGROWTHEXPORT te::rst::Raster* createRaster(te::rst::Raster* raster, const std::string& fileName);
+
+    TEGROWTHEXPORT boost::numeric::ublas::matrix<double> getMatrix(te::rst::Raster* raster, size_t referenceRow, size_t referenceColumn, size_t maskSizeInPixels);
+
+    TEGROWTHEXPORT double calculateValue(const boost::numeric::ublas::matrix<double>& matrixMask);
+
     TEGROWTHEXPORT te::rst::Raster* classifyUrbanDensity(te::rst::Raster* inputRaster, double radius);
   }
 }

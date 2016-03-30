@@ -80,6 +80,7 @@ endif()
 include_directories(${terralib_DIR}
           ${terralib_INCLUDE_DIRS}
           ${terralib_INCLUDE_DIRS}/terralib
+		  ${Boost_INCLUDE_DIR}
           )
 
  add_subdirectory(terralib_mod_growth)

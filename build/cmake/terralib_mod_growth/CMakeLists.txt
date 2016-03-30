@@ -39,7 +39,6 @@ add_library(terralib_mod_growth SHARED ${GROWTH_SRC_FILES} ${GROWTH_HDR_FILES})
 set(GROWTH_LIBRARIES_DEPENDENCIES "terralib_mod_common")
 list(APPEND GROWTH_LIBRARIES_DEPENDENCIES "terralib_mod_geometry")
 list(APPEND GROWTH_LIBRARIES_DEPENDENCIES "terralib_mod_raster")
-
 list(APPEND GROWTH_LIBRARIES_DEPENDENCIES ${Boost_THREAD_LIBRARY})
 
 target_link_libraries(terralib_mod_growth ${GROWTH_LIBRARIES_DEPENDENCIES})

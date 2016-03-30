@@ -26,7 +26,51 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include "UrbanGrowth.h"
 
 #include <terralib/raster/Raster.h>
+#include <terralib/raster/RasterFactory.h>
 #include <terralib/raster/Utils.h>
+
+te::rst::Raster* te::urban::createRaster(te::rst::Raster* raster, const std::string& fileName)
+{
+  std::map<std::string, std::string> rasterInfo;
+  rasterInfo["URI"] = fileName;
+
+  std::vector<te::rst::BandProperty*> bandsProperties;
+  for (size_t bandIndex = 0; bandIndex < raster->getNumberOfBands(); ++bandIndex)
+  {
+    bandsProperties.push_back(new te::rst::BandProperty(*(raster->getBand(bandIndex)->getProperty())));
+  }
+
+  te::rst::Raster* createdRaster = te::rst::RasterFactory::make("GDAL", new te::rst::Grid(*(raster->getGrid())), bandsProperties, rasterInfo, 0, 0);
+  return createdRaster;
+}
+
+boost::numeric::ublas::matrix<double> te::urban::getMatrix(te::rst::Raster* raster, size_t referenceRow, size_t referenceColumn, size_t maskSizeInPixels)
+{
+  int rasterRow = (int)(referenceRow - maskSizeInPixels);
+  int rasterColumn = (int)(referenceColumn - maskSizeInPixels);
+
+  boost::numeric::ublas::matrix<double> matrixMask(maskSizeInPixels, maskSizeInPixels);
+
+  for (size_t matrixRow = 0; matrixRow < maskSizeInPixels; ++matrixRow, ++rasterRow)
+  {
+    for (size_t matrixColumn = 0; matrixColumn < maskSizeInPixels; ++matrixColumn, ++rasterColumn)
+    {
+      double value = 0;
+      raster->getValue(rasterColumn, rasterRow, value);
+
+      matrixMask(matrixRow, matrixColumn) = value;
+    }
+  }
+
+  return matrixMask;
+}
+
+double te::urban::calculateValue(const boost::numeric::ublas::matrix<double>& matrixMask)
+{
+  double value = 0;
+
+  return value;
+}
 
 te::rst::Raster* te::urban::classifyUrbanDensity(te::rst::Raster* inputRaster, double radius)
 {
@@ -37,19 +81,19 @@ te::rst::Raster* te::urban::classifyUrbanDensity(te::rst::Raster* inputRaster, d
   double resX = inputRaster->getResolutionX();
   double resY = inputRaster->getResolutionY();
 
-  int  maskSizeInPixelsX = te::rst::Round(radius / resX);
-  int  maskSizeInPixelsY = te::rst::Round(radius / resY);
+  int  maskSizeInPixels = te::rst::Round(radius / resX);
 
-  size_t initRow = maskSizeInPixelsX;
-  size_t initCol = maskSizeInPixelsY;
-  size_t finalRow = numRows - maskSizeInPixelsX;
-  size_t finalCol = numColumns - maskSizeInPixelsY;
+  size_t initRow = maskSizeInPixels;
+  size_t initCol = maskSizeInPixels;
+  size_t finalRow = numRows - maskSizeInPixels;
+  size_t finalCol = numColumns - maskSizeInPixels;
 
   for (size_t currentRow = initRow; currentRow < finalRow; ++currentRow)
   {
     for (size_t currentColumn = initCol; currentColumn < finalCol; ++currentColumn)
     {
-      double value = executeFunction(inputRaster, currentRow, currentColumn);
+      boost::numeric::ublas::matrix<double> maskMatrix = getMatrix(inputRaster, currentRow, currentColumn, maskSizeInPixels);
+      double value = calculateValue(maskMatrix);
     }
   }
 
