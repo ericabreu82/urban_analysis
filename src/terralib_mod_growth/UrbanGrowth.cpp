@@ -25,6 +25,8 @@ TerraLib Team at <terralib-team@terralib.org>.
 
 #include "UrbanGrowth.h"
 
+#include <terralib/geometry/Coord2D.h>
+#include <terralib/geometry/Point.h>
 #include <terralib/raster/Raster.h>
 #include <terralib/raster/RasterFactory.h>
 #include <terralib/raster/Utils.h>
@@ -44,10 +46,16 @@ te::rst::Raster* te::urban::createRaster(te::rst::Raster* raster, const std::str
   return createdRaster;
 }
 
-boost::numeric::ublas::matrix<double> te::urban::getMatrix(te::rst::Raster* raster, size_t referenceRow, size_t referenceColumn, size_t maskSizeInPixels)
+boost::numeric::ublas::matrix<double> te::urban::getMatrix(te::rst::Raster* raster, size_t referenceRow, size_t referenceColumn, double radius)
 {
+  double resX = raster->getResolutionX();
+  int  maskSizeInPixels = te::rst::Round(radius / resX);
+
   int rasterRow = (int)(referenceRow - maskSizeInPixels);
   int rasterColumn = (int)(referenceColumn - maskSizeInPixels);
+
+  te::gm::Coord2D referenceCoord = raster->getGrid()->gridToGeo(referenceColumn, referenceRow);
+  te::gm::Point referencePoint(referenceCoord.getX(), referenceCoord.getY());
 
   boost::numeric::ublas::matrix<double> matrixMask(maskSizeInPixels, maskSizeInPixels);
 
@@ -55,8 +63,18 @@ boost::numeric::ublas::matrix<double> te::urban::getMatrix(te::rst::Raster* rast
   {
     for (size_t matrixColumn = 0; matrixColumn < maskSizeInPixels; ++matrixColumn, ++rasterColumn)
     {
+      te::gm::Coord2D currentCoord = raster->getGrid()->gridToGeo(rasterColumn, rasterRow);
+      te::gm::Point currentPoint(currentCoord.getX(), currentCoord.getY());
+
       double value = 0;
-      raster->getValue(rasterColumn, rasterRow, value);
+      if (referencePoint.distance(&currentPoint) <= radius)
+      {
+        raster->getValue(rasterColumn, rasterRow, value);
+      }
+      else
+      {
+        value = -1;
+      }
 
       matrixMask(matrixRow, matrixColumn) = value;
     }

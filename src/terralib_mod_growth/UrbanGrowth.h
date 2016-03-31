@@ -41,7 +41,7 @@ namespace te
   {
     TEGROWTHEXPORT te::rst::Raster* createRaster(te::rst::Raster* raster, const std::string& fileName);
 
-    TEGROWTHEXPORT boost::numeric::ublas::matrix<double> getMatrix(te::rst::Raster* raster, size_t referenceRow, size_t referenceColumn, size_t maskSizeInPixels);
+    TEGROWTHEXPORT boost::numeric::ublas::matrix<double> getMatrix(te::rst::Raster* raster, size_t referenceRow, size_t referenceColumn, double radius);
 
     TEGROWTHEXPORT double calculateValue(const boost::numeric::ublas::matrix<double>& matrixMask);
 
