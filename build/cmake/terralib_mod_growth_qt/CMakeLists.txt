@@ -25,7 +25,7 @@
 #          
 
 if(WIN32)
-  add_definitions(-D_SCL_SECURE_NO_WARNINGS -DTEGROWTHDLL)
+  add_definitions(-D_SCL_SECURE_NO_WARNINGS -DTEGROWTHQTDLL)
 endif()
 
 include_directories(
@@ -36,32 +36,43 @@ include_directories(
   ${Boost_INCLUDE_DIR}/qwt
 )
 
-file(GLOB GROWTH_SRC_FILES ${URBANANALYSIS_ABSOLUTE_ROOT_DIR}/src/terralib_mod_growth/*.cpp)
-file(GLOB GROWTH_HDR_FILES ${URBANANALYSIS_ABSOLUTE_ROOT_DIR}/src/terralib_mod_growth/*.h)
+if(Qt5_FOUND)
+  set(CMAKE_AUTOMOC ON)
+  set(CMAKE_INCLUDE_CURRENT_DIR ON)
+endif()
+
+file(GLOB GROWTH_SRC_FILES ${URBANANALYSIS_ABSOLUTE_ROOT_DIR}/src/terralib_mod_growth_qt/*.cpp)
+file(GLOB GROWTH_HDR_FILES ${URBANANALYSIS_ABSOLUTE_ROOT_DIR}/src/terralib_mod_growth_qt/*.h)
+file(GLOB GROWTH_UI_FILES ${URBANANALYSIS_ABSOLUTE_ROOT_DIR}/src/terralib_mod_growth_qt/ui/*.ui)
+
+if(Qt5_FOUND)
+  QT5_WRAP_UI(GROWTH_UI_GEN_FILES ${GROWTH_UI_FILES})
+endif()
 
 source_group("Source Files"  FILES ${GROWTH_SRC_FILES})
 source_group("Header Files"  FILES ${GROWTH_HDR_FILES})
 
-add_library(terralib_mod_growth SHARED ${GROWTH_SRC_FILES} ${GROWTH_HDR_FILES})
+add_library(terralib_mod_growth_qt SHARED ${GROWTH_SRC_FILES} ${GROWTH_HDR_FILES} ${GROWTH_UI_GEN_FILES})
 
-set(GROWTH_LIBRARIES_DEPENDENCIES "terralib_mod_common")
-list(APPEND GROWTH_LIBRARIES_DEPENDENCIES "terralib_mod_geometry")
-list(APPEND GROWTH_LIBRARIES_DEPENDENCIES "terralib_mod_raster")
-list(APPEND GROWTH_LIBRARIES_DEPENDENCIES ${Boost_THREAD_LIBRARY})
+set(GROWTH_LIBRARIES_DEPENDENCIES "terralib_mod_growth")
 
-target_link_libraries(terralib_mod_growth ${GROWTH_LIBRARIES_DEPENDENCIES})
+target_link_libraries(terralib_mod_growth_qt ${GROWTH_LIBRARIES_DEPENDENCIES})
 
-set_target_properties(terralib_mod_growth
+set_target_properties(terralib_mod_growth_qt
                       PROPERTIES VERSION ${URBANANALYSIS_VERSION_MAJOR}.${URBANANALYSIS_VERSION_MINOR}
                                  SOVERSION ${URBANANALYSIS_VERSION_MAJOR}.${URBANANALYSIS_VERSION_MINOR})
+								 
+if(Qt5_FOUND)
+  qt5_use_modules(terralib_mod_growth_qt Widgets)
+endif()
 
-install(TARGETS terralib_mod_growth
+install(TARGETS terralib_mod_growth_qt
         EXPORT terralib-targets
         RUNTIME DESTINATION ${URBANANALYSIS_DESTINATION_RUNTIME} COMPONENT runtime
         LIBRARY DESTINATION ${URBANANALYSIS_DESTINATION_LIBRARY} COMPONENT runtime
         ARCHIVE DESTINATION ${URBANANALYSIS_DESTINATION_ARCHIVE} COMPONENT runtime)
 
 install(FILES ${GROWTH_HDR_FILES}
-        DESTINATION ${URBANANALYSIS_DESTINATION_HEADERS}/terralib_mod_growth COMPONENT devel)
+        DESTINATION ${URBANANALYSIS_DESTINATION_HEADERS}/terralib_mod_growth_qt COMPONENT devel)
 
-export(TARGETS terralib_mod_growth APPEND FILE ${CMAKE_BINARY_DIR}/terralib-exports.cmake)
+export(TARGETS terralib_mod_growth_qt APPEND FILE ${CMAKE_BINARY_DIR}/terralib-exports.cmake)

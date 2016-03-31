@@ -25,7 +25,7 @@
 #          
 
 if(WIN32)
-  add_definitions(-D_SCL_SECURE_NO_WARNINGS -DTEGROWTHDLL)
+  add_definitions(-D_SCL_SECURE_NO_WARNINGS -DURBANANALYSISAPP)
 endif()
 
 include_directories(
@@ -36,32 +36,35 @@ include_directories(
   ${Boost_INCLUDE_DIR}/qwt
 )
 
-file(GLOB GROWTH_SRC_FILES ${URBANANALYSIS_ABSOLUTE_ROOT_DIR}/src/terralib_mod_growth/*.cpp)
-file(GLOB GROWTH_HDR_FILES ${URBANANALYSIS_ABSOLUTE_ROOT_DIR}/src/terralib_mod_growth/*.h)
+if(Qt5_FOUND)
+  set(CMAKE_AUTOMOC ON)
+  set(CMAKE_INCLUDE_CURRENT_DIR ON)
+endif()
 
-source_group("Source Files"  FILES ${GROWTH_SRC_FILES})
-source_group("Header Files"  FILES ${GROWTH_HDR_FILES})
+file(GLOB URBANANALYSIS_SRC_FILES ${URBANANALYSIS_ABSOLUTE_ROOT_DIR}/src/urbanAnalysis_app/*.cpp)
+file(GLOB URBANANALYSIS_HDR_FILES ${URBANANALYSIS_ABSOLUTE_ROOT_DIR}/src/urbanAnalysis_app/*.h)
 
-add_library(terralib_mod_growth SHARED ${GROWTH_SRC_FILES} ${GROWTH_HDR_FILES})
+source_group("Source Files"  FILES ${URBANANALYSIS_SRC_FILES})
+source_group("Header Files"  FILES ${URBANANALYSIS_HDR_FILES})
 
-set(GROWTH_LIBRARIES_DEPENDENCIES "terralib_mod_common")
-list(APPEND GROWTH_LIBRARIES_DEPENDENCIES "terralib_mod_geometry")
-list(APPEND GROWTH_LIBRARIES_DEPENDENCIES "terralib_mod_raster")
-list(APPEND GROWTH_LIBRARIES_DEPENDENCIES ${Boost_THREAD_LIBRARY})
+set(URBANANALYSIS_DEPENDENCIES "terralib_mod_growth")
+list(APPEND URBANANALYSIS_DEPENDENCIES "terralib_mod_growth_qt")
 
-target_link_libraries(terralib_mod_growth ${GROWTH_LIBRARIES_DEPENDENCIES})
+if(Qt5_FOUND)
+  add_executable(urbanAnalysisApp ${URBANANALYSIS_SRC_FILES} ${URBANANALYSIS_HDR_FILES})
+  
+  target_link_libraries(urbanAnalysisApp ${URBANANALYSIS_DEPENDENCIES})
+endif()
 
-set_target_properties(terralib_mod_growth
+set_target_properties(urbanAnalysisApp
                       PROPERTIES VERSION ${URBANANALYSIS_VERSION_MAJOR}.${URBANANALYSIS_VERSION_MINOR}
                                  SOVERSION ${URBANANALYSIS_VERSION_MAJOR}.${URBANANALYSIS_VERSION_MINOR})
 
-install(TARGETS terralib_mod_growth
+install(TARGETS urbanAnalysisApp
         EXPORT terralib-targets
         RUNTIME DESTINATION ${URBANANALYSIS_DESTINATION_RUNTIME} COMPONENT runtime
         LIBRARY DESTINATION ${URBANANALYSIS_DESTINATION_LIBRARY} COMPONENT runtime
         ARCHIVE DESTINATION ${URBANANALYSIS_DESTINATION_ARCHIVE} COMPONENT runtime)
 
-install(FILES ${GROWTH_HDR_FILES}
-        DESTINATION ${URBANANALYSIS_DESTINATION_HEADERS}/terralib_mod_growth COMPONENT devel)
-
-export(TARGETS terralib_mod_growth APPEND FILE ${CMAKE_BINARY_DIR}/terralib-exports.cmake)
+install(FILES ${URBANANALYSIS_HDR_FILES}
+        DESTINATION ${URBANANALYSIS_DESTINATION_HEADERS}/urbanAnalysisApp COMPONENT devel)
