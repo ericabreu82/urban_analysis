@@ -18,13 +18,13 @@ TerraLib Team at <terralib-team@terralib.org>.
 */
 
 /*!
-\file urban_analysis/src/growth/qt/UrbanGrowthDialog.h
+\file urban_analysis/src/growth/qt/ReclassifyWidget.h
 
-\brief This class represents the urban growth dialog
+\brief This class represents the Reclassify Widget class.
 */
 
-#ifndef __URBANANALYSIS_INTERNAL_GROWTH_URBANGROWTH_QT_DIALOG_H
-#define __URBANANALYSIS_INTERNAL_GROWTH_URBANGROWTH_QT_DIALOG_H
+#ifndef __URBANANALYSIS_INTERNAL_URBANALYSIS_RECLASSIFY_QT_WIDGET_H
+#define __URBANANALYSIS_INTERNAL_URBANALYSIS_RECLASSIFY_QT_WIDGET_H
 
 #include "Config.h"
 
@@ -32,9 +32,9 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include <memory>
 
 // Qt
-#include <QDialog>
+#include <QWidget>
 
-namespace Ui { class UrbanGrowthDialogForm; }
+namespace Ui { class ReclassifyWidgetForm; }
 
 namespace te
 {
@@ -42,22 +42,26 @@ namespace te
   {
     namespace qt
     {
-      class TEGROWTHQTEXPORT UrbanGrowthDialog : public QDialog
+      class TEGROWTHQTEXPORT ReclassifyWidget : public QWidget
       {
         Q_OBJECT
 
         public:
 
-          UrbanGrowthDialog(QWidget* parent = 0, Qt::WindowFlags f = 0);
+          ReclassifyWidget(QWidget* parent = 0, Qt::WindowFlags f = 0);
 
-          ~UrbanGrowthDialog();
+          ~ReclassifyWidget();
+
+        public slots:
+
+          void execute();
 
         private:
 
-          std::auto_ptr<Ui::UrbanGrowthDialogForm> m_ui;
+          std::auto_ptr<Ui::ReclassifyWidgetForm> m_ui;
       };
     }
   }
 }
 
-#endif //__URBANANALYSIS_INTERNAL_GROWTH_URBANGROWTH_QT_DIALOG_H
+#endif //__URBANANALYSIS_INTERNAL_URBANALYSIS_RECLASSIFY_QT_WIDGET_H

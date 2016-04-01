@@ -24,7 +24,7 @@ TerraLib Team at <terralib-team@terralib.org>.
 */
 
 // UrbanAnalysis
-#include "../terralib_mod_growth_qt/UrbanGrowthDialog.h"
+#include "../terralib_mod_growth_qt/UrbanAnalysisMainDialog.h"
 
 // Qt
 #include <QApplication>
@@ -35,9 +35,9 @@ int main(int argc, char** argv)
 
   int waitVal = EXIT_FAILURE;
 
-  te::urban::qt::UrbanGrowthDialog dlg;
+  te::urban::qt::UrbanAnalysisMainDialog mainDlg;
 
-  if (dlg.exec() == QDialog::Accepted)
+  if (mainDlg.exec() == QDialog::Accepted)
   {
     waitVal = EXIT_SUCCESS;
   }

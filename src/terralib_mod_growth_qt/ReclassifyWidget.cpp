@@ -18,23 +18,31 @@ TerraLib Team at <terralib-team@terralib.org>.
 */
 
 /*!
-\file urban_analysis/src/growth/qt/UrbanGrowthDialog.cpp
+\file urban_analysis/src/growth/qt/ReclassifyWidget.cpp
 
-\brief This class represents the urban growth dialog
+\brief This class represents the Reclassify Widget class.
 */
 
-#include "UrbanGrowthDialog.h"
-#include "ui_UrbanGrowthDialogForm.h"
+#include "ReclassifyWidget.h"
+#include "ui_ReclassifyWidgetForm.h"
 
-te::urban::qt::UrbanGrowthDialog::UrbanGrowthDialog(QWidget* parent, Qt::WindowFlags f)
-  : QDialog(parent, f),
-  m_ui(new Ui::UrbanGrowthDialogForm)
+//Qt
+#include <QMessageBox>
+
+te::urban::qt::ReclassifyWidget::ReclassifyWidget(QWidget* parent, Qt::WindowFlags f)
+  : QWidget(parent, f),
+  m_ui(new Ui::ReclassifyWidgetForm)
 {
   // add controls
   m_ui->setupUi(this);
 }
 
-te::urban::qt::UrbanGrowthDialog::~UrbanGrowthDialog()
+te::urban::qt::ReclassifyWidget::~ReclassifyWidget()
 {
 
+}
+
+void te::urban::qt::ReclassifyWidget::execute()
+{
+  QMessageBox::information(this, tr("Information"), tr("Mario Bosta!"));
 }
