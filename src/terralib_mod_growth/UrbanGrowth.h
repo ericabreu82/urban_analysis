@@ -39,13 +39,25 @@ namespace te
 
   namespace urban
   {
-    TEGROWTHEXPORT te::rst::Raster* createRaster(te::rst::Raster* raster, const std::string& fileName);
+    enum InputUrbanClasses
+    {
+      INPUT_NO_DATA = 0, INPUT_URBAN = 1, INPUT_WATER = 2, INPUT_OTHER = 3
+    };
+
+    enum OutputUrbanClasses
+    {
+      OUTPUT_NO_DATA = 0, OUTPUT_URBAN = 1, OUTPUT_SUB_URBAN = 2, OUTPUT_RURAL = 3, OUTPUT_URBANIZED_OS = 4, OUTPUT_RURAL_OS = 6, OUTPUT_WATER = 7
+    };
+
+    TEGROWTHEXPORT te::rst::Raster* openRaster(const std::string& fileName);
+
+    TEGROWTHEXPORT te::rst::Raster* createRaster(const std::string& fileName, te::rst::Raster* raster);
 
     TEGROWTHEXPORT boost::numeric::ublas::matrix<double> getMatrix(te::rst::Raster* raster, size_t referenceRow, size_t referenceColumn, double radius);
 
-    TEGROWTHEXPORT double calculateValue(const boost::numeric::ublas::matrix<double>& matrixMask);
+    TEGROWTHEXPORT double calculateValue(double centerPixel, const boost::numeric::ublas::matrix<double>& matrixMask);
 
-    TEGROWTHEXPORT te::rst::Raster* classifyUrbanDensity(te::rst::Raster* inputRaster, double radius);
+    TEGROWTHEXPORT te::rst::Raster* classifyUrbanDensity(const std::string& inputFileName, double radius, const std::string& outputFileName);
   }
 }
 

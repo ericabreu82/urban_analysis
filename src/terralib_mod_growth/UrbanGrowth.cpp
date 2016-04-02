@@ -31,7 +31,16 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include <terralib/raster/RasterFactory.h>
 #include <terralib/raster/Utils.h>
 
-te::rst::Raster* te::urban::createRaster(te::rst::Raster* raster, const std::string& fileName)
+te::rst::Raster* te::urban::openRaster(const std::string& fileName)
+{
+  std::map<std::string, std::string> rasterInfo;
+  rasterInfo["URI"] = fileName;
+
+  te::rst::Raster* raster = te::rst::RasterFactory::make(rasterInfo);
+  return raster;
+}
+
+te::rst::Raster* te::urban::createRaster(const std::string& fileName, te::rst::Raster* raster)
 {
   std::map<std::string, std::string> rasterInfo;
   rasterInfo["URI"] = fileName;
@@ -54,7 +63,7 @@ boost::numeric::ublas::matrix<double> te::urban::getMatrix(te::rst::Raster* rast
   int rasterRow = (int)(referenceRow - maskSizeInPixels);
   int rasterColumn = (int)(referenceColumn - maskSizeInPixels);
 
-  te::gm::Coord2D referenceCoord = raster->getGrid()->gridToGeo(referenceColumn, referenceRow);
+  te::gm::Coord2D referenceCoord = raster->getGrid()->gridToGeo((double)referenceColumn, (double)referenceRow);
   te::gm::Point referencePoint(referenceCoord.getX(), referenceCoord.getY());
 
   boost::numeric::ublas::matrix<double> matrixMask(maskSizeInPixels, maskSizeInPixels);
@@ -83,16 +92,90 @@ boost::numeric::ublas::matrix<double> te::urban::getMatrix(te::rst::Raster* rast
   return matrixMask;
 }
 
-double te::urban::calculateValue(const boost::numeric::ublas::matrix<double>& matrixMask)
+double te::urban::calculateValue(double centerPixel, const boost::numeric::ublas::matrix<double>& matrixMask)
 {
-  double value = 0;
+  //INPUT CLASSES
+  //NO_DATA = 0
+  //OTHER = 1
+  //WATER = 2
+  //URBAN = 3
 
-  return value;
+  //OUTPUTCLASSES
+  //(1) URBAN ZONE BUILT-UP AREA: built-up pixels with imperviousness > 50%
+  //(2) SUBURBAN ZONE BUILT-UP AREA: built-up pixels with imperviousness < 50% and > 10%
+  //(3) RURAL ZONE BUILT-UP AREA: built-up pixels with imperviousness < 10%
+
+  //NO DATA
+  if (centerPixel <= 0 || centerPixel >= 4)
+  {
+    return OUTPUT_NO_DATA;
+  }
+  //WATER
+  if (centerPixel == INPUT_WATER)
+  {
+    return OUTPUT_WATER;
+  } 
+
+  size_t numRows = matrixMask.size1();
+  size_t numCols = matrixMask.size2();
+
+  size_t urbanPixelsCount = 0;
+  size_t allPixelsCount = numRows * numCols;
+
+  for (size_t r = 0; r < numRows; ++r)
+  {
+    for (size_t c = 0; c < numCols; ++c)
+    {
+      double currentValue = matrixMask(r, c);
+
+      //check if the pixel is urban
+      if (currentValue == INPUT_URBAN)
+      {
+        ++urbanPixelsCount;
+      }
+    }
+  }
+
+  double urbanPercentage = (double)urbanPixelsCount / (double)allPixelsCount;
+  if (centerPixel == INPUT_URBAN)
+  {
+    if (urbanPercentage > 0.5)
+    {
+      return OUTPUT_URBAN;
+    }
+    else if (urbanPercentage > 0.1 && urbanPercentage <= 0.5)
+    {
+      return OUTPUT_SUB_URBAN;
+    }
+    else
+    {
+      return OUTPUT_RURAL;
+    }
+  }
+  else if (centerPixel == 1)
+  {
+    if (urbanPercentage > 0.5)
+    { 
+      return OUTPUT_URBANIZED_OS;
+    }
+    else
+    {
+      return OUTPUT_RURAL_OS;
+    }
+  }
+
+  return OUTPUT_NO_DATA;
 }
 
-te::rst::Raster* te::urban::classifyUrbanDensity(te::rst::Raster* inputRaster, double radius)
+te::rst::Raster* te::urban::classifyUrbanDensity(const std::string& inputFileName, double radius, const std::string& outputFileName)
 {
+  te::rst::Raster* inputRaster = openRaster(inputFileName);
+
   assert(inputRaster);
+
+  te::rst::Raster* outputRaster = createRaster(outputFileName, inputRaster);
+
+  assert(outputRaster);
 
   unsigned int numRows = inputRaster->getNumberOfRows();
   unsigned int numColumns = inputRaster->getNumberOfColumns();
@@ -110,10 +193,14 @@ te::rst::Raster* te::urban::classifyUrbanDensity(te::rst::Raster* inputRaster, d
   {
     for (size_t currentColumn = initCol; currentColumn < finalCol; ++currentColumn)
     {
+      double centerPixel = 0;
+      inputRaster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, centerPixel);
       boost::numeric::ublas::matrix<double> maskMatrix = getMatrix(inputRaster, currentRow, currentColumn, maskSizeInPixels);
-      double value = calculateValue(maskMatrix);
+      double value = calculateValue(centerPixel, maskMatrix);
+
+      outputRaster->setValue((unsigned int)currentColumn, (unsigned int)currentRow, value, 0);
     }
   }
 
-  return 0;
+  return outputRaster;
 }

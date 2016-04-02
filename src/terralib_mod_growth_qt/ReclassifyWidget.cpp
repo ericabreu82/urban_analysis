@@ -44,5 +44,9 @@ te::urban::qt::ReclassifyWidget::~ReclassifyWidget()
 
 void te::urban::qt::ReclassifyWidget::execute()
 {
-  QMessageBox::information(this, tr("Information"), tr("Mario Bosta!"));
+  std::string inputFileName;
+  double radius = 0.;
+  std::string outputFileName;
+
+
 }
