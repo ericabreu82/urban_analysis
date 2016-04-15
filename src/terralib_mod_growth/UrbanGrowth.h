@@ -30,6 +30,8 @@ TerraLib Team at <terralib-team@terralib.org>.
 
 #include <boost/numeric/ublas/matrix.hpp>
 
+#include <map>
+
 namespace te
 {
   namespace rst
@@ -55,9 +57,11 @@ namespace te
 
     TEGROWTHEXPORT boost::numeric::ublas::matrix<double> getMatrix(te::rst::Raster* raster, size_t referenceRow, size_t referenceColumn, double radius);
 
-    TEGROWTHEXPORT double calculateValue(double centerPixel, const boost::numeric::ublas::matrix<double>& matrixMask);
+    TEGROWTHEXPORT double calculateValue(double centerPixel, const boost::numeric::ublas::matrix<double>& matrixMask, double& permUrb);
 
-    TEGROWTHEXPORT te::rst::Raster* classifyUrbanDensity(const std::string& inputFileName, double radius, const std::string& outputFileName);
+    TEGROWTHEXPORT bool calculateEdge(te::rst::Raster* raster, size_t column, size_t line);
+
+    TEGROWTHEXPORT te::rst::Raster* classifyUrbanDensity(const std::string& inputFileName, double radius, const std::string& outputFileName, std::map<std::string, double>& mapIndexes);
   }
 }
 

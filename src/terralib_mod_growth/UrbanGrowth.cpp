@@ -92,7 +92,7 @@ boost::numeric::ublas::matrix<double> te::urban::getMatrix(te::rst::Raster* rast
   return matrixMask;
 }
 
-double te::urban::calculateValue(double centerPixel, const boost::numeric::ublas::matrix<double>& matrixMask)
+double te::urban::calculateValue(double centerPixel, const boost::numeric::ublas::matrix<double>& matrixMask, double& permUrb)
 {
   //INPUT CLASSES
   //NO_DATA = 0
@@ -120,13 +120,19 @@ double te::urban::calculateValue(double centerPixel, const boost::numeric::ublas
   size_t numCols = matrixMask.size2();
 
   size_t urbanPixelsCount = 0;
-  size_t allPixelsCount = numRows * numCols;
+  size_t allPixelsCount = 0;
 
   for (size_t r = 0; r < numRows; ++r)
   {
     for (size_t c = 0; c < numCols; ++c)
     {
       double currentValue = matrixMask(r, c);
+      if (currentValue < 1 && currentValue > 3)
+      {
+        continue;
+      }
+
+      ++allPixelsCount;
 
       //check if the pixel is urban
       if (currentValue == INPUT_URBAN)
@@ -137,6 +143,9 @@ double te::urban::calculateValue(double centerPixel, const boost::numeric::ublas
   }
 
   double urbanPercentage = (double)urbanPixelsCount / (double)allPixelsCount;
+
+  permUrb = urbanPercentage;
+
   if (centerPixel == INPUT_URBAN)
   {
     if (urbanPercentage > 0.5)
@@ -167,7 +176,37 @@ double te::urban::calculateValue(double centerPixel, const boost::numeric::ublas
   return OUTPUT_NO_DATA;
 }
 
-te::rst::Raster* te::urban::classifyUrbanDensity(const std::string& inputFileName, double radius, const std::string& outputFileName)
+bool te::urban::calculateEdge(te::rst::Raster* raster, size_t column, size_t line)
+{
+  double value = 0;
+  raster->getValue((unsigned int)column, (unsigned int)(line - 1), value, 0);
+  if (value != INPUT_OTHER)
+  {
+    return true;
+  }
+
+  raster->getValue((unsigned int)(column - 1), (unsigned int)line, value, 0);
+  if (value != INPUT_OTHER)
+  {
+    return true;
+  }
+
+  raster->getValue((unsigned int)(column + 1), (unsigned int)line, value, 0);
+  if (value != INPUT_OTHER)
+  {
+    return true;
+  }
+
+  raster->getValue((unsigned int)column, (unsigned int)(line + 1), value, 0);
+  if (value != INPUT_OTHER)
+  {
+    return true;
+  }
+
+  return false;
+}
+
+te::rst::Raster* te::urban::classifyUrbanDensity(const std::string& inputFileName, double radius, const std::string& outputFileName, std::map<std::string, double>& mapIndexes)
 {
   te::rst::Raster* inputRaster = openRaster(inputFileName);
 
@@ -189,18 +228,46 @@ te::rst::Raster* te::urban::classifyUrbanDensity(const std::string& inputFileNam
   size_t finalRow = numRows - maskSizeInPixels;
   size_t finalCol = numColumns - maskSizeInPixels;
 
+  int numPix = 0;
+  int edgeCount = 0; //edge index
+  double sumPerUrb = 0;
   for (size_t currentRow = initRow; currentRow < finalRow; ++currentRow)
   {
     for (size_t currentColumn = initCol; currentColumn < finalCol; ++currentColumn)
     {
       double centerPixel = 0;
       inputRaster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, centerPixel);
-      boost::numeric::ublas::matrix<double> maskMatrix = getMatrix(inputRaster, currentRow, currentColumn, maskSizeInPixels);
-      double value = calculateValue(centerPixel, maskMatrix);
+      boost::numeric::ublas::matrix<double> maskMatrix = getMatrix(inputRaster, currentRow, currentColumn, radius);
 
+      double permUrb = 0.;
+      double value = calculateValue(centerPixel, maskMatrix, permUrb);
       outputRaster->setValue((unsigned int)currentColumn, (unsigned int)currentRow, value, 0);
+
+      if (centerPixel != INPUT_URBAN && centerPixel != INPUT_OTHER)
+      {
+        continue;
+      }
+
+      //sum the perviousness
+      if (centerPixel == INPUT_OTHER)
+      {
+        sumPerUrb += permUrb;
+        ++numPix;
+      }
+
+      bool hasEdge = calculateEdge(inputRaster, currentColumn, currentRow);
+      if (hasEdge == true)
+      {
+        ++edgeCount;
+      }
     }
   }
+
+  double openness = 1 - (sumPerUrb / numPix);
+  double edgeIndex = double(edgeCount) / numPix;
+
+  mapIndexes["openness"] = openness;
+  mapIndexes["edgeIndex"] = edgeIndex;
 
   return outputRaster;
 }
