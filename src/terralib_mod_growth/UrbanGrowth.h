@@ -40,14 +40,14 @@ namespace te
 
   namespace urban
   {
-    //this reclassification analyses the entire raster
+    //step 1 - this reclassification analyses the entire raster
     TEGROWTHEXPORT te::rst::Raster* classifyUrbanAreas(const std::string& inputFileName, double radius, const std::string& outputFileName);
 
-    //this reclassification analyses the entire raster, where the output will be 1 if the pixel is urban and no_data if the pixel is not urban
-    TEGROWTHEXPORT te::rst::Raster* filterUrbanPixels(const std::string& inputFileName, const std::string& outputFileName);
-
-    //this reclassification analyses the entire raster and returns a binary image containing the areas lower than 100 hectares that are completely sorrounded by urban areas
+    //step 4 - this reclassification analyses the entire raster and returns a binary image containing the areas lower than 100 hectares that are completely sorrounded by urban areas
     TEGROWTHEXPORT te::rst::Raster* classifyIsolatedOpenPatches(const std::string& inputFileName, const std::string& outputFileName);
+    
+    //step 5 - add isoleted patches to map
+    TEGROWTHEXPORT void classifyIsolatedOpenPatches(te::rst::Raster* urbanAreasRaster, te::rst::Raster* isolatedOpenPatchesRaster);
 
     //the indexes calculation only considers the study area
     TEGROWTHEXPORT void calculateUrbanIndexes(const std::string& inputFileName, double radius, std::map<std::string, double>& mapIndexes);

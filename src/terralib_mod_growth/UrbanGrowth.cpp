@@ -72,50 +72,6 @@ te::rst::Raster* te::urban::classifyUrbanAreas(const std::string& inputFileName,
   return outputRaster;
 }
 
-te::rst::Raster* te::urban::filterUrbanPixels(const std::string& inputFileName, const std::string& outputFileName)
-{
-  te::rst::Raster* inputRaster = openRaster(inputFileName);
-
-  assert(inputRaster);
-
-  te::rst::Raster* outputRaster = createRaster(outputFileName, inputRaster);
-
-  assert(outputRaster);
-
-  unsigned int numRows = inputRaster->getNumberOfRows();
-  unsigned int numColumns = inputRaster->getNumberOfColumns();
-  double resX = inputRaster->getResolutionX();
-  double resY = inputRaster->getResolutionY();
-
-  std::size_t initRow = 0;
-  std::size_t initCol = 0;
-  std::size_t finalRow = numRows;
-  std::size_t finalCol = numColumns;
-
-  double noDataValue = 0.;
-
-  for (std::size_t currentRow = initRow; currentRow < finalRow; ++currentRow)
-  {
-    for (std::size_t currentColumn = initCol; currentColumn < finalCol; ++currentColumn)
-    {
-      //gets the value of the current center pixel
-      double centerPixel = 0;
-      inputRaster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, centerPixel);
-
-      double value = noDataValue;
-      if (centerPixel == 1 || centerPixel == 2 || centerPixel == 4)
-      {
-        value = 1;
-      }
-
-      //gets the pixels surrounding pixels that intersects the given radiouss
-      outputRaster->setValue((unsigned int)currentColumn, (unsigned int)currentRow, value, 0);
-    }
-  }
-
-  return outputRaster;
-}
-
 te::rst::Raster* te::urban::classifyIsolatedOpenPatches(const std::string& inputFileName, const std::string& outputFileName)
 {
   //we first need to create a binary image containing only the urban pixels
@@ -132,6 +88,49 @@ te::rst::Raster* te::urban::classifyIsolatedOpenPatches(const std::string& input
   binaryUrbanRaster->rasterize(vecGaps, vecClass);
 
   return binaryUrbanRaster;
+}
+
+void te::urban::classifyIsolatedOpenPatches(te::rst::Raster* urbanAreasRaster, te::rst::Raster* isolatedOpenPatchesRaster)
+{
+  assert(urbanAreasRaster);
+  assert(isolatedOpenPatchesRaster);
+
+  std::size_t numRows = urbanAreasRaster->getNumberOfRows();
+  std::size_t numColumns = urbanAreasRaster->getNumberOfColumns();
+
+  if (numRows != isolatedOpenPatchesRaster->getNumberOfRows())
+  {
+    return;
+  }
+  if (numColumns != isolatedOpenPatchesRaster->getNumberOfColumns())
+  {
+    return;
+  }
+
+  for (std::size_t row = 0; row < numRows; ++row)
+  {
+    for (std::size_t column = 0; column < numColumns; ++numColumns)
+    {
+      double urbanRasterValue = 0.;
+      c->getValue(column, row, urbanRasterValue);
+
+      //if it is not  Rural Opon Space, we do not chance the raster
+      if (urbanRasterValue != OUTPUT_RURAL_OS)
+      {
+        continue;
+      }
+
+      double isolatedOpenPatchesRasterValue = 0.;
+      isolatedOpenPatchesRaster->getValue(column, row, isolatedOpenPatchesRasterValue);
+
+      //if it is an isolated open patch, we set the raster value to 
+      if (isolatedOpenPatchesRasterValue == 1)
+      {
+        urbanAreasRaster->setValue(column, row, OUTPUT_SUBURBAN_ZONE_OPEN_AREA);
+      }
+    }
+  }
+
 }
 
 void te::urban::calculateUrbanIndexes(const std::string& inputFileName, double radius, std::map<std::string, double>& mapIndexes)

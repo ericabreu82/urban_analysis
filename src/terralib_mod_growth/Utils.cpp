@@ -258,6 +258,50 @@ bool te::urban::calculateEdge(te::rst::Raster* raster, size_t column, size_t lin
   return false;
 }
 
+te::rst::Raster* te::urban::filterUrbanPixels(const std::string& inputFileName, const std::string& outputFileName)
+{
+  te::rst::Raster* inputRaster = openRaster(inputFileName);
+
+  assert(inputRaster);
+
+  te::rst::Raster* outputRaster = createRaster(outputFileName, inputRaster);
+
+  assert(outputRaster);
+
+  unsigned int numRows = inputRaster->getNumberOfRows();
+  unsigned int numColumns = inputRaster->getNumberOfColumns();
+  double resX = inputRaster->getResolutionX();
+  double resY = inputRaster->getResolutionY();
+
+  std::size_t initRow = 0;
+  std::size_t initCol = 0;
+  std::size_t finalRow = numRows;
+  std::size_t finalCol = numColumns;
+
+  double noDataValue = 0.;
+
+  for (std::size_t currentRow = initRow; currentRow < finalRow; ++currentRow)
+  {
+    for (std::size_t currentColumn = initCol; currentColumn < finalCol; ++currentColumn)
+    {
+      //gets the value of the current center pixel
+      double centerPixel = 0;
+      inputRaster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, centerPixel);
+
+      double value = noDataValue;
+      if (centerPixel == 1 || centerPixel == 2 || centerPixel == 4)
+      {
+        value = 1;
+      }
+
+      //gets the pixels surrounding pixels that intersects the given radiouss
+      outputRaster->setValue((unsigned int)currentColumn, (unsigned int)currentRow, value, 0);
+    }
+  }
+
+  return outputRaster;
+}
+
 std::vector<te::gm::Geometry*> te::urban::getGaps(const std::vector<te::gm::Geometry*>& vecInput, double area)
 {
   std::vector<te::gm::Geometry*> vecOutput;

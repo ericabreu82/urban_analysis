@@ -53,7 +53,7 @@ namespace te
 
     enum OutputUrbanClasses
     {
-      OUTPUT_NO_DATA = 0, OUTPUT_URBAN = 1, OUTPUT_SUB_URBAN = 2, OUTPUT_RURAL = 3, OUTPUT_URBANIZED_OS = 4, OUTPUT_RURAL_OS = 6, OUTPUT_WATER = 7
+      OUTPUT_NO_DATA = 0, OUTPUT_URBAN = 1, OUTPUT_SUB_URBAN = 2, OUTPUT_RURAL = 3, OUTPUT_URBANIZED_OS = 4, OUTPUT_SUBURBAN_ZONE_OPEN_AREA = 5, OUTPUT_RURAL_OS = 6, OUTPUT_WATER = 7
     };
 
     TEGROWTHEXPORT void init();
@@ -71,6 +71,9 @@ namespace te
     TEGROWTHEXPORT double calculateUrbanClass(short centerPixelValue, const std::vector<short>& vecPixels, double& permUrb);
 
     TEGROWTHEXPORT bool calculateEdge(te::rst::Raster* raster, size_t column, size_t line);
+
+    //this reclassification analyses the entire raster, where the output will be 1 if the pixel is urban and no_data if the pixel is not urban
+    TEGROWTHEXPORT te::rst::Raster* filterUrbanPixels(const std::string& inputFileName, const std::string& outputFileName);
 
     //!< Search for all the gaps (holes) that [optionally] have area smaller then the given reference area
     TEGROWTHEXPORT std::vector<te::gm::Geometry*> getGaps(const std::vector<te::gm::Geometry*>& vecPolygons, double area = 0.);
