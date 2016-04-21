@@ -37,7 +37,7 @@ TerraLib Team at <terralib-team@terralib.org>.
 
 void te::urban::init()
 {
-  /*
+  
   TerraLib::getInstance().initialize();
 
   te::plugin::PluginInfo* info;
@@ -60,16 +60,16 @@ void te::urban::init()
 #endif  
 
   te::plugin::PluginManager::getInstance().loadAll();
-  */
+  
 }
 
 void te::urban::finalize()
 {
-  /*
+  
   te::plugin::PluginManager::getInstance().unloadAll();
 
   TerraLib::getInstance().finalize();
-  */
+  
 }
 
 te::rst::Raster* te::urban::openRaster(const std::string& fileName)
@@ -77,7 +77,7 @@ te::rst::Raster* te::urban::openRaster(const std::string& fileName)
   std::map<std::string, std::string> rasterInfo;
   rasterInfo["URI"] = fileName;
 
-  te::rst::Raster* raster = te::rst::RasterFactory::make(rasterInfo);
+  te::rst::Raster* raster = te::rst::RasterFactory::open(rasterInfo);
   return raster;
 }
 
