@@ -26,6 +26,8 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include "ReclassifyWidget.h"
 #include "ui_ReclassifyWidgetForm.h"
 
+#include "../terralib_mod_growth/UrbanGrowth.h"
+
 //Qt
 #include <QMessageBox>
 
@@ -44,9 +46,36 @@ te::urban::qt::ReclassifyWidget::~ReclassifyWidget()
 
 void te::urban::qt::ReclassifyWidget::execute()
 {
-  std::string inputFileName;
-  double radius = 0.;
-  std::string outputFileName;
+  /*
+  if (m_ui->m_reclassInputImageLineEdit->text().isEmpty() == true)
+  {
+    return;
+  }
+  if (m_ui->m_reclassRadiusLineEdit->text().isEmpty() == true)
+  {
+    return;
+  }
 
+  bool converted = false;
+  double radius = m_ui->m_reclassRadiusLineEdit->text().toDouble(&converted);
 
+  if (converted == false)
+  {
+    return;
+  }
+
+  if (m_ui->m_reclassOutputImageLineEdit->text().isEmpty() == true)
+  {
+    return;
+  }
+
+  std::string inputFileName = m_ui->m_reclassInputImageLineEdit->text().toStdString();
+  std::string outputFileName = m_ui->m_reclassOutputImageLineEdit->text().toStdString();
+  */
+
+  std::string inputFileName = "C:\\Users\\Mário\\Google Drive\\Pessoal\\Projetos\\Miguel_Fred\\Dados\\belem_aug92_t90_final1.tif";
+  double radius = 564.;
+  std::string outputFileName = m_ui->m_reclassOutputImageLineEdit->text().toStdString();
+
+  te::rst::Raster* raster = classifyUrbanAreas(inputFileName, radius, outputFileName);
 }

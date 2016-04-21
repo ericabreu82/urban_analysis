@@ -28,9 +28,8 @@ TerraLib Team at <terralib-team@terralib.org>.
 
 #include "Config.h"
 
-#include <boost/numeric/ublas/matrix.hpp>
-
 #include <map>
+#include <string>
 
 namespace te
 {
@@ -41,27 +40,17 @@ namespace te
 
   namespace urban
   {
-    enum InputUrbanClasses
-    {
-      INPUT_NO_DATA = 0, INPUT_URBAN = 1, INPUT_WATER = 2, INPUT_OTHER = 3
-    };
+    //this reclassification analyses the entire raster
+    TEGROWTHEXPORT te::rst::Raster* classifyUrbanAreas(const std::string& inputFileName, double radius, const std::string& outputFileName);
 
-    enum OutputUrbanClasses
-    {
-      OUTPUT_NO_DATA = 0, OUTPUT_URBAN = 1, OUTPUT_SUB_URBAN = 2, OUTPUT_RURAL = 3, OUTPUT_URBANIZED_OS = 4, OUTPUT_RURAL_OS = 6, OUTPUT_WATER = 7
-    };
+    //this reclassification analyses the entire raster, where the output will be 1 if the pixel is urban and no_data if the pixel is not urban
+    TEGROWTHEXPORT te::rst::Raster* filterUrbanPixels(const std::string& inputFileName, const std::string& outputFileName);
 
-    TEGROWTHEXPORT te::rst::Raster* openRaster(const std::string& fileName);
+    //this reclassification analyses the entire raster and returns a binary image containing the areas lower than 100 hectares that are completely sorrounded by urban areas
+    TEGROWTHEXPORT te::rst::Raster* classifyIsolatedOpenPatches(const std::string& inputFileName, const std::string& outputFileName);
 
-    TEGROWTHEXPORT te::rst::Raster* createRaster(const std::string& fileName, te::rst::Raster* raster);
-
-    TEGROWTHEXPORT boost::numeric::ublas::matrix<double> getMatrix(te::rst::Raster* raster, size_t referenceRow, size_t referenceColumn, double radius);
-
-    TEGROWTHEXPORT double calculateValue(double centerPixel, const boost::numeric::ublas::matrix<double>& matrixMask, double& permUrb);
-
-    TEGROWTHEXPORT bool calculateEdge(te::rst::Raster* raster, size_t column, size_t line);
-
-    TEGROWTHEXPORT te::rst::Raster* classifyUrbanDensity(const std::string& inputFileName, double radius, const std::string& outputFileName, std::map<std::string, double>& mapIndexes);
+    //the indexes calculation only considers the study area
+    TEGROWTHEXPORT void calculateUrbanIndexes(const std::string& inputFileName, double radius, std::map<std::string, double>& mapIndexes);
   }
 }
 

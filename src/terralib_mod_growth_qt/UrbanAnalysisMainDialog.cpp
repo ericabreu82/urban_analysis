@@ -28,6 +28,8 @@ TerraLib Team at <terralib-team@terralib.org>.
 
 #include "ReclassifyWidget.h"
 
+#include "terralib_mod_growth/Utils.h"
+
 //Qt
 #include <QSpacerItem>
 
@@ -47,10 +49,14 @@ te::urban::qt::UrbanAnalysisMainDialog::UrbanAnalysisMainDialog(QWidget* parent,
 
   //add buttons and widgets for each urban analysis operations
   buildDialog();
+
+  te::urban::init();
 }
 
 te::urban::qt::UrbanAnalysisMainDialog::~UrbanAnalysisMainDialog()
 {
+  te::urban::finalize();
+
   if (m_currentWidget)
     delete m_currentWidget;
 }
