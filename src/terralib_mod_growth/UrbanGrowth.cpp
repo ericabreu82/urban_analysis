@@ -125,8 +125,13 @@ te::rst::Raster* te::urban::classifyIsolatedOpenPatches(const std::string& input
   std::vector<te::gm::Geometry*> vecGeometries;
   binaryUrbanRaster->vectorize(vecGeometries, 0);
 
-  return binaryUrbanRaster;
+  std::vector<te::gm::Geometry*> vecGaps = getGaps(vecGeometries, 200.);
 
+  std::vector<double> vecClass;
+  vecClass.resize(vecGaps.size(), 1.);
+  binaryUrbanRaster->rasterize(vecGaps, vecClass);
+
+  return binaryUrbanRaster;
 }
 
 void te::urban::calculateUrbanIndexes(const std::string& inputFileName, double radius, std::map<std::string, double>& mapIndexes)

@@ -278,9 +278,23 @@ std::vector<te::gm::Geometry*> te::urban::getGaps(const std::vector<te::gm::Geom
     }
 
     //now we analyse all the holes of the polygon. If a hole has area smaller the the given area, we convert it to a polygon add it to the output list
-    for (std::size_t j = 1; j < polygon->getNumRings(); ++j)
+    for (std::size_t j = 0; j < polygon->getNumInteriorRings(); ++j)
     {
+      te::gm::Curve* curve = polygon->getInteriorRingN(j);
 
+      te::gm::Curve* newCurve = static_cast<te::gm::Curve*>(curve->clone());
+
+      te::gm::Polygon* newPolygon = new te::gm::Polygon(1, te::gm::PolygonType, polygon->getSRID());
+      newPolygon->setRingN(0, newCurve);
+
+      if (newPolygon->getArea() < area)
+      {
+        vecOutput.push_back(newPolygon);
+      }
+      else
+      {
+        delete newPolygon;
+      }
     }
   }
 
