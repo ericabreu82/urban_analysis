@@ -33,6 +33,8 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include <terralib/plugin.h>
 #include <terralib/raster/Raster.h>
 #include <terralib/raster/RasterFactory.h>
+#include <terralib/raster/RasterSummary.h>
+#include <terralib/raster/RasterSummaryManager.h>
 #include <terralib/raster/Utils.h>
 
 void te::urban::init()
@@ -104,8 +106,63 @@ std::vector<short> te::urban::getPixelsWithinRadious(te::rst::Raster* raster, si
   double resX = raster->getResolutionX();
   int  maskSizeInPixels = te::rst::Round(radius / resX);
 
-  int rasterRow = (int)(referenceRow - maskSizeInPixels);
-  int rasterColumn = (int)(referenceColumn - maskSizeInPixels);
+  int rasterRow = ((int)referenceRow - maskSizeInPixels);
+  int rasterColumn = ((int)referenceColumn - maskSizeInPixels);
+
+  int range = (maskSizeInPixels * 2) + 1;
+
+  te::gm::Coord2D referenceCoord = raster->getGrid()->gridToGeo((double)referenceColumn, (double)referenceRow);
+  te::gm::Point referencePoint(referenceCoord.getX(), referenceCoord.getY());
+
+  std::vector<short> vecPixels;
+  vecPixels.reserve(maskSizeInPixels * maskSizeInPixels);
+
+  for (size_t localRow = 0; localRow <= range; ++localRow, ++rasterRow)
+  {
+    for (size_t localColumn = 0; localColumn <= range; ++localColumn, ++rasterColumn)
+    {
+      if (localRow == referenceRow && localColumn == referenceColumn)
+      {
+        continue;
+      }
+      if (rasterRow < 0 || rasterColumn < 0)
+      {
+        continue;
+      }
+      if (rasterRow >= numRows || rasterColumn >= numColumns)
+      {
+        continue;
+      }
+
+      te::gm::Coord2D currentCoord = raster->getGrid()->gridToGeo(rasterColumn, rasterRow);
+      te::gm::Point currentPoint(currentCoord.getX(), currentCoord.getY());
+
+      if (referencePoint.distance(&currentPoint) > radius)
+      {
+        continue;
+        
+      }
+      double value = 0;
+      raster->getValue(rasterColumn, rasterRow, value);
+
+      vecPixels.push_back((short)value);
+    }
+  }
+
+  return vecPixels;
+}
+
+std::vector<short> te::urban::getAdjacentPixels(te::rst::Raster* raster, size_t referenceRow, size_t referenceColumn)
+{
+  std::size_t numRows = raster->getNumberOfRows();
+  std::size_t numColumns = raster->getNumberOfColumns();
+
+  int  maskSizeInPixels = 1;
+
+  int rasterRow = ((int)referenceRow - maskSizeInPixels);
+  int rasterColumn = ((int)referenceColumn - maskSizeInPixels);
+
+  int range = (maskSizeInPixels * 2) + 1;
 
   te::gm::Coord2D referenceCoord = raster->getGrid()->gridToGeo((double)referenceColumn, (double)referenceRow);
   te::gm::Point referencePoint(referenceCoord.getX(), referenceCoord.getY());
@@ -130,15 +187,7 @@ std::vector<short> te::urban::getPixelsWithinRadious(te::rst::Raster* raster, si
         continue;
       }
 
-      te::gm::Coord2D currentCoord = raster->getGrid()->gridToGeo(rasterColumn, rasterRow);
-      te::gm::Point currentPoint(currentCoord.getX(), currentCoord.getY());
-
       double value = 0;
-      if (referencePoint.distance(&currentPoint) > radius)
-      {
-        continue;
-        
-      }
       raster->getValue(rasterColumn, rasterRow, value);
 
       vecPixels.push_back((short)value);
@@ -148,7 +197,7 @@ std::vector<short> te::urban::getPixelsWithinRadious(te::rst::Raster* raster, si
   return vecPixels;
 }
 
-double te::urban::calculateUrbanClass(short centerPixelValue, const std::vector<short>& vecPixels, double& permUrb)
+double te::urban::calculateUrbanizedArea(short centerPixelValue, const std::vector<short>& vecPixels, double& permUrb)
 {
   //INPUT CLASSES
   //NO_DATA = 0
@@ -194,6 +243,12 @@ double te::urban::calculateUrbanClass(short centerPixelValue, const std::vector<
     }
   }
 
+  //all adjacent pixels are NOT_DATA
+  if (allPixelsCount == 0)
+  {
+    return OUTPUT_NO_DATA;
+  }
+
   double urbanPercentage = (double)urbanPixelsCount / (double)allPixelsCount;
 
   permUrb = urbanPercentage;
@@ -228,6 +283,121 @@ double te::urban::calculateUrbanClass(short centerPixelValue, const std::vector<
   return OUTPUT_NO_DATA;
 }
 
+double te::urban::calculateUrbanFootprint(short centerPixelValue, const std::vector<short>& vecPixels, double& permUrb)
+{
+  //INPUT CLASSES
+  //NO_DATA = 0
+  //OTHER = 1
+  //WATER = 2
+  //URBAN = 3
+
+  //OUTPUTCLASSES
+  //(1) URBAN ZONE BUILT-UP AREA: built-up pixels with imperviousness > 50%
+  //(2) SUBURBAN ZONE BUILT-UP AREA: built-up pixels with imperviousness < 50% and > 10%
+  //(3) RURAL ZONE BUILT-UP AREA: built-up pixels with imperviousness < 10%
+
+  //NO DATA
+  if (centerPixelValue <= 0 || centerPixelValue >= 4)
+  {
+    return OUTPUT_NO_DATA;
+  }
+  //WATER
+  if (centerPixelValue == INPUT_WATER)
+  {
+    return OUTPUT_WATER;
+  }
+
+  if (centerPixelValue == INPUT_OTHER)
+  {
+    return OUTPUT_URBANIZED_OS;
+  }
+
+  std::size_t size = vecPixels.size();
+
+  std::size_t urbanPixelsCount = 0;
+  std::size_t allPixelsCount = 0;
+
+  for (std::size_t i = 0; i < size; ++i)
+  {
+    double currentValue = vecPixels[i];
+    if (currentValue < 1 && currentValue > 3)
+    {
+      continue;
+    }
+
+    ++allPixelsCount;
+
+    //check if the pixel is urban
+    if (currentValue == INPUT_URBAN)
+    {
+      ++urbanPixelsCount;
+    }
+  }
+  //all adjacent pixels are NOT_DATA
+  if (allPixelsCount == 0)
+  {
+    return OUTPUT_NO_DATA;
+  }
+
+  double urbanPercentage = (double)urbanPixelsCount / (double)allPixelsCount;
+
+  permUrb = urbanPercentage;
+
+  if (centerPixelValue == INPUT_URBAN)
+  {
+    if (urbanPercentage > 0.5)
+    {
+      return OUTPUT_URBAN;
+    }
+    else if (urbanPercentage > 0.1 && urbanPercentage <= 0.5)
+    {
+      return OUTPUT_SUB_URBAN;
+    }
+    else
+    {
+      return OUTPUT_RURAL;
+    }
+  }
+
+  return OUTPUT_NO_DATA;
+}
+
+double te::urban::calculateUrbanOpenArea(short centerPixelValue, const std::vector<short>& vecPixels)
+{
+  //INPUT CLASSES
+  //NO_DATA = 0
+  //OTHER = 1
+  //WATER = 2
+  //URBAN = 3
+
+  //OUTPUTCLASSES
+  //(1) URBAN ZONE BUILT-UP AREA: built-up pixels with imperviousness > 50%
+  //(2) SUBURBAN ZONE BUILT-UP AREA: built-up pixels with imperviousness < 50% and > 10%
+  //(3) RURAL ZONE BUILT-UP AREA: built-up pixels with imperviousness < 10%
+
+  if (centerPixelValue != OUTPUT_URBANIZED_OS)
+  {
+    return centerPixelValue;
+  }
+
+  double newPixel = OUTPUT_RURAL_OS; // default to rural OS
+
+  std::size_t size = vecPixels.size();
+  for (std::size_t i = 0; i < size; ++i)
+  {
+    double currentValue = vecPixels[i];
+
+    //check if the pixel is urban
+    if (currentValue == OUTPUT_URBAN || currentValue == OUTPUT_SUB_URBAN)
+    {
+      newPixel = OUTPUT_URBANIZED_OS;
+      break;
+    }
+  }
+
+  return newPixel;
+}
+
 bool te::urban::calculateEdge(te::rst::Raster* raster, size_t column, size_t line)
 {
   double value = 0;
@@ -258,9 +428,9 @@ bool te::urban::calculateEdge(te::rst::Raster* raster, size_t column, size_t lin
   return false;
 }
 
-te::rst::Raster* te::urban::filterUrbanPixels(const std::string& inputFileName, const std::string& outputFileName)
+te::rst::Raster* te::urban::filterUrbanPixels(te::rst::Raster* raster, const std::string& outputFileName)
 {
-  te::rst::Raster* inputRaster = openRaster(inputFileName);
+  te::rst::Raster* inputRaster = raster;
 
   assert(inputRaster);
 
@@ -342,5 +512,203 @@ std::vector<te::gm::Geometry*> te::urban::getGaps(const std::vector<te::gm::Geom
     }
   }
 
+
+  //te::rst::RasterSummary* rasterSummary = te::rst::RasterSummaryManager::getInstance().get(raster, te::rst::SUMMARY_R_HISTOGRAM, true);
+
   return vecOutput;
+}
+
+te::rst::Raster* te::urban::createDistinctGroups(te::rst::Raster* inputRaster, const std::string& outputFileName)
+{
+  assert(inputRaster);
+
+  te::rst::Raster* outputRaster = createRaster(outputFileName, inputRaster);
+
+  te::rst::Copy(*inputRaster, *outputRaster);
+  
+  //we first vectorize the raster
+  std::vector<te::gm::Geometry*> vecGeometries;
+  outputRaster->vectorize(vecGeometries, 0);
+
+  //then we define one class for each group
+  std::vector<double> vecClasses;
+  vecClasses.reserve(vecGeometries.size());
+  for (std::size_t i = 0; i < vecGeometries.size(); ++i)
+  {
+    vecClasses[i] = i;
+  }
+
+  //finally we rasterize the geometries
+  outputRaster->rasterize(vecGeometries, vecClasses);
+
+  te::common::FreeContents(vecGeometries);
+
+  return outputRaster;
+}
+
+std::set<double> te::urban::detectEdgeOpenAreaGroups(te::rst::Raster* newDevRaster, te::rst::Raster* otherDevGroupedRaster, te::rst::Raster* footprintRaster)
+{
+  assert(newDevRaster);
+  assert(otherDevGroupedRaster);
+  assert(footprintRaster);
+
+  std::set<double> setGroupsWithEdges;
+
+  unsigned int numRows = newDevRaster->getNumberOfRows();
+  unsigned int numColumns = newDevRaster->getNumberOfColumns();
+
+  for (unsigned int row = 0; row < numRows; ++row)
+  {
+    for (unsigned int column = 0; column < numColumns; ++column)
+    {
+      //we first read the pixel from newDev raster. If its value is not 1, we continue
+      double newDevValue = 0.;
+      newDevRaster->getValue(column, row, newDevValue);
+      if (newDevValue != 1)
+      {
+        continue;
+      }
+
+      double otherDevGroupedValue = 0.;
+      otherDevGroupedRaster->getValue(column, row, otherDevGroupedValue);
+
+      //then we check the value of the footprint image. If 4 or 5, we register the current group in the SET
+      double footprintValue = 0.;
+      footprintRaster->getValue(column, row, footprintValue);
+
+      if (footprintValue == 4 || footprintValue == 5)
+      {
+        setGroupsWithEdges.insert(otherDevGroupedValue);
+        continue;
+      }
+
+      //if we got here, we must analyse the adjacent pixels in the footprint raster looking for any urban pixel (1, 2 and 3)
+      std::vector<short> vecPixels = getAdjacentPixels(footprintRaster, row, column);
+      for (std::size_t i = 0; i < vecPixels.size(); ++i)
+      {
+        if (vecPixels[i] >= 1 && vecPixels[i] <= 3)
+        {
+          setGroupsWithEdges.insert(otherDevGroupedValue);
+          break;
+        }
+      }
+    }
+  }
+
+  return setGroupsWithEdges;
+}
+
+void te::urban::compareRasters(te::rst::Raster* rasterT1, te::rst::Raster* rasterT2, const std::string& infillRasterFileName, const std::string& otherDevRasterFileName)
+{
+  assert(rasterT1);
+  assert(rasterT2);
+
+  te::rst::Raster* infillRaster = createRaster(infillRasterFileName, rasterT1);
+  te::rst::Raster* otherDevRaster = createRaster(otherDevRasterFileName, rasterT1);
+
+  assert(infillRaster);
+  assert(otherDevRaster);
+
+  std::size_t numRows = rasterT1->getNumberOfRows();
+  std::size_t numColumns = rasterT1->getNumberOfColumns();
+
+  if (numRows != rasterT2->getNumberOfRows())
+  {
+    return;
+  }
+  if (numColumns != rasterT2->getNumberOfColumns())
+  {
+    return;
+  }
+
+  for (std::size_t row = 0; row < numRows; ++row)
+  {
+    for (std::size_t column = 0; column < numColumns; ++numColumns)
+    {
+      double valueT1 = 0.;
+      rasterT1->getValue((unsigned int)column, (unsigned int)row, valueT1);
+
+      double valueT2 = 0.;
+      rasterT2->getValue((unsigned int)column, (unsigned int)row, valueT2);
+
+      double valueInFill = 0;
+      double valueOtherDev = 0;
+
+      //if urban in T2
+      if (valueT2 == OUTPUT_URBAN || valueT2 == OUTPUT_SUB_URBAN || valueT2 == OUTPUT_RURAL)
+      {
+        //if urbanized open space in T1
+        if (valueT1 == OUTPUT_URBANIZED_OS || valueT1 == OUTPUT_SUBURBAN_ZONE_OPEN_AREA)
+        {
+          valueInFill = 1;
+        }
+        else if (valueT1 == OUTPUT_RURAL_OS || valueT1 == OUTPUT_WATER)
+        {
+          valueInFill = 2;
+          valueOtherDev = 1;
+        }
+      }
+
+      infillRaster->setValue((unsigned int)column, (unsigned int)row, valueInFill);
+      otherDevRaster->setValue((unsigned int)column, (unsigned int)row, valueOtherDev);
+    }
+  }
+}
+
+te::rst::Raster* te::urban::classifyNewDevelopment(te::rst::Raster* infillRaster, te::rst::Raster* otherDevGroupedRaster, const std::set<double>& setEdgesOpenAreaGroups, const std::string& outputRasterFileName)
+{
+  assert(infillRaster);
+  assert(otherDevGroupedRaster);
+
+  unsigned int numRows = infillRaster->getNumberOfRows();
+  unsigned int numColumns = infillRaster->getNumberOfColumns();
+
+  if (numRows != otherDevGroupedRaster->getNumberOfRows())
+  {
+    return 0;
+  }
+  if (numColumns != otherDevGroupedRaster->getNumberOfColumns())
+  {
+    return 0;
+  }
+
+  te::rst::Raster* outputRaster = createRaster(outputRasterFileName, infillRaster);
+
+  for (std::size_t row = 0; row < numRows; ++row)
+  {
+    for (std::size_t column = 0; column < numColumns; ++numColumns)
+    {
+      double infillValue = 0.;
+      infillRaster->getValue(column, row, infillValue);
+
+      double outputValue = 0.;
+
+      if (infillValue == 1)
+      {
+        //infill
+        outputValue = 1;
+      }
+      else if (infillValue == 2)
+      {
+        double otherDevValue = 0.;
+        otherDevGroupedRaster->getValue(column, row, otherDevValue);
+
+        std::set<double>::iterator it = setEdgesOpenAreaGroups.find(otherDevValue);
+        if (it != setEdgesOpenAreaGroups.end())
+        {
+          //extension
+          outputValue = 2;
+        }
+        else
+        {
+          //leapfrog
+          outputValue = 3;
+        }
+      }
+
+      outputRaster->setValue(column, row, outputValue);
+    }
+  }
+
+  return outputRaster;
 }

@@ -30,6 +30,9 @@ TerraLib Team at <terralib-team@terralib.org>.
 
 #include <boost/numeric/ublas/matrix.hpp>
 
+
+#include <memory>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -48,12 +51,25 @@ namespace te
   {
     enum InputUrbanClasses
     {
-      INPUT_NO_DATA = 0, INPUT_URBAN = 1, INPUT_WATER = 2, INPUT_OTHER = 3
+      INPUT_NO_DATA = 0, INPUT_OTHER = 1, INPUT_WATER = 2, INPUT_URBAN = 3
     };
 
     enum OutputUrbanClasses
     {
       OUTPUT_NO_DATA = 0, OUTPUT_URBAN = 1, OUTPUT_SUB_URBAN = 2, OUTPUT_RURAL = 3, OUTPUT_URBANIZED_OS = 4, OUTPUT_SUBURBAN_ZONE_OPEN_AREA = 5, OUTPUT_RURAL_OS = 6, OUTPUT_WATER = 7
+    };
+
+    struct UrbanRasters
+    {
+      UrbanRasters()
+        : m_urbanizedAreaRaster(0)
+        , m_urbanFootprintRaster(0)
+      {
+
+      }
+
+      std::auto_ptr<te::rst::Raster> m_urbanizedAreaRaster;
+      std::auto_ptr<te::rst::Raster> m_urbanFootprintRaster;
     };
 
     TEGROWTHEXPORT void init();
@@ -64,19 +80,40 @@ namespace te
 
     TEGROWTHEXPORT te::rst::Raster* createRaster(const std::string& fileName, te::rst::Raster* raster);
 
-    //!< Returns all the pixels within the given radious
+    //!< Returns all the pixels within the given radius
     TEGROWTHEXPORT std::vector<short> getPixelsWithinRadious(te::rst::Raster* raster, size_t referenceRow, size_t referenceColumn, double radius);
 
-    //Calculate the urban class value based in the value of center pixel and in the value of the adjacent pixels
-    TEGROWTHEXPORT double calculateUrbanClass(short centerPixelValue, const std::vector<short>& vecPixels, double& permUrb);
+    //!< Returns all the adjacent pixels
+    TEGROWTHEXPORT std::vector<short> getAdjacentPixels(te::rst::Raster* raster, size_t referenceRow, size_t referenceColumn);
+
+    //Calculate the urbanized area value based in the value of center pixel and in the value of the adjacent pixels
+    TEGROWTHEXPORT double calculateUrbanizedArea(short centerPixelValue, const std::vector<short>& vecPixels, double& permUrb);
+
+    //Calculate the urban footprint value based in the value of center pixel and in the value of the adjacent pixels
+    TEGROWTHEXPORT double calculateUrbanFootprint(short centerPixelValue, const std::vector<short>& vecPixels, double& permUrb);
+
+    //Calculate the urban open area value based in the value of center pixel and in the value of the adjacent pixels
+    TEGROWTHEXPORT double calculateUrbanOpenArea(short centerPixelValue, const std::vector<short>& vecPixels);
 
     TEGROWTHEXPORT bool calculateEdge(te::rst::Raster* raster, size_t column, size_t line);
 
     //this reclassification analyses the entire raster, where the output will be 1 if the pixel is urban and no_data if the pixel is not urban
-    TEGROWTHEXPORT te::rst::Raster* filterUrbanPixels(const std::string& inputFileName, const std::string& outputFileName);
+    TEGROWTHEXPORT te::rst::Raster* filterUrbanPixels(te::rst::Raster* raster, const std::string& outputFileName);
 
     //!< Search for all the gaps (holes) that [optionally] have area smaller then the given reference area
     TEGROWTHEXPORT std::vector<te::gm::Geometry*> getGaps(const std::vector<te::gm::Geometry*>& vecPolygons, double area = 0.);
+
+    //!< For each region, creates a new group using sequential values
+    TEGROWTHEXPORT te::rst::Raster* createDistinctGroups(te::rst::Raster* inputRaster, const std::string& outputFileName);
+
+    //!< DETERMINE EDGE OPEN AREA (100 meter buffer around built-up)
+    TEGROWTHEXPORT std::set<double> detectEdgeOpenAreaGroups(te::rst::Raster* newDevRaster, te::rst::Raster* otherDevGroupedRaster, te::rst::Raster* footprintRaster);
+
+    //compare the images in two diferrent times, creating two new classified images
+    TEGROWTHEXPORT void compareRasters(te::rst::Raster* rasterT1, te::rst::Raster* rasterT2, const std::string& infillRasterFileName, const std::string& otherDevRasterFileName);
+
+    TEGROWTHEXPORT te::rst::Raster* classifyNewDevelopment(te::rst::Raster* infillRaster, te::rst::Raster* otherDevGroupedRaster, const std::set<double>& setEdgesOpenAreaGroups, const std::string& outputRasterFileName);
+
   }
 }
 

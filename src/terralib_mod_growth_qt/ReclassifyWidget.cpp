@@ -75,7 +75,8 @@ void te::urban::qt::ReclassifyWidget::execute()
 
   std::string inputFileName = "C:\\Users\\Mário\\Google Drive\\Pessoal\\Projetos\\Miguel_Fred\\Dados\\belem_aug92_t90_final1.tif";
   double radius = 564.;
-  std::string outputFileName = "D:\\temp\\miguel_fred\\classifyUrbanAreas.tif";
+  std::string outputPath = "D:\\temp\\miguel_fred";
+  std::string outputPrefix = "t1";
 
-  te::rst::Raster* raster = classifyUrbanAreas(inputFileName, radius, outputFileName);
+  UrbanRasters outputRaster = prepareRaster(inputFileName, radius, outputPath, outputPrefix);
 }
