@@ -28,9 +28,10 @@ TerraLib Team at <terralib-team@terralib.org>.
 
 #include "Config.h"
 
-#include <boost/numeric/ublas/matrix.hpp>
+#include "Utils.h"
 
 #include <map>
+#include <string>
 
 namespace te
 {
@@ -41,27 +42,28 @@ namespace te
 
   namespace urban
   {
-    enum InputUrbanClasses
-    {
-      INPUT_NO_DATA = 0, INPUT_URBAN = 1, INPUT_WATER = 2, INPUT_OTHER = 3
-    };
+    //step 1 - this reclassification analyses the entire raster. Classify the urbanized area
+    TEGROWTHEXPORT te::rst::Raster* classifyUrbanizedArea(const std::string& inputFileName, double radius, const std::string& outputFileName);
 
-    enum OutputUrbanClasses
-    {
-      OUTPUT_NO_DATA = 0, OUTPUT_URBAN = 1, OUTPUT_SUB_URBAN = 2, OUTPUT_RURAL = 3, OUTPUT_URBANIZED_OS = 4, OUTPUT_RURAL_OS = 6, OUTPUT_WATER = 7
-    };
+    //step 2 - this reclassification analyses the entire raster. Classify the urban footprint
+    TEGROWTHEXPORT te::rst::Raster* classifyUrbanFootprint(const std::string& inputFileName, double radius, const std::string& outputFileName);
 
-    TEGROWTHEXPORT te::rst::Raster* openRaster(const std::string& fileName);
+    //step 3 - this reclassification analyses the entire raster. Classify the urban open area
+    TEGROWTHEXPORT void classifyUrbanOpenArea(te::rst::Raster* raster, double radius);
 
-    TEGROWTHEXPORT te::rst::Raster* createRaster(const std::string& fileName, te::rst::Raster* raster);
+    //step 4 - this reclassification analyses the entire raster and returns a binary image containing the areas lower than 100 hectares that are completely sorrounded by urban areas
+    TEGROWTHEXPORT te::rst::Raster* identifyIsolatedOpenPatches(te::rst::Raster* raster, const std::string& outputFileName);
+    
+    //step 5 - add isoleted patches to map
+    TEGROWTHEXPORT void addIsolatedOpenPatches(te::rst::Raster* urbanRaster, te::rst::Raster* isolatedOpenPatchesRaster);
 
-    TEGROWTHEXPORT boost::numeric::ublas::matrix<double> getMatrix(te::rst::Raster* raster, size_t referenceRow, size_t referenceColumn, double radius);
+    //steps 4 and 5
+    TEGROWTHEXPORT void classifyIsolatedOpenPatches(te::rst::Raster* raster, const std::string& outputPath, const std::string& outputPrefix);
 
-    TEGROWTHEXPORT double calculateValue(double centerPixel, const boost::numeric::ublas::matrix<double>& matrixMask, double& permUrb);
+    //the indexes calculation only considers the study area
+    TEGROWTHEXPORT void calculateUrbanIndexes(const std::string& inputFileName, double radius, std::map<std::string, double>& mapIndexes);
 
-    TEGROWTHEXPORT bool calculateEdge(te::rst::Raster* raster, size_t column, size_t line);
-
-    TEGROWTHEXPORT te::rst::Raster* classifyUrbanDensity(const std::string& inputFileName, double radius, const std::string& outputFileName, std::map<std::string, double>& mapIndexes);
+    TEGROWTHEXPORT UrbanRasters prepareRaster(const std::string& inputFileName, double radius, const std::string& outputPath, const std::string& outputPrefix);
   }
 }
 
