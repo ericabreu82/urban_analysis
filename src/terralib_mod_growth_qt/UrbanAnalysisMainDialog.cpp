@@ -60,8 +60,10 @@ void te::urban::qt::UrbanAnalysisMainDialog::buildDialog()
   //reclassify
   QToolButton* reclassToolButton = createButton("Reclassify");
   connect(reclassToolButton, SIGNAL(clicked()), this, SLOT(onReclassifyToolButtonClicked()));
-  
 
+  //sprawl metrics
+  QToolButton* sprawlMetricsToolButton = createButton("Sprawl Metrics");
+  connect(sprawlMetricsToolButton, SIGNAL(clicked()), this, SLOT(onSprawlMetricsToolButtonClicked()));
   
   //leave this for last
   createSpacer();
@@ -110,4 +112,17 @@ void te::urban::qt::UrbanAnalysisMainDialog::onReclassifyToolButtonClicked()
   connect(m_ui->m_okPushButton, SIGNAL(clicked()), widget, SLOT(execute()));
 
   m_currentWidget = widget;
+}
+
+void te::urban::qt::UrbanAnalysisMainDialog::onSprawlMetricsToolButtonClicked()
+{
+  QToolButton* button = dynamic_cast<QToolButton*>(QObject::sender());
+
+  if (button)
+    button->setChecked(true);
+
+  if (m_currentWidget)
+    delete m_currentWidget;
+
+  m_currentWidget = 0;
 }
