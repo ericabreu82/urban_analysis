@@ -43,15 +43,19 @@ endif()
 
 file(GLOB URBANANALYSIS_SRC_FILES ${URBANANALYSIS_ABSOLUTE_ROOT_DIR}/src/urbanAnalysis_app/*.cpp)
 file(GLOB URBANANALYSIS_HDR_FILES ${URBANANALYSIS_ABSOLUTE_ROOT_DIR}/src/urbanAnalysis_app/*.h)
+file(GLOB GROWTH_RESOURCES_FILES ${URBANANALYSIS_ABSOLUTE_ROOT_DIR}/resources/*.qrc)
 
 source_group("Source Files"  FILES ${URBANANALYSIS_SRC_FILES})
 source_group("Header Files"  FILES ${URBANANALYSIS_HDR_FILES})
+
 
 set(URBANANALYSIS_DEPENDENCIES "terralib_mod_growth")
 list(APPEND URBANANALYSIS_DEPENDENCIES "terralib_mod_growth_qt")
 
 if(Qt5_FOUND)
-  add_executable(urbanAnalysisApp ${URBANANALYSIS_SRC_FILES} ${URBANANALYSIS_HDR_FILES})
+  QT5_ADD_RESOURCES(GROWTH_RESOURCES ${GROWTH_RESOURCES_FILES})
+  
+  add_executable(urbanAnalysisApp ${URBANANALYSIS_SRC_FILES} ${URBANANALYSIS_HDR_FILES} ${GROWTH_RESOURCES})
   
   target_link_libraries(urbanAnalysisApp ${URBANANALYSIS_DEPENDENCIES})
 endif()

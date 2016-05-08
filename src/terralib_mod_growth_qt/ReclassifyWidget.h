@@ -54,6 +54,14 @@ namespace te
 
         public slots:
 
+          void onReclassAddImageToolButtonClicked();
+
+          void onReclassRemoveImageToolButtonClicked();
+
+          void onReclassAddVecToolButtonClicked();
+
+          void onReclassOutputRepoToolButtonClicked();
+
           void execute();
 
         private:

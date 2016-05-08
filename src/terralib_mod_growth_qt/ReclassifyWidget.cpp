@@ -28,8 +28,13 @@ TerraLib Team at <terralib-team@terralib.org>.
 
 #include "../terralib_mod_growth/UrbanGrowth.h"
 
+//Terralib
+#include <terralib/qt/widgets/Utils.h>
+
 //Qt
+#include <QFileDialog>
 #include <QMessageBox>
+#include <QValidator>
 
 te::urban::qt::ReclassifyWidget::ReclassifyWidget(QWidget* parent, Qt::WindowFlags f)
   : QWidget(parent, f),
@@ -37,6 +42,19 @@ te::urban::qt::ReclassifyWidget::ReclassifyWidget(QWidget* parent, Qt::WindowFla
 {
   // add controls
   m_ui->setupUi(this);
+
+  m_ui->m_reclassRadiusLineEdit->setValidator(new QDoubleValidator(this));
+
+  m_ui->m_reclassAddImageToolButton->setIcon(QIcon(":/images/list-add.svg"));
+  m_ui->m_reclassRemoveImageToolButton->setIcon(QIcon(":/images/list-remove.svg"));
+  m_ui->m_reclassAddVecToolButton->setIcon(QIcon(":/images/folder.svg"));
+  m_ui->m_reclassOutputRepoToolButton->setIcon(QIcon(":/images/folder.svg"));
+
+  //connects
+  connect(m_ui->m_reclassAddImageToolButton, SIGNAL(clicked()), this, SLOT(onReclassAddImageToolButtonClicked()));
+  connect(m_ui->m_reclassRemoveImageToolButton, SIGNAL(clicked()), this, SLOT(onReclassRemoveImageToolButtonClicked()));
+  connect(m_ui->m_reclassAddVecToolButton, SIGNAL(clicked()), this, SLOT(onReclassAddVecToolButtonClicked()));
+  connect(m_ui->m_reclassOutputRepoToolButton, SIGNAL(clicked()), this, SLOT(onReclassOutputRepoToolButtonClicked()));
 }
 
 te::urban::qt::ReclassifyWidget::~ReclassifyWidget()
@@ -44,15 +62,82 @@ te::urban::qt::ReclassifyWidget::~ReclassifyWidget()
 
 }
 
+void te::urban::qt::ReclassifyWidget::onReclassAddImageToolButtonClicked()
+{
+  QStringList fileNames = QFileDialog::getOpenFileNames(this, tr("Open Multiple Raster Files"), te::qt::widgets::GetFilePathFromSettings("urbanAnalysis_img"), te::qt::widgets::GetDiskRasterFileSelFilter());
+
+  if (!fileNames.isEmpty())
+  {
+    QFileInfo info(fileNames.value(0));
+
+    te::qt::widgets::AddFilePathToSettings(info.absolutePath(), "urbanAnalysis_img");
+
+    m_ui->m_imgFilesListWidget->addItems(fileNames);
+  }
+}
+
+void te::urban::qt::ReclassifyWidget::onReclassRemoveImageToolButtonClicked()
+{
+  qDeleteAll(m_ui->m_imgFilesListWidget->selectedItems());
+}
+
+void  te::urban::qt::ReclassifyWidget::onReclassAddVecToolButtonClicked()
+{
+  QString fileName = QFileDialog::getOpenFileName(this, tr("Open Vector File"), te::qt::widgets::GetFilePathFromSettings("urbanAnalysis_vec"), tr("Esri Shapefile (*.shp *.SHP);; Mapinfo File (*.mif *.MIF);; GeoJSON (*.geojson *.GeoJSON);; GML (*.gml *.GML);; KML (*.kml *.KML);; All Files (*.*)"));
+
+  if (!fileName.isEmpty())
+  {
+    QFileInfo info(fileName);
+
+    te::qt::widgets::AddFilePathToSettings(info.absolutePath(), "urbanAnalysis_vec");
+
+    m_ui->m_vecFileLineEdit->setText(fileName);
+  }
+}
+
+void te::urban::qt::ReclassifyWidget::onReclassOutputRepoToolButtonClicked()
+{
+  QString dirName = QFileDialog::getExistingDirectory(this, tr("Select output data location"), te::qt::widgets::GetFilePathFromSettings("urbanAnalysis_outDir"));
+
+  if (!dirName.isEmpty())
+  {
+    te::qt::widgets::AddFilePathToSettings(dirName, "urbanAnalysis_outDir");
+
+    m_ui->m_reclassOutputRepoLineEdit->setText(dirName);
+  }
+}
+
 void te::urban::qt::ReclassifyWidget::execute()
 {
-  /*
-  if (m_ui->m_reclassInputImageLineEdit->text().isEmpty() == true)
+
+  std::string inputFileName = "D:\\Projects\\FGV\\data\\belem_aug92_t90_final1.tif";
+  double r = 564.;
+  std::string oPath = "D:\\Projects\\FGV\\temp";
+  std::string oPrefix = "t1";
+
+  UrbanRasters outputRaster = prepareRaster(inputFileName, r, oPath, oPrefix);
+
+  return;
+
+  //std::string inputFileName = "C:\\Users\\Mário\\Google Drive\\Pessoal\\Projetos\\Miguel_Fred\\Dados\\belem_aug92_t90_final1.tif";
+  //double r = 564.;
+  //std::string oPath = "D:\\temp\\miguel_fred";
+  //std::string oPrefix = "t1";
+
+  //UrbanRasters outputRaster = prepareRaster(inputFileName, r, oPath, oPrefix);
+
+  //return;
+
+  //check input parameters
+  if (m_ui->m_imgFilesListWidget->count() == 0)
   {
+    QMessageBox::warning(this, tr("Urban Analysis"), tr("Select at least one input image."));
     return;
   }
+
   if (m_ui->m_reclassRadiusLineEdit->text().isEmpty() == true)
   {
+    QMessageBox::warning(this, tr("Urban Analysis"), tr("Select input vector data."));
     return;
   }
 
@@ -61,22 +146,31 @@ void te::urban::qt::ReclassifyWidget::execute()
 
   if (converted == false)
   {
+    QMessageBox::warning(this, tr("Urban Analysis"), tr("Invalid radius value."));
     return;
   }
 
-  if (m_ui->m_reclassOutputImageLineEdit->text().isEmpty() == true)
+  if (m_ui->m_reclassOutputRepoLineEdit->text().isEmpty() == true)
   {
+    QMessageBox::warning(this, tr("Urban Analysis"), tr("Select the output repository location."));
     return;
   }
 
-  std::string inputFileName = m_ui->m_reclassInputImageLineEdit->text().toStdString();
-  std::string outputFileName = m_ui->m_reclassOutputImageLineEdit->text().toStdString();
-  */
+  if (m_ui->m_reclassOutputNameLineEdit->text().isEmpty() == true)
+  {
+    QMessageBox::warning(this, tr("Urban Analysis"), tr("Select the output data name."));
+    return;
+  }
 
-  std::string inputFileName = "C:\\Users\\Mário\\Google Drive\\Pessoal\\Projetos\\Miguel_Fred\\Dados\\belem_aug92_t90_final1.tif";
-  double radius = 564.;
-  std::string outputPath = "D:\\temp\\miguel_fred";
-  std::string outputPrefix = "t1";
+  std::string outputPath = m_ui->m_reclassOutputRepoLineEdit->text().toStdString();
+  std::string outputPrefix = m_ui->m_reclassOutputNameLineEdit->text().toStdString();
 
-  UrbanRasters outputRaster = prepareRaster(inputFileName, radius, outputPath, outputPrefix);
+  //execute operation
+  for (int i = 0; i < m_ui->m_imgFilesListWidget->count(); ++i)
+  {
+    std::string inputImgName = m_ui->m_imgFilesListWidget->item(i)->text().toStdString();
+
+    UrbanRasters outputRaster = prepareRaster(inputImgName, radius, outputPath, outputPrefix);
+  }
+
 }

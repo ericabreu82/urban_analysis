@@ -137,7 +137,9 @@ std::vector<short> te::urban::getPixelsWithinRadious(te::rst::Raster* raster, si
       te::gm::Coord2D currentCoord = raster->getGrid()->gridToGeo(rasterColumn, rasterRow);
       te::gm::Point currentPoint(currentCoord.getX(), currentCoord.getY());
 
-      if (referencePoint.distance(&currentPoint) > radius)
+      double dist = referencePoint.distance(&currentPoint);
+
+      if (dist > radius)
       {
         continue;
         

@@ -24,11 +24,13 @@ TerraLib Team at <terralib-team@terralib.org>.
 */
 
 #include "UrbanGrowth.h"
+#include "Utils.h"
 
+//Terralib
+#include <terralib/common/progress/TaskProgress.h>
 #include <terralib/raster/Raster.h>
 #include <terralib/raster/Utils.h>
 
-#include "Utils.h"
 
 te::rst::Raster* te::urban::classifyUrbanizedArea(const std::string& inputFileName, double radius, const std::string& outputFileName)
 {
@@ -52,6 +54,10 @@ te::rst::Raster* te::urban::classifyUrbanizedArea(const std::string& inputFileNa
   std::size_t finalRow = numRows - maskSizeInPixels;
   std::size_t finalCol = numColumns - maskSizeInPixels;
 
+  te::common::TaskProgress task("Classify Urbanized Area");
+  task.setTotalSteps(finalRow * finalCol);
+  task.useTimer(true);
+
   for (std::size_t currentRow = initRow; currentRow < finalRow; ++currentRow)
   {
     for (std::size_t currentColumn = initCol; currentColumn < finalCol; ++currentColumn)
@@ -66,6 +72,8 @@ te::rst::Raster* te::urban::classifyUrbanizedArea(const std::string& inputFileNa
       double permUrb = 0.;
       double value = calculateUrbanizedArea((short)centerPixel, vecPixels, permUrb);
       outputRaster->setValue((unsigned int)currentColumn, (unsigned int)currentRow, value, 0);
+
+      task.pulse();
     }
   }
 

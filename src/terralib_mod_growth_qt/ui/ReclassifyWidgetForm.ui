@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>667</width>
-    <height>447</height>
+    <width>752</width>
+    <height>496</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -45,12 +45,6 @@
           </item>
           <item row="0" column="1" rowspan="3">
            <widget class="QListWidget" name="m_imgFilesListWidget">
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
-              <height>100</height>
-             </size>
-            </property>
             <property name="dragDropMode">
              <enum>QAbstractItemView::InternalMove</enum>
             </property>
@@ -71,6 +65,9 @@
             <property name="orientation">
              <enum>Qt::Vertical</enum>
             </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Minimum</enum>
+            </property>
             <property name="sizeHint" stdset="0">
              <size>
               <width>20</width>
@@ -90,6 +87,9 @@
            <spacer name="verticalSpacer">
             <property name="orientation">
              <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Minimum</enum>
             </property>
             <property name="sizeHint" stdset="0">
              <size>
@@ -132,7 +132,11 @@
            </widget>
           </item>
           <item row="0" column="1">
-           <widget class="QLineEdit" name="m_vecFileLineEdit"/>
+           <widget class="QLineEdit" name="m_vecFileLineEdit">
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
           </item>
           <item row="0" column="2">
            <widget class="QToolButton" name="m_reclassAddVecToolButton">
@@ -175,6 +179,9 @@
           </item>
           <item row="0" column="1">
            <widget class="QLineEdit" name="m_reclassRadiusLineEdit">
+            <property name="text">
+             <string>564.0</string>
+            </property>
             <property name="alignment">
              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
             </property>
@@ -219,6 +226,19 @@
        <layout class="QGridLayout" name="gridLayout_10">
         <item row="0" column="0">
          <layout class="QGridLayout" name="gridLayout_9">
+          <item row="0" column="1">
+           <spacer name="horizontalSpacer_2">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
           <item row="0" column="0">
            <layout class="QGridLayout" name="gridLayout_7">
             <item row="1" column="0">
@@ -237,43 +257,6 @@
                <string>Edge</string>
               </property>
               <property name="checked">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item row="0" column="1">
-           <spacer name="horizontalSpacer_2">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item row="0" column="2">
-           <layout class="QGridLayout" name="gridLayout_8">
-            <item row="1" column="0">
-             <widget class="QLineEdit" name="m_indexesCompactnessLineEdit">
-              <property name="enabled">
-               <bool>true</bool>
-              </property>
-              <property name="readOnly">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="0">
-             <widget class="QLineEdit" name="m_indexesEdgeLineEdit">
-              <property name="enabled">
-               <bool>true</bool>
-              </property>
-              <property name="readOnly">
                <bool>true</bool>
               </property>
              </widget>
@@ -312,6 +295,13 @@
             </property>
            </widget>
           </item>
+          <item row="0" column="2">
+           <widget class="QToolButton" name="m_reclassOutputRepoToolButton">
+            <property name="text">
+             <string>...</string>
+            </property>
+           </widget>
+          </item>
           <item row="0" column="1">
            <widget class="QLineEdit" name="m_reclassOutputRepoLineEdit">
             <property name="minimumSize">
@@ -325,12 +315,18 @@
             </property>
            </widget>
           </item>
-          <item row="0" column="2">
-           <widget class="QToolButton" name="m_reclassOutputRepoToolButton">
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_2">
             <property name="text">
-             <string>...</string>
+             <string>Name:</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
             </property>
            </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QLineEdit" name="m_reclassOutputNameLineEdit"/>
           </item>
          </layout>
         </item>
@@ -350,45 +346,10 @@
   <tabstop>m_reclassRadiusLineEdit</tabstop>
   <tabstop>m_indexesGroupBox</tabstop>
   <tabstop>m_indexesEdgeCheckBox</tabstop>
-  <tabstop>m_indexesEdgeLineEdit</tabstop>
   <tabstop>m_indexesCompactnessCheckBox</tabstop>
-  <tabstop>m_indexesCompactnessLineEdit</tabstop>
   <tabstop>m_reclassOutputRepoLineEdit</tabstop>
   <tabstop>m_reclassOutputRepoToolButton</tabstop>
  </tabstops>
  <resources/>
- <connections>
-  <connection>
-   <sender>m_indexesEdgeCheckBox</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>m_indexesEdgeLineEdit</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>76</x>
-     <y>197</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>239</x>
-     <y>202</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>m_indexesCompactnessCheckBox</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>m_indexesCompactnessLineEdit</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>109</x>
-     <y>231</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>223</x>
-     <y>234</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>

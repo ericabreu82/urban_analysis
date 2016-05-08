@@ -1,0 +1,7 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource>
+    <file>images/folder.svg</file>
+	<file>images/list-add.svg</file>
+	<file>images/list-remove.svg</file>
+</qresource>
+</RCC>

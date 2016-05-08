@@ -55,6 +55,7 @@ source_group("Header Files"  FILES ${GROWTH_HDR_FILES})
 add_library(terralib_mod_growth_qt SHARED ${GROWTH_SRC_FILES} ${GROWTH_HDR_FILES} ${GROWTH_UI_GEN_FILES})
 
 set(GROWTH_LIBRARIES_DEPENDENCIES "terralib_mod_growth")
+list(APPEND GROWTH_LIBRARIES_DEPENDENCIES "terralib_mod_qt_widgets")
 
 target_link_libraries(terralib_mod_growth_qt ${GROWTH_LIBRARIES_DEPENDENCIES})
 
