@@ -34,11 +34,11 @@ TerraLib Team at <terralib-team@terralib.org>.
 
 te::rst::Raster* te::urban::classifyUrbanizedArea(const std::string& inputFileName, double radius, const std::string& outputFileName)
 {
-  te::rst::Raster* inputRaster = openRaster(inputFileName);
+  std::auto_ptr<te::rst::Raster> inputRaster = openRaster(inputFileName);
 
-  assert(inputRaster);
+  assert(inputRaster.get());
 
-  te::rst::Raster* outputRaster = createRaster(outputFileName, inputRaster);
+  te::rst::Raster* outputRaster = createRaster(outputFileName, inputRaster.get());
 
   assert(outputRaster);
 
@@ -55,7 +55,7 @@ te::rst::Raster* te::urban::classifyUrbanizedArea(const std::string& inputFileNa
   std::size_t finalCol = numColumns - maskSizeInPixels;
 
   te::common::TaskProgress task("Classify Urbanized Area");
-  task.setTotalSteps(finalRow * finalCol);
+  task.setTotalSteps((int)(finalRow * finalCol));
   task.useTimer(true);
 
   for (std::size_t currentRow = initRow; currentRow < finalRow; ++currentRow)
@@ -67,7 +67,7 @@ te::rst::Raster* te::urban::classifyUrbanizedArea(const std::string& inputFileNa
       inputRaster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, centerPixel);
 
       //gets the pixels surrounding pixels that intersects the given radious
-      std::vector<short> vecPixels = getPixelsWithinRadious(inputRaster, currentRow, currentColumn, radius);
+      std::vector<short> vecPixels = getPixelsWithinRadious(inputRaster.get(), currentRow, currentColumn, radius);
 
       double permUrb = 0.;
       double value = calculateUrbanizedArea((short)centerPixel, vecPixels, permUrb);
@@ -82,11 +82,11 @@ te::rst::Raster* te::urban::classifyUrbanizedArea(const std::string& inputFileNa
 
 te::rst::Raster* te::urban::classifyUrbanFootprint(const std::string& inputFileName, double radius, const std::string& outputFileName)
 {
-  te::rst::Raster* inputRaster = openRaster(inputFileName);
+  std::auto_ptr<te::rst::Raster> inputRaster = openRaster(inputFileName);
 
-  assert(inputRaster);
+  assert(inputRaster.get());
 
-  te::rst::Raster* outputRaster = createRaster(outputFileName, inputRaster);
+  te::rst::Raster* outputRaster = createRaster(outputFileName, inputRaster.get());
 
   assert(outputRaster);
 
@@ -111,7 +111,7 @@ te::rst::Raster* te::urban::classifyUrbanFootprint(const std::string& inputFileN
       inputRaster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, centerPixel);
 
       //gets the pixels surrounding pixels that intersects the given radious
-      std::vector<short> vecPixels = getPixelsWithinRadious(inputRaster, currentRow, currentColumn, radius);
+      std::vector<short> vecPixels = getPixelsWithinRadious(inputRaster.get(), currentRow, currentColumn, radius);
 
       double permUrb = 0.;
       double value = calculateUrbanFootprint((short)centerPixel, vecPixels, permUrb);
@@ -232,9 +232,9 @@ void te::urban::classifyIsolatedOpenPatches(te::rst::Raster* raster, const std::
 
 void te::urban::calculateUrbanIndexes(const std::string& inputFileName, double radius, std::map<std::string, double>& mapIndexes)
 {
-  te::rst::Raster* inputRaster = openRaster(inputFileName);
+  std::auto_ptr<te::rst::Raster> inputRaster = openRaster(inputFileName);
 
-  assert(inputRaster);
+  assert(inputRaster.get());
 
   unsigned int numRows = inputRaster->getNumberOfRows();
   unsigned int numColumns = inputRaster->getNumberOfColumns();
@@ -258,7 +258,7 @@ void te::urban::calculateUrbanIndexes(const std::string& inputFileName, double r
       inputRaster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, centerPixel);
 
       //gets the pixels surrounding pixels that intersects the given radious
-      std::vector<short> vecPixels = getPixelsWithinRadious(inputRaster, currentRow, currentColumn, radius);
+      std::vector<short> vecPixels = getPixelsWithinRadious(inputRaster.get(), currentRow, currentColumn, radius);
 
       double permUrb = 0.;
       double value = calculateUrbanizedArea((short)centerPixel, vecPixels, permUrb);
@@ -275,7 +275,7 @@ void te::urban::calculateUrbanIndexes(const std::string& inputFileName, double r
         ++numPix;
       }
 
-      bool hasEdge = calculateEdge(inputRaster, currentColumn, currentRow);
+      bool hasEdge = calculateEdge(inputRaster.get(), currentColumn, currentRow);
       if (hasEdge == true)
       {
         ++edgeCount;

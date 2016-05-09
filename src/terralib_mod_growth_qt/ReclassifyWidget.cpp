@@ -109,24 +109,28 @@ void te::urban::qt::ReclassifyWidget::onReclassOutputRepoToolButtonClicked()
 
 void te::urban::qt::ReclassifyWidget::execute()
 {
-
-  std::string inputFileName = "D:\\Projects\\FGV\\data\\belem_aug92_t90_final1.tif";
+  //ERIC FUNC
+  std::string inputFileName = "D:\\Workspace\\FGV\\data\\belem_aug92_t90_final1.tif";
   double r = 564.;
-  std::string oPath = "D:\\Projects\\FGV\\temp";
+  std::string oPath = "D:\\Workspace\\FGV\\temp";
   std::string oPrefix = "t1";
-
-  UrbanRasters outputRaster = prepareRaster(inputFileName, r, oPath, oPrefix);
-
-  return;
-
+  
+  //ERIC HOME
+  //std::string inputFileName = "D:\\Projects\\FGV\\data\\belem_aug92_t90_final1.tif";
+  //double r = 564.;
+  //std::string oPath = "D:\\Projects\\FGV\\temp";
+  //std::string oPrefix = "t1";
+  
+  //MARIO
   //std::string inputFileName = "C:\\Users\\Mário\\Google Drive\\Pessoal\\Projetos\\Miguel_Fred\\Dados\\belem_aug92_t90_final1.tif";
   //double r = 564.;
   //std::string oPath = "D:\\temp\\miguel_fred";
   //std::string oPrefix = "t1";
 
-  //UrbanRasters outputRaster = prepareRaster(inputFileName, r, oPath, oPrefix);
 
-  //return;
+  UrbanRasters outputRaster = prepareRaster(inputFileName, r, oPath, oPrefix);
+
+  return;
 
   //check input parameters
   if (m_ui->m_imgFilesListWidget->count() == 0)

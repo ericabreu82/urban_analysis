@@ -76,7 +76,7 @@ namespace te
 
     TEGROWTHEXPORT void finalize();
 
-    TEGROWTHEXPORT te::rst::Raster* openRaster(const std::string& fileName);
+    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> openRaster(const std::string& fileName);
 
     TEGROWTHEXPORT te::rst::Raster* createRaster(const std::string& fileName, te::rst::Raster* raster);
 

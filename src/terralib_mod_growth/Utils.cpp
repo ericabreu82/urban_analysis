@@ -30,6 +30,7 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include <terralib/geometry/Coord2D.h>
 #include <terralib/geometry/Point.h>
 #include <terralib/geometry/Polygon.h>
+#include <terralib/memory/CachedRaster.h>
 #include <terralib/plugin.h>
 #include <terralib/raster/Raster.h>
 #include <terralib/raster/RasterFactory.h>
@@ -74,13 +75,15 @@ void te::urban::finalize()
   
 }
 
-te::rst::Raster* te::urban::openRaster(const std::string& fileName)
+std::auto_ptr<te::rst::Raster> te::urban::openRaster(const std::string& fileName)
 {
   std::map<std::string, std::string> rasterInfo;
   rasterInfo["URI"] = fileName;
 
-  te::rst::Raster* raster = te::rst::RasterFactory::open(rasterInfo);
-  return raster;
+  te::rst::Raster* rasterPointer = te::rst::RasterFactory::open(rasterInfo);
+
+  std::auto_ptr<te::rst::Raster> rOut(new te::mem::CachedRaster(*rasterPointer, 20, 1));
+  return rOut;
 }
 
 te::rst::Raster* te::urban::createRaster(const std::string& fileName, te::rst::Raster* raster)
@@ -106,9 +109,6 @@ std::vector<short> te::urban::getPixelsWithinRadious(te::rst::Raster* raster, si
   double resX = raster->getResolutionX();
   int  maskSizeInPixels = te::rst::Round(radius / resX);
 
-  int rasterRow = ((int)referenceRow - maskSizeInPixels);
-  int rasterColumn = ((int)referenceColumn - maskSizeInPixels);
-
   int range = (maskSizeInPixels * 2) + 1;
 
   te::gm::Coord2D referenceCoord = raster->getGrid()->gridToGeo((double)referenceColumn, (double)referenceRow);
@@ -117,8 +117,10 @@ std::vector<short> te::urban::getPixelsWithinRadious(te::rst::Raster* raster, si
   std::vector<short> vecPixels;
   vecPixels.reserve(maskSizeInPixels * maskSizeInPixels);
 
+  int rasterRow = ((int)referenceRow - maskSizeInPixels);
   for (size_t localRow = 0; localRow <= range; ++localRow, ++rasterRow)
   {
+    int rasterColumn = ((int)referenceColumn - maskSizeInPixels);
     for (size_t localColumn = 0; localColumn <= range; ++localColumn, ++rasterColumn)
     {
       if (localRow == referenceRow && localColumn == referenceColumn)
