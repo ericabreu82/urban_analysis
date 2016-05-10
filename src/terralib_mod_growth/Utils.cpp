@@ -80,9 +80,27 @@ std::auto_ptr<te::rst::Raster> te::urban::openRaster(const std::string& fileName
   std::map<std::string, std::string> rasterInfo;
   rasterInfo["URI"] = fileName;
 
-  te::rst::Raster* rasterPointer = te::rst::RasterFactory::open(rasterInfo);
+  std::auto_ptr<te::rst::Raster> rasterPointer(te::rst::RasterFactory::open(rasterInfo));
 
-  std::auto_ptr<te::rst::Raster> rOut(new te::mem::CachedRaster(*rasterPointer, 20, 1));
+  //load to mem
+  std::vector<te::rst::BandProperty*> bprops;
+
+  for (size_t t = 0; t < rasterPointer->getNumberOfBands(); ++t)
+  {
+    te::rst::Band* band = rasterPointer->getBand(t);
+    te::rst::BandProperty* bp = new te::rst::BandProperty(t, band->getProperty()->getType(), "");
+    bprops.push_back(bp);
+  }
+
+  std::map< std::string, std::string > dummyRInfo;
+
+  te::rst::Raster* rasterMem = te::rst::RasterFactory::make("MEM", new te::rst::Grid(*(rasterPointer->getGrid())), bprops, dummyRInfo, 0, 0);
+
+  te::rst::Copy(*rasterPointer, *rasterMem);
+
+  //create output auto_ptr
+  std::auto_ptr<te::rst::Raster> rOut(rasterMem);
+
   return rOut;
 }
 
@@ -112,7 +130,6 @@ std::vector<short> te::urban::getPixelsWithinRadious(te::rst::Raster* raster, si
   int range = (maskSizeInPixels * 2) + 1;
 
   te::gm::Coord2D referenceCoord = raster->getGrid()->gridToGeo((double)referenceColumn, (double)referenceRow);
-  te::gm::Point referencePoint(referenceCoord.getX(), referenceCoord.getY());
 
   std::vector<short> vecPixels;
   vecPixels.reserve(maskSizeInPixels * maskSizeInPixels);
@@ -137,9 +154,8 @@ std::vector<short> te::urban::getPixelsWithinRadious(te::rst::Raster* raster, si
       }
 
       te::gm::Coord2D currentCoord = raster->getGrid()->gridToGeo(rasterColumn, rasterRow);
-      te::gm::Point currentPoint(currentCoord.getX(), currentCoord.getY());
 
-      double dist = referencePoint.distance(&currentPoint);
+      double dist = TeDistance(referenceCoord, currentCoord);
 
       if (dist > radius)
       {
@@ -715,4 +731,9 @@ te::rst::Raster* te::urban::classifyNewDevelopment(te::rst::Raster* infillRaster
   }
 
   return outputRaster;
+}
+
+double te::urban::TeDistance(const te::gm::Coord2D& c1, const te::gm::Coord2D& c2)
+{
+  return sqrt(((c2.getX() - c1.getX()) * (c2.getX() - c1.getX())) + ((c2.getY() - c1.getY()) * (c2.getY() - c1.getY())));
 }

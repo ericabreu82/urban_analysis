@@ -40,6 +40,7 @@ namespace te
 {
   namespace gm
   {
+    class Coord2D;
     class Geometry;
   }
   namespace rst
@@ -113,6 +114,9 @@ namespace te
     TEGROWTHEXPORT void compareRasters(te::rst::Raster* rasterT1, te::rst::Raster* rasterT2, const std::string& infillRasterFileName, const std::string& otherDevRasterFileName);
 
     TEGROWTHEXPORT te::rst::Raster* classifyNewDevelopment(te::rst::Raster* infillRaster, te::rst::Raster* otherDevGroupedRaster, const std::set<double>& setEdgesOpenAreaGroups, const std::string& outputRasterFileName);
+
+    // Mega faster distance method
+    TEGROWTHEXPORT double TeDistance(const te::gm::Coord2D& c1, const te::gm::Coord2D& c2);
 
   }
 }
