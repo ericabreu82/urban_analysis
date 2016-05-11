@@ -116,6 +116,9 @@ te::rst::Raster* te::urban::createRaster(const std::string& fileName, te::rst::R
   }
 
   te::rst::Raster* createdRaster = te::rst::RasterFactory::make("GDAL", new te::rst::Grid(*(raster->getGrid())), bandsProperties, rasterInfo, 0, 0);
+
+  te::rst::FillRaster(createdRaster, 0);
+
   return createdRaster;
 }
 

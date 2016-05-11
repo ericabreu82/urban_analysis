@@ -113,7 +113,7 @@ void te::urban::qt::ReclassifyWidget::execute()
   std::string inputFileName = "D:\\Workspace\\FGV\\data\\belem_aug92_t90_final1.tif";
   double r = 564.;
   std::string oPath = "D:\\Workspace\\FGV\\temp";
-  std::string oPrefix = "t1";
+  std::string oPrefix = "belem_aug92_t90_final1_reclass";
   
   //ERIC HOME
   //std::string inputFileName = "D:\\Projects\\FGV\\data\\belem_aug92_t90_final1.tif";

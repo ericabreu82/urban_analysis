@@ -102,6 +102,10 @@ te::rst::Raster* te::urban::classifyUrbanFootprint(const std::string& inputFileN
   std::size_t finalRow = numRows - maskSizeInPixels;
   std::size_t finalCol = numColumns - maskSizeInPixels;
 
+  te::common::TaskProgress task("Classify Urbanized Footprint");
+  task.setTotalSteps((int)(finalRow * finalCol));
+  task.useTimer(true);
+
   for (std::size_t currentRow = initRow; currentRow < finalRow; ++currentRow)
   {
     for (std::size_t currentColumn = initCol; currentColumn < finalCol; ++currentColumn)
@@ -116,17 +120,23 @@ te::rst::Raster* te::urban::classifyUrbanFootprint(const std::string& inputFileN
       double permUrb = 0.;
       double value = calculateUrbanFootprint((short)centerPixel, vecPixels, permUrb);
       outputRaster->setValue((unsigned int)currentColumn, (unsigned int)currentRow, value, 0);
+
+      task.pulse();
     }
   }
 
   return outputRaster;
 }
 
-void te::urban::classifyUrbanOpenArea(te::rst::Raster* raster, double radius)
+te::rst::Raster* te::urban::classifyUrbanOpenArea(te::rst::Raster* raster, double radius, const std::string& outputFileName)
 {
   te::rst::Raster* inputRaster = raster;
 
   assert(inputRaster);
+
+  te::rst::Raster* outputRaster = createRaster(outputFileName, inputRaster);
+
+  assert(outputRaster);
 
   unsigned int numRows = inputRaster->getNumberOfRows();
   unsigned int numColumns = inputRaster->getNumberOfColumns();
@@ -139,6 +149,10 @@ void te::urban::classifyUrbanOpenArea(te::rst::Raster* raster, double radius)
   std::size_t initCol = maskSizeInPixels;
   std::size_t finalRow = numRows - maskSizeInPixels;
   std::size_t finalCol = numColumns - maskSizeInPixels;
+
+  te::common::TaskProgress task("Classify Urbanized Open Area");
+  task.setTotalSteps((int)(finalRow * finalCol));
+  task.useTimer(true);
 
   for (std::size_t currentRow = initRow; currentRow < finalRow; ++currentRow)
   {
@@ -153,9 +167,13 @@ void te::urban::classifyUrbanOpenArea(te::rst::Raster* raster, double radius)
 
       double permUrb = 0.;
       double value = calculateUrbanOpenArea((short)centerPixel, vecPixels);
-      inputRaster->setValue((unsigned int)currentColumn, (unsigned int)currentRow, value, 0);
+      outputRaster->setValue((unsigned int)currentColumn, (unsigned int)currentRow, value, 0);
+
+      task.pulse();
     }
   }
+
+  return outputRaster;
 }
 
 te::rst::Raster* te::urban::identifyIsolatedOpenPatches(te::rst::Raster* raster, const std::string& outputFileName)
@@ -294,19 +312,24 @@ te::urban::UrbanRasters te::urban::prepareRaster(const std::string& inputFileNam
 {
   std::string urbanizedPrefix = outputPrefix + "_urbanized";
   std::string footprintPrefix = outputPrefix + "_footprint";
+  std::string footprintOpenAreaPrefix = outputPrefix + "_footprintOpenArea";
 
   UrbanRasters urbanRaster;
 
   //step 1 - classify the urbanized areas
   std::string urbanizedAreaFileName = outputPath + "/" + urbanizedPrefix + ".tif";
-  urbanRaster .m_urbanizedAreaRaster.reset(classifyUrbanizedArea(inputFileName, radius, urbanizedAreaFileName));
+  //urbanRaster .m_urbanizedAreaRaster.reset(classifyUrbanizedArea(inputFileName, radius, urbanizedAreaFileName));
+  urbanRaster.m_urbanizedAreaRaster = openRaster("D:\\Workspace\\FGV\\data\\belem_aug92_t90_final1_reclass_urbanized.tif");
 
   //step 2 - classify the urban footprints
   std::string urbanFootprintsFileName = outputPath + "/" + footprintPrefix + ".tif";
-  urbanRaster.m_urbanFootprintRaster.reset(classifyUrbanFootprint(inputFileName, radius, urbanFootprintsFileName));
+  //urbanRaster.m_urbanFootprintRaster.reset(classifyUrbanFootprint(inputFileName, radius, urbanFootprintsFileName));
+  urbanRaster.m_urbanFootprintRaster = openRaster("D:\\Workspace\\FGV\\data\\belem_aug92_t90_final1_reclass_footprint.tif");
 
   //step 3 - classify fringe open areas
-  classifyUrbanOpenArea(urbanRaster.m_urbanFootprintRaster.get(), radius);
+  std::string urbanFootprintsOpenAreaFileName = outputPath + "/" + footprintOpenAreaPrefix + ".tif";
+  //urbanRaster.m_urbanFootprintRaster.reset(classifyUrbanOpenArea(urbanRaster.m_urbanFootprintRaster.get(), radius, urbanFootprintsOpenAreaFileName));
+  urbanRaster.m_urbanFootprintRaster = openRaster("D:\\Workspace\\FGV\\data\\belem_aug92_t90_final1_reclass_footprintOpenArea.tif");
 
   //step 4 and 5- identify isolated patches and classify them into the given raster
   classifyIsolatedOpenPatches(urbanRaster.m_urbanizedAreaRaster.get(), outputPath, urbanizedPrefix);

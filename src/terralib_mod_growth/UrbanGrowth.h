@@ -49,7 +49,7 @@ namespace te
     TEGROWTHEXPORT te::rst::Raster* classifyUrbanFootprint(const std::string& inputFileName, double radius, const std::string& outputFileName);
 
     //step 3 - this reclassification analyses the entire raster. Classify the urban open area
-    TEGROWTHEXPORT void classifyUrbanOpenArea(te::rst::Raster* raster, double radius);
+    TEGROWTHEXPORT te::rst::Raster* classifyUrbanOpenArea(te::rst::Raster* raster, double radius, const std::string& outputFileName);
 
     //step 4 - this reclassification analyses the entire raster and returns a binary image containing the areas lower than 100 hectares that are completely sorrounded by urban areas
     TEGROWTHEXPORT te::rst::Raster* identifyIsolatedOpenPatches(te::rst::Raster* raster, const std::string& outputFileName);
