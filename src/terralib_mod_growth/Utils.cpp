@@ -135,7 +135,7 @@ std::vector<short> te::urban::getPixelsWithinRadious(te::rst::Raster* raster, si
   te::gm::Coord2D referenceCoord = raster->getGrid()->gridToGeo((double)referenceColumn, (double)referenceRow);
 
   std::vector<short> vecPixels;
-  vecPixels.reserve(maskSizeInPixels * maskSizeInPixels);
+  vecPixels.reserve(range * range);
 
   int rasterRow = ((int)referenceRow - maskSizeInPixels);
   for (size_t localRow = 0; localRow <= range; ++localRow, ++rasterRow)
@@ -143,7 +143,7 @@ std::vector<short> te::urban::getPixelsWithinRadious(te::rst::Raster* raster, si
     int rasterColumn = ((int)referenceColumn - maskSizeInPixels);
     for (size_t localColumn = 0; localColumn <= range; ++localColumn, ++rasterColumn)
     {
-      if (localRow == referenceRow && localColumn == referenceColumn)
+      if (rasterRow == referenceRow && rasterColumn == referenceColumn)
       {
         continue;
       }
@@ -163,7 +163,6 @@ std::vector<short> te::urban::getPixelsWithinRadious(te::rst::Raster* raster, si
       if (dist > radius)
       {
         continue;
-        
       }
       double value = 0;
       raster->getValue(rasterColumn, rasterRow, value);
@@ -232,17 +231,6 @@ double te::urban::calculateUrbanizedArea(short centerPixelValue, const std::vect
   //(1) URBAN ZONE BUILT-UP AREA: built-up pixels with imperviousness > 50%
   //(2) SUBURBAN ZONE BUILT-UP AREA: built-up pixels with imperviousness < 50% and > 10%
   //(3) RURAL ZONE BUILT-UP AREA: built-up pixels with imperviousness < 10%
-
-  //NO DATA
-  if (centerPixelValue <= 0 || centerPixelValue >= 4)
-  {
-    return OUTPUT_NO_DATA;
-  }
-  //WATER
-  if (centerPixelValue == INPUT_WATER)
-  {
-    return OUTPUT_WATER;
-  } 
 
   std::size_t size = vecPixels.size();
 
