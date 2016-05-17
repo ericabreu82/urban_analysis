@@ -240,7 +240,7 @@ double te::urban::calculateUrbanizedArea(short centerPixelValue, const std::vect
   for (std::size_t i = 0; i < size; ++i)
   {
     double currentValue = vecPixels[i];
-    if (currentValue < 1 && currentValue > 3)
+    if (currentValue < 1 || currentValue > 3)
     {
       continue;
     }
