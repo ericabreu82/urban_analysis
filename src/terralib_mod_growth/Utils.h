@@ -52,7 +52,7 @@ namespace te
   {
     enum InputUrbanClasses
     {
-      INPUT_NO_DATA = 0, INPUT_OTHER = 1, INPUT_WATER = 2, INPUT_URBAN = 3
+      INPUT_NO_DATA = 0, INPUT_WATER = 1, INPUT_URBAN = 2, INPUT_OTHER = 3
     };
 
     enum OutputUrbanClasses

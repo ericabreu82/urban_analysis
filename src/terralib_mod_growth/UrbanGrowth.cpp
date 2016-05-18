@@ -115,11 +115,27 @@ te::rst::Raster* te::urban::classifyUrbanFootprint(const std::string& inputFileN
       double centerPixel = 0;
       inputRaster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, centerPixel);
 
-      //gets the pixels surrounding pixels that intersects the given radious
-      std::vector<short> vecPixels = getPixelsWithinRadious(inputRaster.get(), currentRow, currentColumn, radius);
+      //NO DATA
+      double value = OUTPUT_NO_DATA;
 
-      double permUrb = 0.;
-      double value = calculateUrbanFootprint((short)centerPixel, vecPixels, permUrb);
+      //WATER
+      if (centerPixel == INPUT_WATER)
+      {
+        value = OUTPUT_WATER;
+      }
+      else if (centerPixel == INPUT_OTHER)
+      {
+        value = OUTPUT_URBANIZED_OS;
+      }
+      else if (centerPixel > 0 || centerPixel < 4)
+      {
+        //gets the pixels surrounding pixels that intersects the given radious
+        std::vector<short> vecPixels = getPixelsWithinRadious(inputRaster.get(), currentRow, currentColumn, radius);
+
+        double permUrb = 0.;
+        value = calculateUrbanFootprint((short)centerPixel, vecPixels, permUrb);
+      }
+      
       outputRaster->setValue((unsigned int)currentColumn, (unsigned int)currentRow, value, 0);
 
       task.pulse();
@@ -146,28 +162,28 @@ te::rst::Raster* te::urban::classifyUrbanOpenArea(te::rst::Raster* raster, doubl
 
   int  maskSizeInPixels = te::rst::Round(radius / resX);
 
-  std::size_t initRow = maskSizeInPixels;
-  std::size_t initCol = maskSizeInPixels;
-  std::size_t finalRow = numRows - maskSizeInPixels;
-  std::size_t finalCol = numColumns - maskSizeInPixels;
-
   te::common::TaskProgress task("Classify Urbanized Open Area");
-  task.setTotalSteps((int)(finalRow * finalCol));
+  task.setTotalSteps((int)(numRows * numColumns));
   task.useTimer(true);
 
-  for (std::size_t currentRow = initRow; currentRow < finalRow; ++currentRow)
+  for (std::size_t currentRow = 0; currentRow < numRows; ++currentRow)
   {
-    for (std::size_t currentColumn = initCol; currentColumn < finalCol; ++currentColumn)
+    for (std::size_t currentColumn = 0; currentColumn < numColumns; ++currentColumn)
     {
       //gets the value of the current center pixel
       double centerPixel = 0;
       inputRaster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, centerPixel);
 
-      //gets the pixels surrounding pixels that intersects the given radious
-      std::vector<short> vecPixels = getPixelsWithinRadious(inputRaster, currentRow, currentColumn, radius);
+      double value = centerPixel;
+      if (centerPixel == OUTPUT_URBANIZED_OS)
+      {
+        //gets the pixels surrounding pixels that intersects the given radious
+        std::vector<short> vecPixels = getPixelsWithinRadious(inputRaster, currentRow, currentColumn, radius);
 
-      double permUrb = 0.;
-      double value = calculateUrbanOpenArea((short)centerPixel, vecPixels);
+        double permUrb = 0.;
+        value = calculateUrbanOpenArea((short)centerPixel, vecPixels);
+      }
+
       outputRaster->setValue((unsigned int)currentColumn, (unsigned int)currentRow, value, 0);
 
       task.pulse();
@@ -320,7 +336,6 @@ te::urban::UrbanRasters te::urban::prepareRaster(const std::string& inputFileNam
   //step 1 - classify the urbanized areas
   std::string urbanizedAreaFileName = outputPath + "/" + urbanizedPrefix + ".tif";
   urbanRaster .m_urbanizedAreaRaster.reset(classifyUrbanizedArea(inputFileName, radius, urbanizedAreaFileName));
-  urbanRaster.m_urbanizedAreaRaster.reset(0);
   //urbanRaster.m_urbanizedAreaRaster = openRaster("D:\\Workspace\\FGV\\data\\belem_aug92_t90_final1_reclass_urbanized.tif");
 
   //step 2 - classify the urban footprints

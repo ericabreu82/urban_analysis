@@ -279,7 +279,7 @@ double te::urban::calculateUrbanizedArea(short centerPixelValue, const std::vect
       return OUTPUT_RURAL;
     }
   }
-  else if (centerPixelValue == 1)
+  else if (centerPixelValue == INPUT_OTHER)
   {
     if (urbanPercentage > 0.5)
     { 
@@ -307,22 +307,6 @@ double te::urban::calculateUrbanFootprint(short centerPixelValue, const std::vec
   //(2) SUBURBAN ZONE BUILT-UP AREA: built-up pixels with imperviousness < 50% and > 10%
   //(3) RURAL ZONE BUILT-UP AREA: built-up pixels with imperviousness < 10%
 
-  //NO DATA
-  if (centerPixelValue <= 0 || centerPixelValue >= 4)
-  {
-    return OUTPUT_NO_DATA;
-  }
-  //WATER
-  if (centerPixelValue == INPUT_WATER)
-  {
-    return OUTPUT_WATER;
-  }
-
-  if (centerPixelValue == INPUT_OTHER)
-  {
-    return OUTPUT_URBANIZED_OS;
-  }
-
   std::size_t size = vecPixels.size();
 
   std::size_t urbanPixelsCount = 0;
@@ -331,7 +315,7 @@ double te::urban::calculateUrbanFootprint(short centerPixelValue, const std::vec
   for (std::size_t i = 0; i < size; ++i)
   {
     double currentValue = vecPixels[i];
-    if (currentValue < 1 && currentValue > 3)
+    if (currentValue < 1 || currentValue > 3)
     {
       continue;
     }
@@ -385,11 +369,6 @@ double te::urban::calculateUrbanOpenArea(short centerPixelValue, const std::vect
   //(1) URBAN ZONE BUILT-UP AREA: built-up pixels with imperviousness > 50%
   //(2) SUBURBAN ZONE BUILT-UP AREA: built-up pixels with imperviousness < 50% and > 10%
   //(3) RURAL ZONE BUILT-UP AREA: built-up pixels with imperviousness < 10%
-
-  if (centerPixelValue != OUTPUT_URBANIZED_OS)
-  {
-    return centerPixelValue;
-  }
 
   double newPixel = OUTPUT_RURAL_OS; // default to rural OS
 
