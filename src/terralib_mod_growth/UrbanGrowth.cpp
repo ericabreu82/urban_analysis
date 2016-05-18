@@ -202,6 +202,8 @@ te::rst::Raster* te::urban::identifyIsolatedOpenPatches(te::rst::Raster* raster,
   std::vector<te::gm::Geometry*> vecGeometries;
   binaryUrbanRaster->vectorize(vecGeometries, 0);
 
+  te::rst::FillRaster(binaryUrbanRaster, 0.);
+
   std::vector<te::gm::Geometry*> vecGaps = getGaps(vecGeometries, 200.);
 
   std::vector<double> vecClass;
@@ -230,7 +232,7 @@ void te::urban::addIsolatedOpenPatches(te::rst::Raster* urbanRaster, te::rst::Ra
 
   for (std::size_t row = 0; row < numRows; ++row)
   {
-    for (std::size_t column = 0; column < numColumns; ++numColumns)
+    for (std::size_t column = 0; column < numColumns; ++column)
     {
       double urbanRasterValue = 0.;
       urbanRaster->getValue((unsigned int)column, (unsigned int)row, urbanRasterValue);
@@ -245,7 +247,7 @@ void te::urban::addIsolatedOpenPatches(te::rst::Raster* urbanRaster, te::rst::Ra
       isolatedOpenPatchesRaster->getValue((unsigned int)column, (unsigned int)row, isolatedOpenPatchesRasterValue);
 
       //if it is an isolated open patch, we set the raster value to 
-      if (isolatedOpenPatchesRasterValue == 1)
+      if (isolatedOpenPatchesRasterValue == 1.)
       {
         urbanRaster->setValue((unsigned int)column, (unsigned int)row, OUTPUT_SUBURBAN_ZONE_OPEN_AREA);
       }

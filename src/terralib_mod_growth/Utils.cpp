@@ -112,12 +112,16 @@ te::rst::Raster* te::urban::createRaster(const std::string& fileName, te::rst::R
   std::vector<te::rst::BandProperty*> bandsProperties;
   for (size_t bandIndex = 0; bandIndex < raster->getNumberOfBands(); ++bandIndex)
   {
-    bandsProperties.push_back(new te::rst::BandProperty(*(raster->getBand(bandIndex)->getProperty())));
+    te::rst::BandProperty* bp = new te::rst::BandProperty(*(raster->getBand(bandIndex)->getProperty()));
+
+    bp->m_noDataValue = 0.;
+
+    bandsProperties.push_back(bp);
   }
 
   te::rst::Raster* createdRaster = te::rst::RasterFactory::make("GDAL", new te::rst::Grid(*(raster->getGrid())), bandsProperties, rasterInfo, 0, 0);
 
-  te::rst::FillRaster(createdRaster, 0);
+  te::rst::FillRaster(createdRaster, 0.);
 
   return createdRaster;
 }
@@ -433,16 +437,11 @@ te::rst::Raster* te::urban::filterUrbanPixels(te::rst::Raster* raster, const std
   double resX = inputRaster->getResolutionX();
   double resY = inputRaster->getResolutionY();
 
-  std::size_t initRow = 0;
-  std::size_t initCol = 0;
-  std::size_t finalRow = numRows;
-  std::size_t finalCol = numColumns;
-
   double noDataValue = 0.;
 
-  for (std::size_t currentRow = initRow; currentRow < finalRow; ++currentRow)
+  for (std::size_t currentRow = 0; currentRow < numRows; ++currentRow)
   {
-    for (std::size_t currentColumn = initCol; currentColumn < finalCol; ++currentColumn)
+    for (std::size_t currentColumn = 0; currentColumn < numColumns; ++currentColumn)
     {
       //gets the value of the current center pixel
       double centerPixel = 0;
@@ -451,7 +450,7 @@ te::rst::Raster* te::urban::filterUrbanPixels(te::rst::Raster* raster, const std
       double value = noDataValue;
       if (centerPixel == 1 || centerPixel == 2 || centerPixel == 4)
       {
-        value = 1;
+        value = 1.;
       }
 
       //gets the pixels surrounding pixels that intersects the given radiouss
@@ -470,7 +469,7 @@ std::vector<te::gm::Geometry*> te::urban::getGaps(const std::vector<te::gm::Geom
   for (std::size_t i = 0; i < vecInput.size(); ++i)
   {
     te::gm::Geometry* geometry = vecInput[i];
-    if (geometry->getTypeCode() != te::gm::PolygonType)
+    if (geometry->getGeomTypeId() != te::gm::PolygonType)
     {
       continue;
     }
@@ -491,7 +490,9 @@ std::vector<te::gm::Geometry*> te::urban::getGaps(const std::vector<te::gm::Geom
       te::gm::Polygon* newPolygon = new te::gm::Polygon(1, te::gm::PolygonType, polygon->getSRID());
       newPolygon->setRingN(0, newCurve);
 
-      if (newPolygon->getArea() < area)
+      double newPolArea = newPolygon->getArea() / 10000.; //convert to hectare
+
+      if (newPolArea < area)
       {
         vecOutput.push_back(newPolygon);
       }
@@ -501,9 +502,6 @@ std::vector<te::gm::Geometry*> te::urban::getGaps(const std::vector<te::gm::Geom
       }
     }
   }
-
-
-  //te::rst::RasterSummary* rasterSummary = te::rst::RasterSummaryManager::getInstance().get(raster, te::rst::SUMMARY_R_HISTOGRAM, true);
 
   return vecOutput;
 }

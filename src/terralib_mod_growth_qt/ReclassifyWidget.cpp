@@ -110,10 +110,10 @@ void te::urban::qt::ReclassifyWidget::onReclassOutputRepoToolButtonClicked()
 void te::urban::qt::ReclassifyWidget::execute()
 {
   //ERIC FUNC
-  //std::string inputFileName = "D:\\Workspace\\FGV\\data\\belem_aug92_t90_final1.tif";
-  //double r = 564.;
-  //std::string oPath = "D:\\Workspace\\FGV\\temp";
-  //std::string oPrefix = "belem_aug92_t90_final1_reclass";
+  std::string inputFileName = "D:\\Workspace\\FGV\\data\\belem_aug92_t90_final1.tif";
+  double r = 564.;
+  std::string oPath = "D:\\Workspace\\FGV\\temp";
+  std::string oPrefix = "belem_aug92_t90_final1_reclass";
   
   //ERIC HOME
   //std::string inputFileName = "D:\\Projects\\FGV\\data\\belem_aug92_t90_final1.tif";
@@ -122,10 +122,10 @@ void te::urban::qt::ReclassifyWidget::execute()
   //std::string oPrefix = "t1";
   
   //MARIO
-  std::string inputFileName = "D:\\temp\\miguel_fred\\entrada\\belem_aug92_t90_final1.tif";
-  double r = 564.;
-  std::string oPath = "D:\\temp\\miguel_fred";
-  std::string oPrefix = "t1";
+  //std::string inputFileName = "D:\\temp\\miguel_fred\\entrada\\belem_aug92_t90_final1.tif";
+  //double r = 564.;
+  //std::string oPath = "D:\\temp\\miguel_fred";
+  //std::string oPrefix = "t1";
 
 
   UrbanRasters outputRaster = prepareRaster(inputFileName, r, oPath, oPrefix);
