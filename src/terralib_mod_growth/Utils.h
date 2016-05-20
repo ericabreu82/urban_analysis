@@ -79,7 +79,7 @@ namespace te
 
     TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> openRaster(const std::string& fileName);
 
-    TEGROWTHEXPORT te::rst::Raster* createRaster(const std::string& fileName, te::rst::Raster* raster);
+    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> createRaster(const std::string& fileName, te::rst::Raster* raster);
 
     //!< Returns all the pixels within the given radius
     TEGROWTHEXPORT std::vector<short> getPixelsWithinRadious(te::rst::Raster* raster, size_t referenceRow, size_t referenceColumn, double radius);
@@ -99,21 +99,21 @@ namespace te
     TEGROWTHEXPORT bool calculateEdge(te::rst::Raster* raster, size_t column, size_t line);
 
     //this reclassification analyses the entire raster, where the output will be 1 if the pixel is urban and no_data if the pixel is not urban
-    TEGROWTHEXPORT te::rst::Raster* filterUrbanPixels(te::rst::Raster* raster, const std::string& outputFileName);
+    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> filterUrbanPixels(te::rst::Raster* raster, const std::string& outputFileName);
 
     //!< Search for all the gaps (holes) that [optionally] have area smaller then the given reference area
     TEGROWTHEXPORT std::vector<te::gm::Geometry*> getGaps(const std::vector<te::gm::Geometry*>& vecPolygons, double area = 0.);
 
     //!< For each region, creates a new group using sequential values
-    TEGROWTHEXPORT te::rst::Raster* createDistinctGroups(te::rst::Raster* inputRaster, const std::string& outputFileName);
+    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> createDistinctGroups(te::rst::Raster* inputRaster, const std::string& outputFileName);
 
     //!< DETERMINE EDGE OPEN AREA (100 meter buffer around built-up)
-    TEGROWTHEXPORT std::set<double> detectEdgeOpenAreaGroups(te::rst::Raster* newDevRaster, te::rst::Raster* otherDevGroupedRaster, te::rst::Raster* footprintRaster);
+    TEGROWTHEXPORT std::set<double> detectEdgeOpenAreaGroups(te::rst::Raster* otherNewDevRaster, te::rst::Raster* otherNewDevGroupedRaster, te::rst::Raster* footprintRaster);
 
     //compare the images in two diferrent times, creating two new classified images
-    TEGROWTHEXPORT void compareRasters(te::rst::Raster* rasterT1, te::rst::Raster* rasterT2, const std::string& infillRasterFileName, const std::string& otherDevRasterFileName);
+    TEGROWTHEXPORT void generateInfillOtherDevRasters(te::rst::Raster* rasterT1, te::rst::Raster* rasterT2, const std::string& infillRasterFileName, const std::string& otherDevRasterFileName);
 
-    TEGROWTHEXPORT te::rst::Raster* classifyNewDevelopment(te::rst::Raster* infillRaster, te::rst::Raster* otherDevGroupedRaster, const std::set<double>& setEdgesOpenAreaGroups, const std::string& outputRasterFileName);
+    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> classifyNewDevelopment(te::rst::Raster* infillRaster, te::rst::Raster* otherDevGroupedRaster, const std::set<double>& setEdgesOpenAreaGroups, const std::string& outputRasterFileName);
 
     // Mega faster distance method
     TEGROWTHEXPORT double TeDistance(const te::gm::Coord2D& c1, const te::gm::Coord2D& c2);

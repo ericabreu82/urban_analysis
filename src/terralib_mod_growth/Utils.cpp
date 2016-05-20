@@ -104,7 +104,7 @@ std::auto_ptr<te::rst::Raster> te::urban::openRaster(const std::string& fileName
   return rOut;
 }
 
-te::rst::Raster* te::urban::createRaster(const std::string& fileName, te::rst::Raster* raster)
+std::auto_ptr<te::rst::Raster> te::urban::createRaster(const std::string& fileName, te::rst::Raster* raster)
 {
   std::map<std::string, std::string> rasterInfo;
   rasterInfo["URI"] = fileName;
@@ -118,12 +118,14 @@ te::rst::Raster* te::urban::createRaster(const std::string& fileName, te::rst::R
 
     bandsProperties.push_back(bp);
   }
-
+  
+  
   te::rst::Raster* createdRaster = te::rst::RasterFactory::make("GDAL", new te::rst::Grid(*(raster->getGrid())), bandsProperties, rasterInfo, 0, 0);
 
   te::rst::FillRaster(createdRaster, 0.);
 
-  return createdRaster;
+  std::auto_ptr<te::rst::Raster> createdRasterPtr(createdRaster);
+  return createdRasterPtr;
 }
 
 std::vector<short> te::urban::getPixelsWithinRadious(te::rst::Raster* raster, size_t referenceRow, size_t referenceColumn, double radius)
@@ -422,15 +424,15 @@ bool te::urban::calculateEdge(te::rst::Raster* raster, size_t column, size_t lin
   return false;
 }
 
-te::rst::Raster* te::urban::filterUrbanPixels(te::rst::Raster* raster, const std::string& outputFileName)
+std::auto_ptr<te::rst::Raster> te::urban::filterUrbanPixels(te::rst::Raster* raster, const std::string& outputFileName)
 {
   te::rst::Raster* inputRaster = raster;
 
   assert(inputRaster);
 
-  te::rst::Raster* outputRaster = createRaster(outputFileName, inputRaster);
+  std::auto_ptr<te::rst::Raster> outputRaster = createRaster(outputFileName, inputRaster);
 
-  assert(outputRaster);
+  assert(outputRaster.get());
 
   unsigned int numRows = inputRaster->getNumberOfRows();
   unsigned int numColumns = inputRaster->getNumberOfColumns();
@@ -506,13 +508,13 @@ std::vector<te::gm::Geometry*> te::urban::getGaps(const std::vector<te::gm::Geom
   return vecOutput;
 }
 
-te::rst::Raster* te::urban::createDistinctGroups(te::rst::Raster* inputRaster, const std::string& outputFileName)
+std::auto_ptr<te::rst::Raster> te::urban::createDistinctGroups(te::rst::Raster* inputRaster, const std::string& outputFileName)
 {
   assert(inputRaster);
 
-  te::rst::Raster* outputRaster = createRaster(outputFileName, inputRaster);
+  std::auto_ptr<te::rst::Raster> outputRaster = createRaster(outputFileName, inputRaster);
 
-  te::rst::Copy(*inputRaster, *outputRaster);
+  te::rst::Copy(*inputRaster, *outputRaster.get());
   
   //we first vectorize the raster
   std::vector<te::gm::Geometry*> vecGeometries;
@@ -534,16 +536,16 @@ te::rst::Raster* te::urban::createDistinctGroups(te::rst::Raster* inputRaster, c
   return outputRaster;
 }
 
-std::set<double> te::urban::detectEdgeOpenAreaGroups(te::rst::Raster* newDevRaster, te::rst::Raster* otherDevGroupedRaster, te::rst::Raster* footprintRaster)
+std::set<double> te::urban::detectEdgeOpenAreaGroups(te::rst::Raster* otherNewDevRaster, te::rst::Raster* otherNewDevGroupedRaster, te::rst::Raster* footprintRaster)
 {
-  assert(newDevRaster);
-  assert(otherDevGroupedRaster);
+  assert(otherNewDevRaster);
+  assert(otherNewDevGroupedRaster);
   assert(footprintRaster);
 
   std::set<double> setGroupsWithEdges;
 
-  unsigned int numRows = newDevRaster->getNumberOfRows();
-  unsigned int numColumns = newDevRaster->getNumberOfColumns();
+  unsigned int numRows = otherNewDevRaster->getNumberOfRows();
+  unsigned int numColumns = otherNewDevRaster->getNumberOfColumns();
 
   for (unsigned int row = 0; row < numRows; ++row)
   {
@@ -551,14 +553,14 @@ std::set<double> te::urban::detectEdgeOpenAreaGroups(te::rst::Raster* newDevRast
     {
       //we first read the pixel from newDev raster. If its value is not 1, we continue
       double newDevValue = 0.;
-      newDevRaster->getValue(column, row, newDevValue);
+      otherNewDevRaster->getValue(column, row, newDevValue);
       if (newDevValue != 1)
       {
         continue;
       }
 
       double otherDevGroupedValue = 0.;
-      otherDevGroupedRaster->getValue(column, row, otherDevGroupedValue);
+      otherNewDevGroupedRaster->getValue(column, row, otherDevGroupedValue);
 
       //then we check the value of the footprint image. If 4 or 5, we register the current group in the SET
       double footprintValue = 0.;
@@ -586,16 +588,16 @@ std::set<double> te::urban::detectEdgeOpenAreaGroups(te::rst::Raster* newDevRast
   return setGroupsWithEdges;
 }
 
-void te::urban::compareRasters(te::rst::Raster* rasterT1, te::rst::Raster* rasterT2, const std::string& infillRasterFileName, const std::string& otherDevRasterFileName)
+void te::urban::generateInfillOtherDevRasters(te::rst::Raster* rasterT1, te::rst::Raster* rasterT2, const std::string& infillRasterFileName, const std::string& otherDevRasterFileName)
 {
   assert(rasterT1);
   assert(rasterT2);
 
-  te::rst::Raster* infillRaster = createRaster(infillRasterFileName, rasterT1);
-  te::rst::Raster* otherDevRaster = createRaster(otherDevRasterFileName, rasterT1);
+  std::auto_ptr<te::rst::Raster> infillRaster = createRaster(infillRasterFileName, rasterT1);
+  std::auto_ptr<te::rst::Raster> otherDevRaster = createRaster(otherDevRasterFileName, rasterT1);
 
-  assert(infillRaster);
-  assert(otherDevRaster);
+  assert(infillRaster.get());
+  assert(otherDevRaster.get());
 
   std::size_t numRows = rasterT1->getNumberOfRows();
   std::size_t numColumns = rasterT1->getNumberOfColumns();
@@ -643,7 +645,7 @@ void te::urban::compareRasters(te::rst::Raster* rasterT1, te::rst::Raster* raste
   }
 }
 
-te::rst::Raster* te::urban::classifyNewDevelopment(te::rst::Raster* infillRaster, te::rst::Raster* otherDevGroupedRaster, const std::set<double>& setEdgesOpenAreaGroups, const std::string& outputRasterFileName)
+std::auto_ptr<te::rst::Raster> te::urban::classifyNewDevelopment(te::rst::Raster* infillRaster, te::rst::Raster* otherDevGroupedRaster, const std::set<double>& setEdgesOpenAreaGroups, const std::string& outputRasterFileName)
 {
   assert(infillRaster);
   assert(otherDevGroupedRaster);
@@ -653,18 +655,18 @@ te::rst::Raster* te::urban::classifyNewDevelopment(te::rst::Raster* infillRaster
 
   if (numRows != otherDevGroupedRaster->getNumberOfRows())
   {
-    return 0;
+    return std::auto_ptr<te::rst::Raster>();
   }
   if (numColumns != otherDevGroupedRaster->getNumberOfColumns())
   {
-    return 0;
+    return std::auto_ptr<te::rst::Raster>();
   }
 
-  te::rst::Raster* outputRaster = createRaster(outputRasterFileName, infillRaster);
+  std::auto_ptr<te::rst::Raster> outputRaster = createRaster(outputRasterFileName, infillRaster);
 
-  for (std::size_t row = 0; row < numRows; ++row)
+  for (unsigned int row = 0; row < numRows; ++row)
   {
-    for (std::size_t column = 0; column < numColumns; ++numColumns)
+    for (unsigned int column = 0; column < numColumns; ++numColumns)
     {
       double infillValue = 0.;
       infillRaster->getValue(column, row, infillValue);

@@ -43,16 +43,16 @@ namespace te
   namespace urban
   {
     //step 1 - this reclassification analyses the entire raster. Classify the urbanized area
-    TEGROWTHEXPORT te::rst::Raster* classifyUrbanizedArea(const std::string& inputFileName, double radius, const std::string& outputFileName);
+    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> classifyUrbanizedArea(const std::string& inputFileName, double radius, const std::string& outputFileName);
 
     //step 2 - this reclassification analyses the entire raster. Classify the urban footprint
-    TEGROWTHEXPORT te::rst::Raster* classifyUrbanFootprint(const std::string& inputFileName, double radius, const std::string& outputFileName);
+    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> classifyUrbanFootprint(const std::string& inputFileName, double radius, const std::string& outputFileName);
 
     //step 3 - this reclassification analyses the entire raster. Classify the urban open area
-    TEGROWTHEXPORT te::rst::Raster* classifyUrbanOpenArea(te::rst::Raster* raster, double radius, const std::string& outputFileName);
+    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> classifyUrbanOpenArea(te::rst::Raster* raster, double radius, const std::string& outputFileName);
 
     //step 4 - this reclassification analyses the entire raster and returns a binary image containing the areas lower than 100 hectares that are completely sorrounded by urban areas
-    TEGROWTHEXPORT te::rst::Raster* identifyIsolatedOpenPatches(te::rst::Raster* raster, const std::string& outputFileName);
+    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> identifyIsolatedOpenPatches(te::rst::Raster* raster, const std::string& outputFileName);
     
     //step 5 - add isoleted patches to map
     TEGROWTHEXPORT void addIsolatedOpenPatches(te::rst::Raster* urbanRaster, te::rst::Raster* isolatedOpenPatchesRaster);
@@ -64,6 +64,9 @@ namespace te
     TEGROWTHEXPORT void calculateUrbanIndexes(const std::string& inputFileName, double radius, std::map<std::string, double>& mapIndexes);
 
     TEGROWTHEXPORT UrbanRasters prepareRaster(const std::string& inputFileName, double radius, const std::string& outputPath, const std::string& outputPrefix);
+
+    //step 9 - analyze new development
+    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> compareRasterPeriods(const UrbanRasters& t1, const UrbanRasters& t2, const std::string& outputPath, const std::string& outputPrefix);
   }
 }
 

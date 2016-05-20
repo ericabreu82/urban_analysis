@@ -31,6 +31,9 @@ TerraLib Team at <terralib-team@terralib.org>.
 //Terralib
 #include <terralib/qt/widgets/Utils.h>
 
+//Boost
+#include <boost/lexical_cast.hpp>
+
 //Qt
 #include <QFileDialog>
 #include <QMessageBox>
@@ -110,10 +113,10 @@ void te::urban::qt::ReclassifyWidget::onReclassOutputRepoToolButtonClicked()
 void te::urban::qt::ReclassifyWidget::execute()
 {
   //ERIC FUNC
-  std::string inputFileName = "D:\\Workspace\\FGV\\data\\belem_aug92_t90_final1.tif";
-  double r = 564.;
-  std::string oPath = "D:\\Workspace\\FGV\\temp";
-  std::string oPrefix = "belem_aug92_t90_final1_reclass";
+  //std::string inputFileName = "D:\\Workspace\\FGV\\data\\belem_aug92_t90_final1.tif";
+  //double r = 564.;
+  //std::string oPath = "D:\\Workspace\\FGV\\temp";
+  //std::string oPrefix = "belem_aug92_t90_final1_reclass";
   
   //ERIC HOME
   //std::string inputFileName = "D:\\Projects\\FGV\\data\\belem_aug92_t90_final1.tif";
@@ -122,10 +125,10 @@ void te::urban::qt::ReclassifyWidget::execute()
   //std::string oPrefix = "t1";
   
   //MARIO
-  //std::string inputFileName = "D:\\temp\\miguel_fred\\entrada\\belem_aug92_t90_final1.tif";
-  //double r = 564.;
-  //std::string oPath = "D:\\temp\\miguel_fred";
-  //std::string oPrefix = "t1";
+  std::string inputFileName = "D:\\temp\\miguel_fred\\entrada\\belem_aug92_t90_final1.tif";
+  double r = 564.;
+  std::string oPath = "D:\\temp\\miguel_fred";
+  std::string oPrefix = "t1";
 
 
   UrbanRasters outputRaster = prepareRaster(inputFileName, r, oPath, oPrefix);
@@ -170,11 +173,19 @@ void te::urban::qt::ReclassifyWidget::execute()
   std::string outputPrefix = m_ui->m_reclassOutputNameLineEdit->text().toStdString();
 
   //execute operation
+  UrbanRasters urbanRaster_t_n0;
+  UrbanRasters urbanRaster_t_n1;
   for (int i = 0; i < m_ui->m_imgFilesListWidget->count(); ++i)
   {
     std::string inputImgName = m_ui->m_imgFilesListWidget->item(i)->text().toStdString();
+    std::string currentOutputPrefix = outputPrefix + "_t" + boost::lexical_cast<std::string>(i + 1);
 
-    UrbanRasters outputRaster = prepareRaster(inputImgName, radius, outputPath, outputPrefix);
+    urbanRaster_t_n0 = urbanRaster_t_n1;
+    urbanRaster_t_n1 = prepareRaster(inputImgName, radius, outputPath, currentOutputPrefix);
+
+    if (i == 1)
+    {
+      std::auto_ptr<te::rst::Raster> newDevelopmentRaster = compareRasterPeriods(urbanRaster_t_n0, urbanRaster_t_n1, outputPath, currentOutputPrefix);
+    }
   }
-
 }
