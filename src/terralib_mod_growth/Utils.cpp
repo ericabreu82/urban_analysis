@@ -198,9 +198,9 @@ std::vector<short> te::urban::getAdjacentPixels(te::rst::Raster* raster, size_t 
   std::vector<short> vecPixels;
   vecPixels.reserve(maskSizeInPixels * maskSizeInPixels);
 
-  for (size_t localRow = 0; localRow <= maskSizeInPixels; ++localRow, ++rasterRow)
+  for (size_t localRow = 0; localRow <= range; ++localRow, ++rasterRow)
   {
-    for (size_t localColumn = 0; localColumn <= maskSizeInPixels; ++localColumn, ++rasterColumn)
+    for (size_t localColumn = 0; localColumn <= range; ++localColumn, ++rasterColumn)
     {
       if (localRow == referenceRow && localColumn == referenceColumn)
       {

@@ -277,17 +277,15 @@ void te::urban::calculateUrbanIndexes(const std::string& inputFileName, double r
   double resX = inputRaster->getResolutionX();
   double resY = inputRaster->getResolutionY();
 
-  size_t initRow = 0;
-  size_t initCol = 0;
-  size_t finalRow = numRows;
-  size_t finalCol = numColumns;
-
   int numPix = 0;
   int edgeCount = 0; //edge index
   double sumPerUrb = 0;
-  for (size_t currentRow = initRow; currentRow < finalRow; ++currentRow)
+
+  //TODO: we must consider the given study area
+
+  for (size_t currentRow = 0; currentRow < numRows; ++currentRow)
   {
-    for (size_t currentColumn = initCol; currentColumn < finalCol; ++currentColumn)
+    for (size_t currentColumn = 0; currentColumn < numColumns; ++currentColumn)
     {
       //gets the value of the current center pixel
       double centerPixel = 0;
