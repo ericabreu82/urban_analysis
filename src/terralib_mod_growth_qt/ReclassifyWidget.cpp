@@ -125,15 +125,14 @@ void te::urban::qt::ReclassifyWidget::execute()
   //std::string oPrefix = "t1";
   
   //MARIO
-  std::string inputFileName = "D:\\temp\\miguel_fred\\entrada\\belem_aug92_t90_final1.tif";
-  double r = 564.;
-  std::string oPath = "D:\\temp\\miguel_fred";
-  std::string oPrefix = "t1";
+  //std::string inputFileName = "D:\\temp\\miguel_fred\\entrada\\belem_aug92_t90_final1.tif";
+  //double r = 564.;
+  //std::string oPath = "D:\\temp\\miguel_fred";
+  //std::string oPrefix = "t1";
 
 
-  UrbanRasters outputRaster = prepareRaster(inputFileName, r, oPath, oPrefix);
-
-  return;
+  //UrbanRasters outputRaster = prepareRaster(inputFileName, r, oPath, oPrefix);
+  //return;
 
   //check input parameters
   if (m_ui->m_imgFilesListWidget->count() == 0)

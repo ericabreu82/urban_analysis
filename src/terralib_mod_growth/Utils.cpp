@@ -613,7 +613,7 @@ void te::urban::generateInfillOtherDevRasters(te::rst::Raster* rasterT1, te::rst
 
   for (std::size_t row = 0; row < numRows; ++row)
   {
-    for (std::size_t column = 0; column < numColumns; ++numColumns)
+    for (std::size_t column = 0; column < numColumns; ++column)
     {
       double valueT1 = 0.;
       rasterT1->getValue((unsigned int)column, (unsigned int)row, valueT1);
@@ -666,7 +666,7 @@ std::auto_ptr<te::rst::Raster> te::urban::classifyNewDevelopment(te::rst::Raster
 
   for (unsigned int row = 0; row < numRows; ++row)
   {
-    for (unsigned int column = 0; column < numColumns; ++numColumns)
+    for (unsigned int column = 0; column < numColumns; ++column)
     {
       double infillValue = 0.;
       infillRaster->getValue(column, row, infillValue);
