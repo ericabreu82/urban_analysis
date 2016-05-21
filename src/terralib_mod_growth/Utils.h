@@ -28,6 +28,8 @@ TerraLib Team at <terralib-team@terralib.org>.
 
 #include "Config.h"
 
+#include <terralib/raster/Raster.h>
+
 #include <boost/numeric/ublas/matrix.hpp>
 
 
@@ -42,10 +44,6 @@ namespace te
   {
     class Coord2D;
     class Geometry;
-  }
-  namespace rst
-  {
-    class Raster;
   }
 
   namespace urban
@@ -80,6 +78,8 @@ namespace te
     TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> openRaster(const std::string& fileName);
 
     TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> createRaster(const std::string& fileName, te::rst::Raster* raster);
+
+    TEGROWTHEXPORT boost::numeric::ublas::matrix<bool> createRadiusMask(double resolution, double radius);
 
     //!< Returns all the pixels within the given radius
     TEGROWTHEXPORT std::vector<short> getPixelsWithinRadious(te::rst::Raster* raster, size_t referenceRow, size_t referenceColumn, double radius);

@@ -187,4 +187,6 @@ void te::urban::qt::ReclassifyWidget::execute()
       std::auto_ptr<te::rst::Raster> newDevelopmentRaster = compareRasterPeriods(urbanRaster_t_n0, urbanRaster_t_n1, outputPath, currentOutputPrefix);
     }
   }
+
+  QMessageBox::information(this, tr("Urban Analysis"), tr("The execution finished with success."));
 }

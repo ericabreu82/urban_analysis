@@ -119,13 +119,42 @@ std::auto_ptr<te::rst::Raster> te::urban::createRaster(const std::string& fileNa
     bandsProperties.push_back(bp);
   }
   
-  
   te::rst::Raster* createdRaster = te::rst::RasterFactory::make("GDAL", new te::rst::Grid(*(raster->getGrid())), bandsProperties, rasterInfo, 0, 0);
 
   te::rst::FillRaster(createdRaster, 0.);
 
   std::auto_ptr<te::rst::Raster> createdRasterPtr(createdRaster);
   return createdRasterPtr;
+}
+
+boost::numeric::ublas::matrix<bool> te::urban::createRadiusMask(double resolution, double radius)
+{
+  int  radiusInPixels = te::rst::Round(radius / resolution);
+  int range = (radiusInPixels * 2) + 1;
+
+  te::gm::Coord2D referenceCoord((radiusInPixels + 1) * resolution, (radiusInPixels + 1) * resolution);
+
+  boost::numeric::ublas::matrix<bool> mask(range, range);
+
+  for (size_t localRow = 0; localRow <= range; ++localRow)
+  {
+    for (size_t localColumn = 0; localColumn <= range; ++localColumn)
+    {
+      bool maskOn = false;
+
+      te::gm::Coord2D currentCoord(localColumn + resolution, localRow + resolution);
+
+      double currentDistance = TeDistance(referenceCoord, currentCoord);
+      if (currentDistance <= radius)
+      {
+        maskOn = true;
+      }
+
+      mask(localRow, localColumn) = maskOn;
+    }
+  }
+
+  return mask;
 }
 
 std::vector<short> te::urban::getPixelsWithinRadious(te::rst::Raster* raster, size_t referenceRow, size_t referenceColumn, double radius)
@@ -525,7 +554,7 @@ std::auto_ptr<te::rst::Raster> te::urban::createDistinctGroups(te::rst::Raster* 
   vecClasses.reserve(vecGeometries.size());
   for (std::size_t i = 0; i < vecGeometries.size(); ++i)
   {
-    vecClasses[i] = i;
+    vecClasses[i] = (double)i;
   }
 
   //finally we rasterize the geometries
