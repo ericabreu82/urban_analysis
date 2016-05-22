@@ -40,7 +40,7 @@ std::auto_ptr<te::rst::Raster> te::urban::classifyUrbanizedArea(const std::strin
 
   std::auto_ptr<te::rst::Raster> outputRaster = createRaster(outputFileName, inputRaster.get());
 
-  assert(outputRaster);
+  assert(outputRaster.get());
 
   unsigned int numRows = inputRaster->getNumberOfRows();
   unsigned int numColumns = inputRaster->getNumberOfColumns();
@@ -48,6 +48,8 @@ std::auto_ptr<te::rst::Raster> te::urban::classifyUrbanizedArea(const std::strin
   double resY = inputRaster->getResolutionY();
 
   int  maskSizeInPixels = te::rst::Round(radius / resX);
+
+  boost::numeric::ublas::matrix<bool> mask = createRadiusMask(resX, radius);
 
   te::common::TaskProgress task("Classify Urbanized Area");
   task.setTotalSteps((int)(numRows * numColumns));
@@ -71,7 +73,7 @@ std::auto_ptr<te::rst::Raster> te::urban::classifyUrbanizedArea(const std::strin
       else if (centerPixel > 0 && centerPixel < 4)
       {
         //gets the pixels surrounding pixels that intersects the given radious
-        std::vector<short> vecPixels = getPixelsWithinRadious(inputRaster.get(), currentRow, currentColumn, radius);
+        std::vector<short> vecPixels = getPixelsWithinRadious(inputRaster.get(), currentRow, currentColumn, radius, mask);
 
         double permUrb = 0.;
         value = calculateUrbanizedArea((short)centerPixel, vecPixels, permUrb);
@@ -94,12 +96,14 @@ std::auto_ptr<te::rst::Raster> te::urban::classifyUrbanFootprint(const std::stri
 
   std::auto_ptr<te::rst::Raster> outputRaster = createRaster(outputFileName, inputRaster.get());
 
-  assert(outputRaster);
+  assert(outputRaster.get());
 
   unsigned int numRows = inputRaster->getNumberOfRows();
   unsigned int numColumns = inputRaster->getNumberOfColumns();
   double resX = inputRaster->getResolutionX();
   double resY = inputRaster->getResolutionY();
+
+  boost::numeric::ublas::matrix<bool> mask = createRadiusMask(resX, radius);
 
   int  maskSizeInPixels = te::rst::Round(radius / resX);
 
@@ -130,7 +134,7 @@ std::auto_ptr<te::rst::Raster> te::urban::classifyUrbanFootprint(const std::stri
       else if (centerPixel > 0 || centerPixel < 4)
       {
         //gets the pixels surrounding pixels that intersects the given radious
-        std::vector<short> vecPixels = getPixelsWithinRadious(inputRaster.get(), currentRow, currentColumn, radius);
+        std::vector<short> vecPixels = getPixelsWithinRadious(inputRaster.get(), currentRow, currentColumn, radius, mask);
 
         double permUrb = 0.;
         value = calculateUrbanFootprint((short)centerPixel, vecPixels, permUrb);
@@ -153,12 +157,14 @@ std::auto_ptr<te::rst::Raster> te::urban::classifyUrbanOpenArea(te::rst::Raster*
 
   std::auto_ptr<te::rst::Raster> outputRaster = createRaster(outputFileName, inputRaster);
 
-  assert(outputRaster);
+  assert(outputRaster.get());
 
   unsigned int numRows = inputRaster->getNumberOfRows();
   unsigned int numColumns = inputRaster->getNumberOfColumns();
   double resX = inputRaster->getResolutionX();
   double resY = inputRaster->getResolutionY();
+
+  boost::numeric::ublas::matrix<bool> mask = createRadiusMask(resX, radius);
 
   int  maskSizeInPixels = te::rst::Round(radius / resX);
 
@@ -178,7 +184,7 @@ std::auto_ptr<te::rst::Raster> te::urban::classifyUrbanOpenArea(te::rst::Raster*
       if (centerPixel == OUTPUT_URBANIZED_OS)
       {
         //gets the pixels surrounding pixels that intersects the given radious
-        std::vector<short> vecPixels = getPixelsWithinRadious(inputRaster, currentRow, currentColumn, radius);
+        std::vector<short> vecPixels = getPixelsWithinRadious(inputRaster, currentRow, currentColumn, radius, mask);
 
         double permUrb = 0.;
         value = calculateUrbanOpenArea((short)centerPixel, vecPixels);
@@ -277,6 +283,8 @@ void te::urban::calculateUrbanIndexes(const std::string& inputFileName, double r
   double resX = inputRaster->getResolutionX();
   double resY = inputRaster->getResolutionY();
 
+  boost::numeric::ublas::matrix<bool> mask = createRadiusMask(resX, radius);
+
   int numPix = 0;
   int edgeCount = 0; //edge index
   double sumPerUrb = 0;
@@ -292,7 +300,7 @@ void te::urban::calculateUrbanIndexes(const std::string& inputFileName, double r
       inputRaster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, centerPixel);
 
       //gets the pixels surrounding pixels that intersects the given radious
-      std::vector<short> vecPixels = getPixelsWithinRadious(inputRaster.get(), currentRow, currentColumn, radius);
+      std::vector<short> vecPixels = getPixelsWithinRadious(inputRaster.get(), currentRow, currentColumn, radius, mask);
 
       double permUrb = 0.;
       double value = calculateUrbanizedArea((short)centerPixel, vecPixels, permUrb);
@@ -356,8 +364,8 @@ te::urban::UrbanRasters te::urban::prepareRaster(const std::string& inputFileNam
 
 std::auto_ptr<te::rst::Raster> te::urban::compareRasterPeriods(const UrbanRasters& t1, const UrbanRasters& t2, const std::string& outputPath, const std::string& outputPrefix)
 {
-  assert(t1.m_urbanizedAreaRaster);
-  assert(t2.m_urbanizedAreaRaster);
+  assert(t1.m_urbanizedAreaRaster.get());
+  assert(t2.m_urbanizedAreaRaster.get());
 
   std::string infillPrefix = outputPrefix + "_infill";
   std::string otherNewDevPrefix = outputPrefix + "_otherNewDev";

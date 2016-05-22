@@ -136,13 +136,13 @@ boost::numeric::ublas::matrix<bool> te::urban::createRadiusMask(double resolutio
 
   boost::numeric::ublas::matrix<bool> mask(range, range);
 
-  for (size_t localRow = 0; localRow <= range; ++localRow)
+  for (size_t localRow = 0; localRow < range; ++localRow)
   {
-    for (size_t localColumn = 0; localColumn <= range; ++localColumn)
+    for (size_t localColumn = 0; localColumn < range; ++localColumn)
     {
       bool maskOn = false;
 
-      te::gm::Coord2D currentCoord(localColumn + resolution, localRow + resolution);
+      te::gm::Coord2D currentCoord(localColumn * resolution, localRow * resolution);
 
       double currentDistance = TeDistance(referenceCoord, currentCoord);
       if (currentDistance <= radius)
@@ -157,7 +157,7 @@ boost::numeric::ublas::matrix<bool> te::urban::createRadiusMask(double resolutio
   return mask;
 }
 
-std::vector<short> te::urban::getPixelsWithinRadious(te::rst::Raster* raster, size_t referenceRow, size_t referenceColumn, double radius)
+std::vector<short> te::urban::getPixelsWithinRadious(te::rst::Raster* raster, size_t referenceRow, size_t referenceColumn, double radius, const boost::numeric::ublas::matrix<bool>& mask)
 {
   std::size_t numRows = raster->getNumberOfRows();
   std::size_t numColumns = raster->getNumberOfColumns();
@@ -167,17 +167,23 @@ std::vector<short> te::urban::getPixelsWithinRadious(te::rst::Raster* raster, si
 
   int range = (maskSizeInPixels * 2) + 1;
 
-  te::gm::Coord2D referenceCoord = raster->getGrid()->gridToGeo((double)referenceColumn, (double)referenceRow);
+  std::size_t localNumRows = mask.size1();
+  std::size_t localNumColumns = mask.size2();
 
   std::vector<short> vecPixels;
-  vecPixels.reserve(range * range);
+  vecPixels.reserve(localNumRows * localNumColumns);
 
   int rasterRow = ((int)referenceRow - maskSizeInPixels);
-  for (size_t localRow = 0; localRow <= range; ++localRow, ++rasterRow)
+  for (size_t localRow = 0; localRow < range; ++localRow, ++rasterRow)
   {
     int rasterColumn = ((int)referenceColumn - maskSizeInPixels);
-    for (size_t localColumn = 0; localColumn <= range; ++localColumn, ++rasterColumn)
+    for (size_t localColumn = 0; localColumn < range; ++localColumn, ++rasterColumn)
     {
+      if (mask(localRow, localColumn) == false)
+      {
+        continue;
+      }
+
       if (rasterRow == referenceRow && rasterColumn == referenceColumn)
       {
         continue;
@@ -191,14 +197,6 @@ std::vector<short> te::urban::getPixelsWithinRadious(te::rst::Raster* raster, si
         continue;
       }
 
-      te::gm::Coord2D currentCoord = raster->getGrid()->gridToGeo(rasterColumn, rasterRow);
-
-      double dist = TeDistance(referenceCoord, currentCoord);
-
-      if (dist > radius)
-      {
-        continue;
-      }
       double value = 0;
       raster->getValue(rasterColumn, rasterRow, value);
 
@@ -227,9 +225,9 @@ std::vector<short> te::urban::getAdjacentPixels(te::rst::Raster* raster, size_t 
   std::vector<short> vecPixels;
   vecPixels.reserve(maskSizeInPixels * maskSizeInPixels);
 
-  for (size_t localRow = 0; localRow <= range; ++localRow, ++rasterRow)
+  for (size_t localRow = 0; localRow < range; ++localRow, ++rasterRow)
   {
-    for (size_t localColumn = 0; localColumn <= range; ++localColumn, ++rasterColumn)
+    for (size_t localColumn = 0; localColumn < range; ++localColumn, ++rasterColumn)
     {
       if (localRow == referenceRow && localColumn == referenceColumn)
       {

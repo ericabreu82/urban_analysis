@@ -42,7 +42,7 @@ namespace te
 {
   namespace gm
   {
-    class Coord2D;
+    struct Coord2D;
     class Geometry;
   }
 
@@ -82,7 +82,7 @@ namespace te
     TEGROWTHEXPORT boost::numeric::ublas::matrix<bool> createRadiusMask(double resolution, double radius);
 
     //!< Returns all the pixels within the given radius
-    TEGROWTHEXPORT std::vector<short> getPixelsWithinRadious(te::rst::Raster* raster, size_t referenceRow, size_t referenceColumn, double radius);
+    TEGROWTHEXPORT std::vector<short> getPixelsWithinRadious(te::rst::Raster* raster, size_t referenceRow, size_t referenceColumn, double radius, const boost::numeric::ublas::matrix<bool>& mask);
 
     //!< Returns all the adjacent pixels
     TEGROWTHEXPORT std::vector<short> getAdjacentPixels(te::rst::Raster* raster, size_t referenceRow, size_t referenceColumn);
