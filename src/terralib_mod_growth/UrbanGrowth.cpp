@@ -272,7 +272,7 @@ void te::urban::classifyIsolatedOpenPatches(te::rst::Raster* raster, const std::
   //TODO apagar o raster o disco
 }
 
-void te::urban::calculateUrbanIndexes(const std::string& inputFileName, double radius, std::map<std::string, double>& mapIndexes)
+void te::urban::calculateUrbanIndexes(const std::string& inputFileName, double radius, UrbanIndexes& urbanIndexes)
 {
   std::auto_ptr<te::rst::Raster> inputRaster = openRaster(inputFileName);
 
@@ -328,15 +328,15 @@ void te::urban::calculateUrbanIndexes(const std::string& inputFileName, double r
   double openness = 1 - (sumPerUrb / numPix);
   double edgeIndex = double(edgeCount) / numPix;
 
-  mapIndexes["openness"] = openness;
-  mapIndexes["edgeIndex"] = edgeIndex;
+  urbanIndexes["openness"] = openness;
+  urbanIndexes["edgeIndex"] = edgeIndex;
 }
 
 te::urban::UrbanRasters te::urban::prepareRaster(const std::string& inputFileName, double radius, const std::string& outputPath, const std::string& outputPrefix)
 {
   std::string urbanizedPrefix = outputPrefix + "_urbanized";
   std::string footprintPrefix = outputPrefix + "_footprint";
-  std::string footprintOpenAreaPrefix = outputPrefix + "_footprintOpenArea";
+  std::string footprintOpenAreaPrefix = outputPrefix + "_footprint_open_area";
 
   UrbanRasters urbanRaster;
 

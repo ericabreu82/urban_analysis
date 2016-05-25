@@ -42,6 +42,9 @@ namespace te
 
   namespace urban
   {
+    typedef std::map<std::string, double> UrbanIndexes;
+    typedef std::map<std::string, UrbanIndexes> UrbanSummary;
+
     //step 1 - this reclassification analyses the entire raster. Classify the urbanized area
     TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> classifyUrbanizedArea(const std::string& inputFileName, double radius, const std::string& outputFileName);
 
@@ -61,7 +64,7 @@ namespace te
     TEGROWTHEXPORT void classifyIsolatedOpenPatches(te::rst::Raster* raster, const std::string& outputPath, const std::string& outputPrefix);
 
     //the indexes calculation only considers the study area
-    TEGROWTHEXPORT void calculateUrbanIndexes(const std::string& inputFileName, double radius, std::map<std::string, double>& mapIndexes);
+    TEGROWTHEXPORT void calculateUrbanIndexes(const std::string& inputFileName, double radius, UrbanIndexes& urbanIndexes);
 
     TEGROWTHEXPORT UrbanRasters prepareRaster(const std::string& inputFileName, double radius, const std::string& outputPath, const std::string& outputPrefix);
 
