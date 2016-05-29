@@ -38,6 +38,8 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include <terralib/raster/RasterSummaryManager.h>
 #include <terralib/raster/Utils.h>
 
+#include <cstdlib>
+
 void te::urban::init()
 {
   
@@ -75,6 +77,36 @@ void te::urban::finalize()
   
 }
 
+std::auto_ptr<te::rst::Raster> te::urban::cloneRasterIntoMem(te::rst::Raster* raster, bool copyData)
+{
+  //load to mem
+  std::vector<te::rst::BandProperty*> bprops;
+
+  for (size_t t = 0; t < raster->getNumberOfBands(); ++t)
+  {
+    te::rst::Band* band = raster->getBand(t);
+    te::rst::BandProperty* bp = new te::rst::BandProperty(t, band->getProperty()->getType(), "");
+    bprops.push_back(bp);
+  }
+
+  std::map< std::string, std::string > dummyRInfo;
+
+  te::rst::Raster* rasterMem = te::rst::RasterFactory::make("MEM", new te::rst::Grid(*(raster->getGrid())), bprops, dummyRInfo, 0, 0);
+
+  if (copyData == true)
+  {
+    te::rst::Copy(*raster, *rasterMem);
+  }
+  else
+  {
+    te::rst::FillRaster(rasterMem, 0.);
+  }
+
+  //create output auto_ptr
+  std::auto_ptr<te::rst::Raster> rOut(rasterMem);
+  return rOut;
+}
+
 std::auto_ptr<te::rst::Raster> te::urban::openRaster(const std::string& fileName)
 {
   std::map<std::string, std::string> rasterInfo;
@@ -82,26 +114,8 @@ std::auto_ptr<te::rst::Raster> te::urban::openRaster(const std::string& fileName
 
   std::auto_ptr<te::rst::Raster> rasterPointer(te::rst::RasterFactory::open(rasterInfo));
 
-  //load to mem
-  std::vector<te::rst::BandProperty*> bprops;
-
-  for (size_t t = 0; t < rasterPointer->getNumberOfBands(); ++t)
-  {
-    te::rst::Band* band = rasterPointer->getBand(t);
-    te::rst::BandProperty* bp = new te::rst::BandProperty(t, band->getProperty()->getType(), "");
-    bprops.push_back(bp);
-  }
-
-  std::map< std::string, std::string > dummyRInfo;
-
-  te::rst::Raster* rasterMem = te::rst::RasterFactory::make("MEM", new te::rst::Grid(*(rasterPointer->getGrid())), bprops, dummyRInfo, 0, 0);
-
-  te::rst::Copy(*rasterPointer, *rasterMem);
-
-  //create output auto_ptr
-  std::auto_ptr<te::rst::Raster> rOut(rasterMem);
-
-  return rOut;
+  std::auto_ptr<te::rst::Raster> memRaster = cloneRasterIntoMem(rasterPointer.get(), true);
+  return memRaster;
 }
 
 std::auto_ptr<te::rst::Raster> te::urban::createRaster(const std::string& fileName, te::rst::Raster* raster)
@@ -125,6 +139,12 @@ std::auto_ptr<te::rst::Raster> te::urban::createRaster(const std::string& fileNa
 
   std::auto_ptr<te::rst::Raster> createdRasterPtr(createdRaster);
   return createdRasterPtr;
+}
+
+void te::urban::saveRaster(const std::string& fileName, te::rst::Raster* raster)
+{
+  std::auto_ptr<te::rst::Raster> outputRaster = createRaster(fileName, raster);
+  te::rst::Copy(*raster, *outputRaster);
 }
 
 boost::numeric::ublas::matrix<bool> te::urban::createRadiusMask(double resolution, double radius)
@@ -451,13 +471,13 @@ bool te::urban::calculateEdge(te::rst::Raster* raster, size_t column, size_t lin
   return false;
 }
 
-std::auto_ptr<te::rst::Raster> te::urban::filterUrbanPixels(te::rst::Raster* raster, const std::string& outputFileName)
+std::auto_ptr<te::rst::Raster> te::urban::filterUrbanPixels(te::rst::Raster* raster)
 {
   te::rst::Raster* inputRaster = raster;
 
   assert(inputRaster);
 
-  std::auto_ptr<te::rst::Raster> outputRaster = createRaster(outputFileName, inputRaster);
+  std::auto_ptr<te::rst::Raster> outputRaster = cloneRasterIntoMem(inputRaster, false);
 
   assert(outputRaster.get());
 
@@ -535,14 +555,12 @@ std::vector<te::gm::Geometry*> te::urban::getGaps(const std::vector<te::gm::Geom
   return vecOutput;
 }
 
-std::auto_ptr<te::rst::Raster> te::urban::createDistinctGroups(te::rst::Raster* inputRaster, const std::string& outputFileName)
+std::auto_ptr<te::rst::Raster> te::urban::createDistinctGroups(te::rst::Raster* inputRaster)
 {
   assert(inputRaster);
 
-  std::auto_ptr<te::rst::Raster> outputRaster = createRaster(outputFileName, inputRaster);
+  std::auto_ptr<te::rst::Raster> outputRaster = cloneRasterIntoMem(inputRaster, true);
 
-  te::rst::Copy(*inputRaster, *outputRaster.get());
-  
   //we first vectorize the raster
   std::vector<te::gm::Geometry*> vecGeometries;
   outputRaster->vectorize(vecGeometries, 0);
@@ -620,8 +638,8 @@ void te::urban::generateInfillOtherDevRasters(te::rst::Raster* rasterT1, te::rst
   assert(rasterT1);
   assert(rasterT2);
 
-  std::auto_ptr<te::rst::Raster> infillRaster = createRaster(infillRasterFileName, rasterT1);
-  std::auto_ptr<te::rst::Raster> otherDevRaster = createRaster(otherDevRasterFileName, rasterT1);
+  std::auto_ptr<te::rst::Raster> infillRaster = cloneRasterIntoMem(rasterT1, false);
+  std::auto_ptr<te::rst::Raster> otherDevRaster = cloneRasterIntoMem(rasterT1, false);
 
   assert(infillRaster.get());
   assert(otherDevRaster.get());
@@ -670,9 +688,12 @@ void te::urban::generateInfillOtherDevRasters(te::rst::Raster* rasterT1, te::rst
       otherDevRaster->setValue((unsigned int)column, (unsigned int)row, valueOtherDev);
     }
   }
+
+  saveRaster(infillRasterFileName, infillRaster.get());
+  saveRaster(otherDevRasterFileName, otherDevRaster.get());
 }
 
-std::auto_ptr<te::rst::Raster> te::urban::classifyNewDevelopment(te::rst::Raster* infillRaster, te::rst::Raster* otherDevGroupedRaster, const std::set<double>& setEdgesOpenAreaGroups, const std::string& outputRasterFileName)
+std::auto_ptr<te::rst::Raster> te::urban::classifyNewDevelopment(te::rst::Raster* infillRaster, te::rst::Raster* otherDevGroupedRaster, const std::set<double>& setEdgesOpenAreaGroups)
 {
   assert(infillRaster);
   assert(otherDevGroupedRaster);
@@ -689,8 +710,7 @@ std::auto_ptr<te::rst::Raster> te::urban::classifyNewDevelopment(te::rst::Raster
     return std::auto_ptr<te::rst::Raster>();
   }
 
-  std::auto_ptr<te::rst::Raster> outputRaster = createRaster(outputRasterFileName, infillRaster);
-
+  std::auto_ptr<te::rst::Raster> outputRaster = cloneRasterIntoMem(infillRaster, false);
   for (unsigned int row = 0; row < numRows; ++row)
   {
     for (unsigned int column = 0; column < numColumns; ++column)
@@ -733,4 +753,54 @@ std::auto_ptr<te::rst::Raster> te::urban::classifyNewDevelopment(te::rst::Raster
 double te::urban::TeDistance(const te::gm::Coord2D& c1, const te::gm::Coord2D& c2)
 {
   return sqrt(((c2.getX() - c1.getX()) * (c2.getX() - c1.getX())) + ((c2.getY() - c1.getY()) * (c2.getY() - c1.getY())));
+}
+
+void te::urban::getUrbanCoordinates(te::rst::Raster* raster, std::vector<te::gm::Coord2D>& vecUrbanCoords)
+{
+  assert(raster);
+
+  unsigned int numRows = raster->getNumberOfRows();
+  unsigned int numColumns = raster->getNumberOfColumns();
+  double resX = raster->getResolutionX();
+  double resY = raster->getResolutionY();
+
+  //empiric value to avoid unnecessary resize (copy) of the vector. it supposes that 1/4 of the pixels are urban
+  vecUrbanCoords.reserve(numRows * numColumns / 4);
+
+  for (std::size_t currentRow = 0; currentRow < numRows; ++currentRow)
+  {
+    for (std::size_t currentColumn = 0; currentColumn < numColumns; ++currentColumn)
+    {
+      //gets the value of the current center pixel
+      double centerPixel = 0;
+      raster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, centerPixel);
+
+      if (centerPixel == OUTPUT_URBAN || centerPixel == OUTPUT_SUB_URBAN || centerPixel == OUTPUT_URBANIZED_OS || centerPixel == OUTPUT_SUBURBAN_ZONE_OPEN_AREA)
+      {
+        te::gm::Coord2D coord = raster->getGrid()->gridToGeo((double)currentColumn, (double)currentRow);
+        vecUrbanCoords.push_back(coord);
+      }
+    }
+  }
+}
+
+std::vector<te::gm::Coord2D> te::urban::getRandomCoordSubset(const std::vector<te::gm::Coord2D>& vecUrbanCoords, std::size_t subsetSize)
+{
+  std::vector<te::gm::Coord2D> vecSubset;
+
+  for (std::size_t i = 0; i < subsetSize; ++i)
+  {
+    int randValue = rand();
+    double factor = (double)randValue / RAND_MAX;
+
+    std::size_t randIndex = (std::size_t)(subsetSize * factor);
+    if (randIndex >= vecUrbanCoords.size())
+    {
+      break;
+    }
+
+    vecSubset.push_back(vecUrbanCoords[randIndex]);
+  }
+
+  return vecSubset;
 }

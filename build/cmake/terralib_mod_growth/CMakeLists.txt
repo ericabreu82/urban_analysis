@@ -25,7 +25,7 @@
 #          
 
 if(WIN32)
-  add_definitions(-D_SCL_SECURE_NO_WARNINGS -DTEGROWTHDLL)
+  add_definitions(-D_SCL_SECURE_NO_WARNINGS -DTEGROWTHDLL -D_CRT_SECURE_NO_WARNINGS)
 endif()
 
 include_directories(

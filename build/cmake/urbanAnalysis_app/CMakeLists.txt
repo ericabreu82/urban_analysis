@@ -1,4 +1,4 @@
-#
+﻿#
 #  Copyright (C) 2008-2014 National Institute For Space Research (INPE) - Brazil.
 #
 #  This file is part of the TerraLib - a Framework for building GIS enabled applications.
@@ -25,7 +25,7 @@
 #          
 
 if(WIN32)
-  add_definitions(-D_SCL_SECURE_NO_WARNINGS -DURBANANALYSISAPP)
+  add_definitions(-D_SCL_SECURE_NO_WARNINGS -DURBANANALYSISAPP -D_CRT_SECURE_NO_WARNINGS)
 endif()
 
 include_directories(

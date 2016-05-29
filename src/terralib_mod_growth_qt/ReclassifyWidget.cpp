@@ -174,6 +174,8 @@ void te::urban::qt::ReclassifyWidget::execute()
   //execute operation
   UrbanRasters urbanRaster_t_n0;
   UrbanRasters urbanRaster_t_n1;
+  UrbanSummary urbanSummary;
+
   for (int i = 0; i < m_ui->m_imgFilesListWidget->count(); ++i)
   {
     std::string inputImgName = m_ui->m_imgFilesListWidget->item(i)->text().toStdString();
@@ -182,11 +184,44 @@ void te::urban::qt::ReclassifyWidget::execute()
     urbanRaster_t_n0 = urbanRaster_t_n1;
     urbanRaster_t_n1 = prepareRaster(inputImgName, radius, outputPath, currentOutputPrefix);
 
+    UrbanIndexes urbanIndexes;
+    calculateUrbanIndexes(inputImgName, radius, urbanIndexes);
+
+    urbanSummary[inputImgName] = urbanIndexes;
+
     if (i == 1)
     {
       std::auto_ptr<te::rst::Raster> newDevelopmentRaster = compareRasterPeriods(urbanRaster_t_n0, urbanRaster_t_n1, outputPath, currentOutputPrefix);
+
+      std::string newDevelopmentPrefix = outputPrefix + "_newDevelopment";
+      std::string newDevelopmentRasterFileName = outputPath + "/" + newDevelopmentPrefix + ".tif";
+      saveRaster(newDevelopmentRasterFileName, newDevelopmentRaster.get());
     }
   }
 
-  QMessageBox::information(this, tr("Urban Analysis"), tr("The execution finished with success."));
+  QString messageIndexes;
+
+  UrbanSummary::iterator itSummary = urbanSummary.begin();
+  while (itSummary != urbanSummary.end())
+  {
+    UrbanIndexes::iterator itIndexes = itSummary->second.begin();
+    while (itIndexes != itSummary->second.end())
+    {
+      messageIndexes += "Input: " + QString(itSummary->first.c_str()) + " -> " + QString(itIndexes->first.c_str()) + "=" + QString::number(itIndexes->second)  + "\n";
+
+      ++itIndexes;
+    }
+
+    ++itSummary;
+  }
+
+  QMessageBox message(this);
+  message.setWindowTitle(tr("Urban Analysis"));
+  message.setText(tr("The execution finished with success."));
+  message.setIcon(QMessageBox::Information);
+  if(messageIndexes.isEmpty() != true)
+  {
+    message.setDetailedText(messageIndexes);
+  }
+  message.exec();
 }

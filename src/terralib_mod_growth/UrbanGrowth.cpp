@@ -32,13 +32,13 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include <terralib/raster/Utils.h>
 
 
-std::auto_ptr<te::rst::Raster> te::urban::classifyUrbanizedArea(const std::string& inputFileName, double radius, const std::string& outputFileName)
+std::auto_ptr<te::rst::Raster> te::urban::classifyUrbanizedArea(const std::string& inputFileName, double radius)
 {
   std::auto_ptr<te::rst::Raster> inputRaster = openRaster(inputFileName);
 
   assert(inputRaster.get());
 
-  std::auto_ptr<te::rst::Raster> outputRaster = createRaster(outputFileName, inputRaster.get());
+  std::auto_ptr<te::rst::Raster> outputRaster = cloneRasterIntoMem(inputRaster.get(), false);
 
   assert(outputRaster.get());
 
@@ -88,13 +88,13 @@ std::auto_ptr<te::rst::Raster> te::urban::classifyUrbanizedArea(const std::strin
   return outputRaster;
 }
 
-std::auto_ptr<te::rst::Raster> te::urban::classifyUrbanFootprint(const std::string& inputFileName, double radius, const std::string& outputFileName)
+std::auto_ptr<te::rst::Raster> te::urban::classifyUrbanFootprint(const std::string& inputFileName, double radius)
 {
   std::auto_ptr<te::rst::Raster> inputRaster = openRaster(inputFileName);
 
   assert(inputRaster.get());
 
-  std::auto_ptr<te::rst::Raster> outputRaster = createRaster(outputFileName, inputRaster.get());
+  std::auto_ptr<te::rst::Raster> outputRaster = cloneRasterIntoMem(inputRaster.get(), false);
 
   assert(outputRaster.get());
 
@@ -149,20 +149,14 @@ std::auto_ptr<te::rst::Raster> te::urban::classifyUrbanFootprint(const std::stri
   return outputRaster;
 }
 
-std::auto_ptr<te::rst::Raster> te::urban::classifyUrbanOpenArea(te::rst::Raster* raster, double radius, const std::string& outputFileName)
+void te::urban::classifyUrbanOpenArea(te::rst::Raster* urbanFootprintRaster, double radius)
 {
-  te::rst::Raster* inputRaster = raster;
+  assert(urbanFootprintRaster);
 
-  assert(inputRaster);
-
-  std::auto_ptr<te::rst::Raster> outputRaster = createRaster(outputFileName, inputRaster);
-
-  assert(outputRaster.get());
-
-  unsigned int numRows = inputRaster->getNumberOfRows();
-  unsigned int numColumns = inputRaster->getNumberOfColumns();
-  double resX = inputRaster->getResolutionX();
-  double resY = inputRaster->getResolutionY();
+  unsigned int numRows = urbanFootprintRaster->getNumberOfRows();
+  unsigned int numColumns = urbanFootprintRaster->getNumberOfColumns();
+  double resX = urbanFootprintRaster->getResolutionX();
+  double resY = urbanFootprintRaster->getResolutionY();
 
   boost::numeric::ublas::matrix<bool> mask = createRadiusMask(resX, radius);
 
@@ -178,31 +172,28 @@ std::auto_ptr<te::rst::Raster> te::urban::classifyUrbanOpenArea(te::rst::Raster*
     {
       //gets the value of the current center pixel
       double centerPixel = 0;
-      inputRaster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, centerPixel);
+      urbanFootprintRaster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, centerPixel);
 
       double value = centerPixel;
       if (centerPixel == OUTPUT_URBANIZED_OS)
       {
         //gets the pixels surrounding pixels that intersects the given radious
-        std::vector<short> vecPixels = getPixelsWithinRadious(inputRaster, currentRow, currentColumn, radius, mask);
+        std::vector<short> vecPixels = getPixelsWithinRadious(urbanFootprintRaster, currentRow, currentColumn, radius, mask);
 
-        double permUrb = 0.;
         value = calculateUrbanOpenArea((short)centerPixel, vecPixels);
-      }
 
-      outputRaster->setValue((unsigned int)currentColumn, (unsigned int)currentRow, value, 0);
+        urbanFootprintRaster->setValue((unsigned int)currentColumn, (unsigned int)currentRow, value, 0);
+      }
 
       task.pulse();
     }
   }
-
-  return outputRaster;
 }
 
-std::auto_ptr<te::rst::Raster> te::urban::identifyIsolatedOpenPatches(te::rst::Raster* raster, const std::string& outputFileName)
+std::auto_ptr<te::rst::Raster> te::urban::identifyIsolatedOpenPatches(te::rst::Raster* raster)
 {
   //we first need to create a binary image containing only the urban pixels
-  std::auto_ptr<te::rst::Raster> binaryUrbanRaster = filterUrbanPixels(raster, outputFileName);
+  std::auto_ptr<te::rst::Raster> binaryUrbanRaster = filterUrbanPixels(raster);
 
   //then we vectorize the result
   std::vector<te::gm::Geometry*> vecGeometries;
@@ -261,15 +252,11 @@ void te::urban::addIsolatedOpenPatches(te::rst::Raster* urbanRaster, te::rst::Ra
   }
 }
 
-void te::urban::classifyIsolatedOpenPatches(te::rst::Raster* raster, const std::string& outputPath, const std::string& outputPrefix)
+void te::urban::classifyIsolatedOpenPatches(te::rst::Raster* raster)
 {
-  std::string isolatedOpenPatchesRasterFileName = outputPath + "/" + outputPrefix + "_isolated_open_patches.tif";
-  
-  std::auto_ptr<te::rst::Raster> isolatedOpenPatchesRaster = identifyIsolatedOpenPatches(raster, isolatedOpenPatchesRasterFileName);
+  std::auto_ptr<te::rst::Raster> isolatedOpenPatchesRaster = identifyIsolatedOpenPatches(raster);
 
   addIsolatedOpenPatches(raster, isolatedOpenPatchesRaster.get());
-
-  //TODO apagar o raster o disco
 }
 
 void te::urban::calculateUrbanIndexes(const std::string& inputFileName, double radius, UrbanIndexes& urbanIndexes)
@@ -289,6 +276,10 @@ void te::urban::calculateUrbanIndexes(const std::string& inputFileName, double r
   int edgeCount = 0; //edge index
   double sumPerUrb = 0;
 
+  te::common::TaskProgress task("Calculating indexes");
+  task.setTotalSteps((int)(numRows * numColumns));
+  task.useTimer(true);
+
   //TODO: we must consider the given study area
 
   for (size_t currentRow = 0; currentRow < numRows; ++currentRow)
@@ -299,28 +290,31 @@ void te::urban::calculateUrbanIndexes(const std::string& inputFileName, double r
       double centerPixel = 0;
       inputRaster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, centerPixel);
 
-      //gets the pixels surrounding pixels that intersects the given radious
-      std::vector<short> vecPixels = getPixelsWithinRadious(inputRaster.get(), currentRow, currentColumn, radius, mask);
-
-      double permUrb = 0.;
-      double value = calculateUrbanizedArea((short)centerPixel, vecPixels, permUrb);
+      task.pulse();
 
       if (centerPixel != INPUT_URBAN && centerPixel != INPUT_OTHER)
       {
         continue;
       }
 
+      //gets the pixels surrounding pixels that intersects the given radious
+      std::vector<short> vecPixels = getPixelsWithinRadious(inputRaster.get(), currentRow, currentColumn, radius, mask);
+
+      double permUrb = 0.;
+      double value = calculateUrbanizedArea((short)centerPixel, vecPixels, permUrb);
+
       //sum the perviousness
+      //TODO: we need to check if the pixel is in the study area
       if (centerPixel == INPUT_OTHER)
       {
         sumPerUrb += permUrb;
         ++numPix;
-      }
 
-      bool hasEdge = calculateEdge(inputRaster.get(), currentColumn, currentRow);
-      if (hasEdge == true)
-      {
-        ++edgeCount;
+        bool hasEdge = calculateEdge(inputRaster.get(), currentColumn, currentRow);
+        if (hasEdge == true)
+        {
+          ++edgeCount;
+        }
       }
     }
   }
@@ -334,30 +328,39 @@ void te::urban::calculateUrbanIndexes(const std::string& inputFileName, double r
 
 te::urban::UrbanRasters te::urban::prepareRaster(const std::string& inputFileName, double radius, const std::string& outputPath, const std::string& outputPrefix)
 {
+  //define the prefix to the file names
   std::string urbanizedPrefix = outputPrefix + "_urbanized";
   std::string footprintPrefix = outputPrefix + "_footprint";
   std::string footprintOpenAreaPrefix = outputPrefix + "_footprint_open_area";
 
+  //define the file names
+  std::string urbanizedAreaFileName = outputPath + "/" + urbanizedPrefix + ".tif";
+  std::string urbanFootprintsFileName = outputPath + "/" + footprintPrefix + ".tif";
+  std::string urbanFootprintsOpenAreaFileName = outputPath + "/" + footprintOpenAreaPrefix + ".tif";
+
+  std::string urbanizedIsolatedOpenPatchesFileName = outputPath + "/" + urbanizedPrefix + "_isolated_open_patches.tif";
+  std::string urbanFootprintsIsolatedOpenPatchesFileName = outputPath + "/" + footprintPrefix + "_isolated_open_patches.tif";
+
   UrbanRasters urbanRaster;
 
   //step 1 - classify the urbanized areas
-  std::string urbanizedAreaFileName = outputPath + "/" + urbanizedPrefix + ".tif";
-  urbanRaster .m_urbanizedAreaRaster = classifyUrbanizedArea(inputFileName, radius, urbanizedAreaFileName);
-  //urbanRaster.m_urbanizedAreaRaster = openRaster("D:\\Workspace\\FGV\\data\\belem_aug92_t90_final1_reclass_urbanized.tif");
+  urbanRaster .m_urbanizedAreaRaster = classifyUrbanizedArea(inputFileName, radius);
+  saveRaster(urbanizedAreaFileName, urbanRaster.m_urbanizedAreaRaster.get());
 
   //step 2 - classify the urban footprints
-  std::string urbanFootprintsFileName = outputPath + "/" + footprintPrefix + ".tif";
-  urbanRaster.m_urbanFootprintRaster = classifyUrbanFootprint(inputFileName, radius, urbanFootprintsFileName);
-  //urbanRaster.m_urbanFootprintRaster = openRaster("D:\\Workspace\\FGV\\data\\belem_aug92_t90_final1_reclass_footprint.tif");
+  urbanRaster.m_urbanFootprintRaster = classifyUrbanFootprint(inputFileName, radius);
+  saveRaster(urbanFootprintsFileName, urbanRaster.m_urbanFootprintRaster.get());
 
   //step 3 - classify fringe open areas
-  std::string urbanFootprintsOpenAreaFileName = outputPath + "/" + footprintOpenAreaPrefix + ".tif";
-  urbanRaster.m_urbanFootprintRaster = classifyUrbanOpenArea(urbanRaster.m_urbanFootprintRaster.get(), radius, urbanFootprintsOpenAreaFileName);
-  //urbanRaster.m_urbanFootprintRaster = openRaster("D:\\Workspace\\FGV\\data\\belem_aug92_t90_final1_reclass_footprintOpenArea.tif");
+  classifyUrbanOpenArea(urbanRaster.m_urbanFootprintRaster.get(), radius);
+  saveRaster(urbanFootprintsOpenAreaFileName, urbanRaster.m_urbanFootprintRaster.get());
 
   //step 4 and 5- identify isolated patches and classify them into the given raster
-  classifyIsolatedOpenPatches(urbanRaster.m_urbanizedAreaRaster.get(), outputPath, urbanizedPrefix);
-  classifyIsolatedOpenPatches(urbanRaster.m_urbanFootprintRaster.get(), outputPath, footprintPrefix);
+  classifyIsolatedOpenPatches(urbanRaster.m_urbanizedAreaRaster.get());
+  classifyIsolatedOpenPatches(urbanRaster.m_urbanFootprintRaster.get());
+
+  saveRaster(urbanizedIsolatedOpenPatchesFileName, urbanRaster.m_urbanizedAreaRaster.get());
+  saveRaster(urbanFootprintsIsolatedOpenPatchesFileName, urbanRaster.m_urbanFootprintRaster.get());
 
   return urbanRaster;
 }
@@ -370,13 +373,11 @@ std::auto_ptr<te::rst::Raster> te::urban::compareRasterPeriods(const UrbanRaster
   std::string infillPrefix = outputPrefix + "_infill";
   std::string otherNewDevPrefix = outputPrefix + "_otherNewDev";
   std::string otherNewDevGroupedPrefix = outputPrefix + "_otherNewDevGrouped";
-  std::string newDevelopmentPrefix = outputPrefix + "_newDevelopment";
 
   std::string infillRasterFileName = outputPath + "/" + infillPrefix + ".tif";
   std::string otherNewDevRasterFileName = outputPath + "/" + otherNewDevPrefix + ".tif";
   std::string otherNewDevGroupedRasterFileName = outputPath + "/" + otherNewDevGroupedPrefix + ".tif";
-  std::string newDevelopmentRasterFileName = outputPath + "/" + newDevelopmentPrefix + ".tif";
-  
+
   //1 - we first generate the infill raster and the other dev raster
   generateInfillOtherDevRasters(t1.m_urbanFootprintRaster.get(), t2.m_urbanFootprintRaster.get(), infillRasterFileName, otherNewDevRasterFileName);
 
@@ -384,13 +385,13 @@ std::auto_ptr<te::rst::Raster> te::urban::compareRasterPeriods(const UrbanRaster
   std::auto_ptr<te::rst::Raster> otherDevRaster = openRaster(otherNewDevRasterFileName);
 
   //2 - then we create distinct groups for each region of the other dev raster
-  std::auto_ptr<te::rst::Raster> otherDevGroupedRaster = createDistinctGroups(otherDevRaster.get(), otherNewDevGroupedRasterFileName);
+  std::auto_ptr<te::rst::Raster> otherDevGroupedRaster = createDistinctGroups(otherDevRaster.get());
+  saveRaster(otherNewDevGroupedRasterFileName, otherDevGroupedRaster.get());
 
   //3 - determine edge area groups
   std::set<double> setEdgeOpenAreaGroups = detectEdgeOpenAreaGroups(otherDevRaster.get(), otherDevGroupedRaster.get(), t1.m_urbanFootprintRaster.get());
 
   //4 - then we calculate the new development classification
-  std::auto_ptr<te::rst::Raster> newDevelopmentRaster = classifyNewDevelopment(infillRaster.get(), otherDevGroupedRaster.get(), setEdgeOpenAreaGroups, newDevelopmentRasterFileName);
-
+  std::auto_ptr<te::rst::Raster> newDevelopmentRaster = classifyNewDevelopment(infillRaster.get(), otherDevGroupedRaster.get(), setEdgeOpenAreaGroups);
   return newDevelopmentRaster;
 }
