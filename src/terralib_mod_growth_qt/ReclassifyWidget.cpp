@@ -171,6 +171,14 @@ void te::urban::qt::ReclassifyWidget::execute()
   std::string outputPath = m_ui->m_reclassOutputRepoLineEdit->text().toStdString();
   std::string outputPrefix = m_ui->m_reclassOutputNameLineEdit->text().toStdString();
 
+  InputClassesMap inputClassesMap;
+  //temporary
+  inputClassesMap[INPUT_NO_DATA] = 0;
+  inputClassesMap[INPUT_WATER] = 1;
+  inputClassesMap[INPUT_URBAN] = 2;
+  inputClassesMap[INPUT_OTHER] = 3;
+  //end temporary
+
   //execute operation
   UrbanRasters urbanRaster_t_n0;
   UrbanRasters urbanRaster_t_n1;
@@ -182,10 +190,10 @@ void te::urban::qt::ReclassifyWidget::execute()
     std::string currentOutputPrefix = outputPrefix + "_t" + boost::lexical_cast<std::string>(i + 1);
 
     urbanRaster_t_n0 = urbanRaster_t_n1;
-    urbanRaster_t_n1 = prepareRaster(inputImgName, radius, outputPath, currentOutputPrefix);
+    urbanRaster_t_n1 = prepareRaster(inputImgName, inputClassesMap, radius, outputPath, currentOutputPrefix);
 
     UrbanIndexes urbanIndexes;
-    calculateUrbanIndexes(inputImgName, radius, urbanIndexes);
+    calculateUrbanIndexes(inputImgName, inputClassesMap, radius, urbanIndexes);
 
     urbanSummary[inputImgName] = urbanIndexes;
 

@@ -46,10 +46,10 @@ namespace te
     typedef std::map<std::string, UrbanIndexes> UrbanSummary;
 
     //step 1 - this reclassification analyses the entire raster. Classify the urbanized area
-    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> classifyUrbanizedArea(const std::string& inputFileName, double radius);
+    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> classifyUrbanizedArea(const std::string& inputFileName, const InputClassesMap& inputClassesMap, double radius);
 
     //step 2 - this reclassification analyses the entire raster. Classify the urban footprint
-    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> classifyUrbanFootprint(const std::string& inputFileName, double radius);
+    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> classifyUrbanFootprint(const std::string& inputFileName, const InputClassesMap& inputClassesMap, double radius);
 
     //step 3 - this reclassification analyses the entire raster. Classify the urban open area
     TEGROWTHEXPORT void classifyUrbanOpenArea(te::rst::Raster* urbanFootprintRaster, double radius);
@@ -64,9 +64,9 @@ namespace te
     TEGROWTHEXPORT void classifyIsolatedOpenPatches(te::rst::Raster* raster);
 
     //the indexes calculation only considers the study area
-    TEGROWTHEXPORT void calculateUrbanIndexes(const std::string& inputFileName, double radius, UrbanIndexes& urbanIndexes);
+    TEGROWTHEXPORT void calculateUrbanIndexes(const std::string& inputFileName, const InputClassesMap& inputClassesMap, double radius, UrbanIndexes& urbanIndexes);
 
-    TEGROWTHEXPORT UrbanRasters prepareRaster(const std::string& inputFileName, double radius, const std::string& outputPath, const std::string& outputPrefix);
+    TEGROWTHEXPORT UrbanRasters prepareRaster(const std::string& inputFileName, const InputClassesMap& inputClassesMap, double radius, const std::string& outputPath, const std::string& outputPrefix);
 
     //step 9 - analyze new development
     TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> compareRasterPeriods(const UrbanRasters& t1, const UrbanRasters& t2, const std::string& outputPath, const std::string& outputPrefix);
