@@ -64,7 +64,7 @@ te::urban::qt::UrbanAnalysisMainDialog::~UrbanAnalysisMainDialog()
 void te::urban::qt::UrbanAnalysisMainDialog::buildDialog()
 {
   //reclassify
-  QToolButton* reclassToolButton = createButton("Reclassify");
+  QToolButton* reclassToolButton = createButton("Urban Growth");
   connect(reclassToolButton, SIGNAL(clicked()), this, SLOT(onReclassifyToolButtonClicked()));
 
   //sprawl metrics

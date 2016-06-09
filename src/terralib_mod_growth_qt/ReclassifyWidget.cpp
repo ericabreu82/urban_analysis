@@ -29,7 +29,10 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include "../terralib_mod_growth/UrbanGrowth.h"
 
 //Terralib
+#include <terralib/common/progress/ProgressManager.h>
+#include <terralib/qt/widgets/progress/ProgressViewerDialog.h>
 #include <terralib/qt/widgets/Utils.h>
+
 
 //Boost
 #include <boost/lexical_cast.hpp>
@@ -168,8 +171,14 @@ void te::urban::qt::ReclassifyWidget::execute()
     return;
   }
 
+  bool calculateIndexes = m_ui->m_indexesGroupBox->isChecked();
+
   std::string outputPath = m_ui->m_reclassOutputRepoLineEdit->text().toStdString();
   std::string outputPrefix = m_ui->m_reclassOutputNameLineEdit->text().toStdString();
+
+  //add task viewer
+  te::qt::widgets::ProgressViewerDialog* dlgViewer = new te::qt::widgets::ProgressViewerDialog(this);
+  int dlgViewerId = te::common::ProgressManager::getInstance().addViewer(dlgViewer);
 
   //execute operation
   UrbanRasters urbanRaster_t_n0;
@@ -184,12 +193,15 @@ void te::urban::qt::ReclassifyWidget::execute()
     urbanRaster_t_n0 = urbanRaster_t_n1;
     urbanRaster_t_n1 = prepareRaster(inputImgName, radius, outputPath, currentOutputPrefix);
 
-    UrbanIndexes urbanIndexes;
-    calculateUrbanIndexes(inputImgName, radius, urbanIndexes);
+    if (calculateIndexes)
+    {
+      UrbanIndexes urbanIndexes;
+      calculateUrbanIndexes(inputImgName, radius, urbanIndexes);
 
-    urbanSummary[inputImgName] = urbanIndexes;
+      urbanSummary[inputImgName] = urbanIndexes;
+    }
 
-    if (i == 1)
+    if (i > 0)
     {
       std::auto_ptr<te::rst::Raster> newDevelopmentRaster = compareRasterPeriods(urbanRaster_t_n0, urbanRaster_t_n1, outputPath, currentOutputPrefix);
 
@@ -199,29 +211,43 @@ void te::urban::qt::ReclassifyWidget::execute()
     }
   }
 
-  QString messageIndexes;
-
-  UrbanSummary::iterator itSummary = urbanSummary.begin();
-  while (itSummary != urbanSummary.end())
+  if (calculateIndexes)
   {
-    UrbanIndexes::iterator itIndexes = itSummary->second.begin();
-    while (itIndexes != itSummary->second.end())
-    {
-      messageIndexes += "Input: " + QString(itSummary->first.c_str()) + " -> " + QString(itIndexes->first.c_str()) + "=" + QString::number(itIndexes->second)  + "\n";
+    m_ui->m_tableWidget->setRowCount(0);
 
-      ++itIndexes;
+    UrbanSummary::iterator itSummary = urbanSummary.begin();
+
+    while (itSummary != urbanSummary.end())
+    {
+      UrbanIndexes ui = itSummary->second;
+
+      std::string imageName = itSummary->first;
+      double opennes = ui["openness"];
+      double edge = ui["edgeIndex"];
+
+      int newrow = m_ui->m_tableWidget->rowCount();
+      m_ui->m_tableWidget->insertRow(newrow);
+
+      QTableWidgetItem* itemName = new QTableWidgetItem(QString::fromStdString(imageName));
+      itemName->setFlags(Qt::ItemIsEnabled);
+      m_ui->m_tableWidget->setItem(newrow, 0, itemName);
+
+      QTableWidgetItem* itemOpennes = new QTableWidgetItem(QString::number(opennes));
+      itemName->setFlags(Qt::ItemIsEnabled);
+      m_ui->m_tableWidget->setItem(newrow, 1, itemOpennes);
+
+      QTableWidgetItem* itemEdge = new QTableWidgetItem(QString::number(edge));
+      itemName->setFlags(Qt::ItemIsEnabled);
+      m_ui->m_tableWidget->setItem(newrow, 2, itemEdge);
+
+      ++itSummary;
     }
 
-    ++itSummary;
+    m_ui->m_tableWidget->resizeColumnsToContents();
   }
 
-  QMessageBox message(this);
-  message.setWindowTitle(tr("Urban Analysis"));
-  message.setText(tr("The execution finished with success."));
-  message.setIcon(QMessageBox::Information);
-  if(messageIndexes.isEmpty() != true)
-  {
-    message.setDetailedText(messageIndexes);
-  }
-  message.exec();
+  te::common::ProgressManager::getInstance().removeViewer(dlgViewerId);
+  delete dlgViewer;
+
+  QMessageBox::information(this, tr("Urban Analysis"), tr("The execution finished with success."));
 }

@@ -6,16 +6,16 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>752</width>
-    <height>496</height>
+    <width>915</width>
+    <height>354</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Reclassify</string>
   </property>
-  <layout class="QGridLayout" name="gridLayout_14">
+  <layout class="QGridLayout" name="gridLayout_9">
    <item row="0" column="0">
-    <layout class="QGridLayout" name="gridLayout_13">
+    <layout class="QGridLayout" name="gridLayout_8">
      <item row="0" column="0">
       <widget class="QGroupBox" name="groupBox">
        <property name="title">
@@ -100,6 +100,40 @@
            </spacer>
           </item>
          </layout>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item row="0" column="1" rowspan="4">
+      <widget class="QGroupBox" name="m_indexesGroupBox">
+       <property name="title">
+        <string>Calculate Indexes</string>
+       </property>
+       <property name="flat">
+        <bool>true</bool>
+       </property>
+       <property name="checkable">
+        <bool>true</bool>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_7">
+        <item row="0" column="0">
+         <widget class="QTableWidget" name="m_tableWidget">
+          <column>
+           <property name="text">
+            <string>Image</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Edge</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Openness</string>
+           </property>
+          </column>
+         </widget>
         </item>
        </layout>
       </widget>
@@ -213,62 +247,6 @@
       </widget>
      </item>
      <item row="3" column="0">
-      <widget class="QGroupBox" name="m_indexesGroupBox">
-       <property name="title">
-        <string>Calculate Indexes</string>
-       </property>
-       <property name="flat">
-        <bool>true</bool>
-       </property>
-       <property name="checkable">
-        <bool>true</bool>
-       </property>
-       <layout class="QGridLayout" name="gridLayout_10">
-        <item row="0" column="0">
-         <layout class="QGridLayout" name="gridLayout_9">
-          <item row="0" column="1">
-           <spacer name="horizontalSpacer_2">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item row="0" column="0">
-           <layout class="QGridLayout" name="gridLayout_7">
-            <item row="1" column="0">
-             <widget class="QCheckBox" name="m_indexesCompactnessCheckBox">
-              <property name="text">
-               <string>Compactness</string>
-              </property>
-              <property name="checked">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="0">
-             <widget class="QCheckBox" name="m_indexesEdgeCheckBox">
-              <property name="text">
-               <string>Edge</string>
-              </property>
-              <property name="checked">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-         </layout>
-        </item>
-       </layout>
-      </widget>
-     </item>
-     <item row="4" column="0">
       <widget class="QGroupBox" name="groupBox_2">
        <property name="title">
         <string>Output Data</string>
@@ -345,8 +323,6 @@
   <tabstop>m_reclassAddVecToolButton</tabstop>
   <tabstop>m_reclassRadiusLineEdit</tabstop>
   <tabstop>m_indexesGroupBox</tabstop>
-  <tabstop>m_indexesEdgeCheckBox</tabstop>
-  <tabstop>m_indexesCompactnessCheckBox</tabstop>
   <tabstop>m_reclassOutputRepoLineEdit</tabstop>
   <tabstop>m_reclassOutputRepoToolButton</tabstop>
  </tabstops>
