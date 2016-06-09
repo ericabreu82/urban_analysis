@@ -272,7 +272,7 @@ std::vector<short> te::urban::getAdjacentPixels(te::rst::Raster* raster, size_t 
   return vecPixels;
 }
 
-double te::urban::calculateUrbanizedArea(short centerPixelValue, const std::vector<short>& vecPixels, double& permUrb)
+double te::urban::calculateUrbanizedArea(short centerPixelValue, const InputClassesMap& inputClassesMap, const std::vector<short>& vecPixels, double& permUrb)
 {
   //INPUT CLASSES
   //NO_DATA = 0
@@ -285,6 +285,10 @@ double te::urban::calculateUrbanizedArea(short centerPixelValue, const std::vect
   //(2) SUBURBAN ZONE BUILT-UP AREA: built-up pixels with imperviousness < 50% and > 10%
   //(3) RURAL ZONE BUILT-UP AREA: built-up pixels with imperviousness < 10%
 
+  const short InputWater = inputClassesMap.find(INPUT_WATER)->second;
+  const short InputUrban = inputClassesMap.find(INPUT_URBAN)->second;
+  const short InputOther = inputClassesMap.find(INPUT_OTHER)->second;
+
   std::size_t size = vecPixels.size();
 
   std::size_t urbanPixelsCount = 0;
@@ -293,7 +297,7 @@ double te::urban::calculateUrbanizedArea(short centerPixelValue, const std::vect
   for (std::size_t i = 0; i < size; ++i)
   {
     double currentValue = vecPixels[i];
-    if (currentValue < 1 || currentValue > 3)
+    if (currentValue != InputWater && currentValue != InputUrban && currentValue != InputOther)
     {
       continue;
     }
@@ -301,7 +305,7 @@ double te::urban::calculateUrbanizedArea(short centerPixelValue, const std::vect
     ++allPixelsCount;
 
     //check if the pixel is urban
-    if (currentValue == INPUT_URBAN)
+    if (currentValue == InputUrban)
     {
       ++urbanPixelsCount;
     }
@@ -317,7 +321,7 @@ double te::urban::calculateUrbanizedArea(short centerPixelValue, const std::vect
 
   permUrb = urbanPercentage;
 
-  if (centerPixelValue == INPUT_URBAN)
+  if (centerPixelValue == InputUrban)
   {
     if (urbanPercentage > 0.5)
     {
@@ -332,7 +336,7 @@ double te::urban::calculateUrbanizedArea(short centerPixelValue, const std::vect
       return OUTPUT_RURAL;
     }
   }
-  else if (centerPixelValue == INPUT_OTHER)
+  else if (centerPixelValue == InputOther)
   {
     if (urbanPercentage > 0.5)
     { 
@@ -347,7 +351,7 @@ double te::urban::calculateUrbanizedArea(short centerPixelValue, const std::vect
   return OUTPUT_NO_DATA;
 }
 
-double te::urban::calculateUrbanFootprint(short centerPixelValue, const std::vector<short>& vecPixels, double& permUrb)
+double te::urban::calculateUrbanFootprint(short centerPixelValue, const InputClassesMap& inputClassesMap, const std::vector<short>& vecPixels, double& permUrb)
 {
   //INPUT CLASSES
   //NO_DATA = 0
@@ -360,6 +364,10 @@ double te::urban::calculateUrbanFootprint(short centerPixelValue, const std::vec
   //(2) SUBURBAN ZONE BUILT-UP AREA: built-up pixels with imperviousness < 50% and > 10%
   //(3) RURAL ZONE BUILT-UP AREA: built-up pixels with imperviousness < 10%
 
+  const short InputWater = inputClassesMap.find(INPUT_WATER)->second;
+  const short InputUrban = inputClassesMap.find(INPUT_URBAN)->second;
+  const short InputOther = inputClassesMap.find(INPUT_OTHER)->second;
+
   std::size_t size = vecPixels.size();
 
   std::size_t urbanPixelsCount = 0;
@@ -368,7 +376,7 @@ double te::urban::calculateUrbanFootprint(short centerPixelValue, const std::vec
   for (std::size_t i = 0; i < size; ++i)
   {
     double currentValue = vecPixels[i];
-    if (currentValue < 1 || currentValue > 3)
+    if (currentValue != InputWater && currentValue != InputUrban && currentValue != InputOther)
     {
       continue;
     }
@@ -376,7 +384,7 @@ double te::urban::calculateUrbanFootprint(short centerPixelValue, const std::vec
     ++allPixelsCount;
 
     //check if the pixel is urban
-    if (currentValue == INPUT_URBAN)
+    if (currentValue == InputUrban)
     {
       ++urbanPixelsCount;
     }
@@ -391,7 +399,7 @@ double te::urban::calculateUrbanFootprint(short centerPixelValue, const std::vec
 
   permUrb = urbanPercentage;
 
-  if (centerPixelValue == INPUT_URBAN)
+  if (centerPixelValue == InputUrban)
   {
     if (urbanPercentage > 0.5)
     {
@@ -441,29 +449,32 @@ double te::urban::calculateUrbanOpenArea(short centerPixelValue, const std::vect
   return newPixel;
 }
 
-bool te::urban::calculateEdge(te::rst::Raster* raster, size_t column, size_t line)
+bool te::urban::calculateEdge(te::rst::Raster* raster, const InputClassesMap& inputClassesMap, size_t column, size_t line)
 {
+  //the script seems to be wrong. double check
+  const short InputUrban = inputClassesMap.find(INPUT_URBAN)->second;
+
   double value = 0;
   raster->getValue((unsigned int)column, (unsigned int)(line - 1), value, 0);
-  if (value != INPUT_OTHER)
+  if (value != InputUrban)
   {
     return true;
   }
 
   raster->getValue((unsigned int)(column - 1), (unsigned int)line, value, 0);
-  if (value != INPUT_OTHER)
+  if (value != InputUrban)
   {
     return true;
   }
 
   raster->getValue((unsigned int)(column + 1), (unsigned int)line, value, 0);
-  if (value != INPUT_OTHER)
+  if (value != InputUrban)
   {
     return true;
   }
 
   raster->getValue((unsigned int)column, (unsigned int)(line + 1), value, 0);
-  if (value != INPUT_OTHER)
+  if (value != InputUrban)
   {
     return true;
   }

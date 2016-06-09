@@ -50,13 +50,15 @@ namespace te
   {
     enum InputUrbanClasses
     {
-      INPUT_NO_DATA = 0, INPUT_WATER = 1, INPUT_URBAN = 2, INPUT_OTHER = 3
+      INPUT_WATER = 1, INPUT_URBAN = 2, INPUT_OTHER = 3
     };
 
     enum OutputUrbanClasses
     {
       OUTPUT_NO_DATA = 0, OUTPUT_URBAN = 1, OUTPUT_SUB_URBAN = 2, OUTPUT_RURAL = 3, OUTPUT_URBANIZED_OS = 4, OUTPUT_SUBURBAN_ZONE_OPEN_AREA = 5, OUTPUT_RURAL_OS = 6, OUTPUT_WATER = 7
     };
+
+    typedef std::map<InputUrbanClasses, short> InputClassesMap;
 
     struct UrbanRasters
     {
@@ -92,15 +94,15 @@ namespace te
     TEGROWTHEXPORT std::vector<short> getAdjacentPixels(te::rst::Raster* raster, std::size_t referenceRow, std::size_t referenceColumn);
 
     //Calculate the urbanized area value based in the value of center pixel and in the value of the adjacent pixels
-    TEGROWTHEXPORT double calculateUrbanizedArea(short centerPixelValue, const std::vector<short>& vecPixels, double& permUrb);
+    TEGROWTHEXPORT double calculateUrbanizedArea(short centerPixelValue, const InputClassesMap& inputClassesMap, const std::vector<short>& vecPixels, double& permUrb);
 
     //Calculate the urban footprint value based in the value of center pixel and in the value of the adjacent pixels
-    TEGROWTHEXPORT double calculateUrbanFootprint(short centerPixelValue, const std::vector<short>& vecPixels, double& permUrb);
+    TEGROWTHEXPORT double calculateUrbanFootprint(short centerPixelValue, const InputClassesMap& inputClassesMap, const std::vector<short>& vecPixels, double& permUrb);
 
     //Calculate the urban open area value based in the value of center pixel and in the value of the adjacent pixels
     TEGROWTHEXPORT double calculateUrbanOpenArea(short centerPixelValue, const std::vector<short>& vecPixels);
 
-    TEGROWTHEXPORT bool calculateEdge(te::rst::Raster* raster, std::size_t column, std::size_t line);
+    TEGROWTHEXPORT bool calculateEdge(te::rst::Raster* raster, const InputClassesMap& inputClassesMap, std::size_t column, std::size_t line);
 
     //this reclassification analyses the entire raster, where the output will be 1 if the pixel is urban and no_data if the pixel is not urban
     TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> filterUrbanPixels(te::rst::Raster* raster);

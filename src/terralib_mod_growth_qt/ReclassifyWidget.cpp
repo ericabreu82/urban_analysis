@@ -38,6 +38,7 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include <boost/lexical_cast.hpp>
 
 //Qt
+#include <QComboBox>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QValidator>
@@ -61,6 +62,7 @@ te::urban::qt::ReclassifyWidget::ReclassifyWidget(QWidget* parent, Qt::WindowFla
   connect(m_ui->m_reclassRemoveImageToolButton, SIGNAL(clicked()), this, SLOT(onReclassRemoveImageToolButtonClicked()));
   connect(m_ui->m_reclassAddVecToolButton, SIGNAL(clicked()), this, SLOT(onReclassAddVecToolButtonClicked()));
   connect(m_ui->m_reclassOutputRepoToolButton, SIGNAL(clicked()), this, SLOT(onReclassOutputRepoToolButtonClicked()));
+  connect(m_ui->m_remapCheckBox, SIGNAL(clicked(bool)), this, SLOT(onRemapCheckBoxClicked(bool)));
 }
 
 te::urban::qt::ReclassifyWidget::~ReclassifyWidget()
@@ -111,6 +113,39 @@ void te::urban::qt::ReclassifyWidget::onReclassOutputRepoToolButtonClicked()
 
     m_ui->m_reclassOutputRepoLineEdit->setText(dirName);
   }
+}
+
+void te::urban::qt::ReclassifyWidget::onRemapCheckBoxClicked(bool flag)
+{
+  if (!m_ui->m_remapCheckBox->isChecked())
+    return;
+
+  m_ui->m_tabWidget->setCurrentIndex(1);
+
+  std::set<double> values;/// MARIO DO IT
+
+  m_ui->m_remapTableWidget->setRowCount(0);
+
+  std::set<double>::iterator it;
+
+  for (it = values.begin(); it != values.end(); ++it)
+  {
+    int newrow = m_ui->m_remapTableWidget->rowCount();
+    m_ui->m_remapTableWidget->insertRow(newrow);
+
+    QTableWidgetItem* itemValue = new QTableWidgetItem(QString::number(*it));
+    itemValue->setFlags(Qt::ItemIsEnabled);
+    m_ui->m_remapTableWidget->setItem(newrow, 0, itemValue);
+
+    QComboBox* cmbBox = new QComboBox(m_ui->m_remapTableWidget);
+    cmbBox->addItem("Other", INPUT_OTHER);
+    cmbBox->addItem("Water", INPUT_WATER);
+    cmbBox->addItem("Urban", INPUT_URBAN);
+    
+    m_ui->m_remapTableWidget->setCellWidget(newrow, 1, cmbBox);
+  }
+
+  m_ui->m_remapTableWidget->resizeColumnToContents(0);
 }
 
 void te::urban::qt::ReclassifyWidget::execute()
@@ -171,7 +206,7 @@ void te::urban::qt::ReclassifyWidget::execute()
     return;
   }
 
-  bool calculateIndexes = m_ui->m_indexesGroupBox->isChecked();
+  bool calculateIndexes = m_ui->m_indexCheckBox->isChecked();
 
   std::string outputPath = m_ui->m_reclassOutputRepoLineEdit->text().toStdString();
   std::string outputPrefix = m_ui->m_reclassOutputNameLineEdit->text().toStdString();
@@ -179,6 +214,17 @@ void te::urban::qt::ReclassifyWidget::execute()
   //add task viewer
   te::qt::widgets::ProgressViewerDialog* dlgViewer = new te::qt::widgets::ProgressViewerDialog(this);
   int dlgViewerId = te::common::ProgressManager::getInstance().addViewer(dlgViewer);
+
+  InputClassesMap inputClassesMap;
+
+  if (m_ui->m_remapCheckBox->isChecked())
+  {
+    // mario do it
+
+    //get values from table
+
+    //remap
+  }
 
   //execute operation
   UrbanRasters urbanRaster_t_n0;
@@ -191,12 +237,12 @@ void te::urban::qt::ReclassifyWidget::execute()
     std::string currentOutputPrefix = outputPrefix + "_t" + boost::lexical_cast<std::string>(i + 1);
 
     urbanRaster_t_n0 = urbanRaster_t_n1;
-    urbanRaster_t_n1 = prepareRaster(inputImgName, radius, outputPath, currentOutputPrefix);
+    urbanRaster_t_n1 = prepareRaster(inputImgName, inputClassesMap, radius, outputPath, currentOutputPrefix);
 
     if (calculateIndexes)
     {
       UrbanIndexes urbanIndexes;
-      calculateUrbanIndexes(inputImgName, radius, urbanIndexes);
+      calculateUrbanIndexes(inputImgName, inputClassesMap, radius, urbanIndexes);
 
       urbanSummary[inputImgName] = urbanIndexes;
     }
@@ -213,7 +259,7 @@ void te::urban::qt::ReclassifyWidget::execute()
 
   if (calculateIndexes)
   {
-    m_ui->m_tableWidget->setRowCount(0);
+    m_ui->m_indexTableWidget->setRowCount(0);
 
     UrbanSummary::iterator itSummary = urbanSummary.begin();
 
@@ -225,26 +271,28 @@ void te::urban::qt::ReclassifyWidget::execute()
       double opennes = ui["openness"];
       double edge = ui["edgeIndex"];
 
-      int newrow = m_ui->m_tableWidget->rowCount();
-      m_ui->m_tableWidget->insertRow(newrow);
+      int newrow = m_ui->m_indexTableWidget->rowCount();
+      m_ui->m_indexTableWidget->insertRow(newrow);
 
       QTableWidgetItem* itemName = new QTableWidgetItem(QString::fromStdString(imageName));
       itemName->setFlags(Qt::ItemIsEnabled);
-      m_ui->m_tableWidget->setItem(newrow, 0, itemName);
+      m_ui->m_indexTableWidget->setItem(newrow, 0, itemName);
 
       QTableWidgetItem* itemOpennes = new QTableWidgetItem(QString::number(opennes));
       itemName->setFlags(Qt::ItemIsEnabled);
-      m_ui->m_tableWidget->setItem(newrow, 1, itemOpennes);
+      m_ui->m_indexTableWidget->setItem(newrow, 1, itemOpennes);
 
       QTableWidgetItem* itemEdge = new QTableWidgetItem(QString::number(edge));
       itemName->setFlags(Qt::ItemIsEnabled);
-      m_ui->m_tableWidget->setItem(newrow, 2, itemEdge);
+      m_ui->m_indexTableWidget->setItem(newrow, 2, itemEdge);
 
       ++itSummary;
     }
 
-    m_ui->m_tableWidget->resizeColumnsToContents();
+    m_ui->m_indexTableWidget->resizeColumnsToContents();
   }
+
+  m_ui->m_tabWidget->setCurrentIndex(0);
 
   te::common::ProgressManager::getInstance().removeViewer(dlgViewerId);
   delete dlgViewer;

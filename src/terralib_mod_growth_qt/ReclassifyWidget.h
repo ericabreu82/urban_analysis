@@ -62,6 +62,8 @@ namespace te
 
           void onReclassOutputRepoToolButtonClicked();
 
+          void onRemapCheckBoxClicked(bool flag);
+
           void execute();
 
         private:
