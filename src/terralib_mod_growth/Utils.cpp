@@ -815,3 +815,34 @@ std::vector<te::gm::Coord2D> te::urban::getRandomCoordSubset(const std::vector<t
 
   return vecSubset;
 }
+
+std::auto_ptr<te::rst::Raster> te::urban::reclassify(te::rst::Raster* inputRaster, const std::map<int, int>& mapValues, int defaultValue)
+{
+  assert(inputRaster);
+
+  std::auto_ptr<te::rst::Raster> outputRaster = cloneRasterIntoMem(inputRaster, false);
+
+  unsigned int numRows = inputRaster->getNumberOfRows();
+  unsigned int numColumns = inputRaster->getNumberOfColumns();
+
+  for (std::size_t currentRow = 0; currentRow < numRows; ++currentRow)
+  {
+    for (std::size_t currentColumn = 0; currentColumn < numColumns; ++currentColumn)
+    {
+      //gets the value of the current center pixel
+      double oldValue = 0;
+      double newValue = defaultValue;
+      inputRaster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, oldValue);
+
+      std::map<int, int>::const_iterator it = mapValues.find((int)oldValue);
+      if (it != mapValues.end())
+      {
+        newValue = (double)it->second;
+      }
+
+      outputRaster->setValue((unsigned int)currentColumn, (unsigned int)currentRow, newValue);
+    }
+  }
+
+  return outputRaster;
+}

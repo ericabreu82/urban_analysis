@@ -32,13 +32,11 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include <terralib/raster/Utils.h>
 
 
-std::auto_ptr<te::rst::Raster> te::urban::classifyUrbanizedArea(const std::string& inputFileName, const InputClassesMap& inputClassesMap, double radius)
+std::auto_ptr<te::rst::Raster> te::urban::classifyUrbanizedArea(te::rst::Raster* inputRaster, const InputClassesMap& inputClassesMap, double radius)
 {
-  std::auto_ptr<te::rst::Raster> inputRaster = openRaster(inputFileName);
-
   assert(inputRaster.get());
 
-  std::auto_ptr<te::rst::Raster> outputRaster = cloneRasterIntoMem(inputRaster.get(), false);
+  std::auto_ptr<te::rst::Raster> outputRaster = cloneRasterIntoMem(inputRaster, false);
 
   assert(outputRaster.get());
 
@@ -77,7 +75,7 @@ std::auto_ptr<te::rst::Raster> te::urban::classifyUrbanizedArea(const std::strin
       else if (centerPixel == InputUrban || centerPixel == InputOther)
       {
         //gets the pixels surrounding pixels that intersects the given radious
-        std::vector<short> vecPixels = getPixelsWithinRadious(inputRaster.get(), currentRow, currentColumn, radius, mask);
+        std::vector<short> vecPixels = getPixelsWithinRadious(inputRaster, currentRow, currentColumn, radius, mask);
 
         double permUrb = 0.;
         value = calculateUrbanizedArea((short)centerPixel, inputClassesMap, vecPixels, permUrb);
@@ -92,13 +90,11 @@ std::auto_ptr<te::rst::Raster> te::urban::classifyUrbanizedArea(const std::strin
   return outputRaster;
 }
 
-std::auto_ptr<te::rst::Raster> te::urban::classifyUrbanFootprint(const std::string& inputFileName, const InputClassesMap& inputClassesMap, double radius)
+std::auto_ptr<te::rst::Raster> te::urban::classifyUrbanFootprint(te::rst::Raster* inputRaster, const InputClassesMap& inputClassesMap, double radius)
 {
-  std::auto_ptr<te::rst::Raster> inputRaster = openRaster(inputFileName);
-
   assert(inputRaster.get());
 
-  std::auto_ptr<te::rst::Raster> outputRaster = cloneRasterIntoMem(inputRaster.get(), false);
+  std::auto_ptr<te::rst::Raster> outputRaster = cloneRasterIntoMem(inputRaster, false);
 
   assert(outputRaster.get());
 
@@ -142,7 +138,7 @@ std::auto_ptr<te::rst::Raster> te::urban::classifyUrbanFootprint(const std::stri
       else if (centerPixel == InputUrban)
       {
         //gets the pixels surrounding pixels that intersects the given radious
-        std::vector<short> vecPixels = getPixelsWithinRadious(inputRaster.get(), currentRow, currentColumn, radius, mask);
+        std::vector<short> vecPixels = getPixelsWithinRadious(inputRaster, currentRow, currentColumn, radius, mask);
 
         double permUrb = 0.;
         value = calculateUrbanFootprint((short)centerPixel, inputClassesMap, vecPixels, permUrb);
@@ -267,11 +263,9 @@ void te::urban::classifyIsolatedOpenPatches(te::rst::Raster* raster)
   addIsolatedOpenPatches(raster, isolatedOpenPatchesRaster.get());
 }
 
-void te::urban::calculateUrbanIndexes(const std::string& inputFileName, const InputClassesMap& inputClassesMap, double radius, UrbanIndexes& urbanIndexes)
+void te::urban::calculateUrbanIndexes(te::rst::Raster* inputRaster, const InputClassesMap& inputClassesMap, double radius, UrbanIndexes& urbanIndexes)
 {
-  std::auto_ptr<te::rst::Raster> inputRaster = openRaster(inputFileName);
-
-  assert(inputRaster.get());
+  assert(inputRaster);
 
   const short InputUrban = inputClassesMap.find(INPUT_URBAN)->second;
   const short InputOther = inputClassesMap.find(INPUT_OTHER)->second;
@@ -309,7 +303,7 @@ void te::urban::calculateUrbanIndexes(const std::string& inputFileName, const In
       }
 
       //gets the pixels surrounding pixels that intersects the given radious
-      std::vector<short> vecPixels = getPixelsWithinRadious(inputRaster.get(), currentRow, currentColumn, radius, mask);
+      std::vector<short> vecPixels = getPixelsWithinRadious(inputRaster, currentRow, currentColumn, radius, mask);
 
       double permUrb = 0.;
       double value = calculateUrbanizedArea((short)centerPixel, inputClassesMap, vecPixels, permUrb);
@@ -321,7 +315,7 @@ void te::urban::calculateUrbanIndexes(const std::string& inputFileName, const In
         sumPerUrb += permUrb;
         ++numPix;
 
-        bool hasEdge = calculateEdge(inputRaster.get(), inputClassesMap, currentColumn, currentRow);
+        bool hasEdge = calculateEdge(inputRaster, inputClassesMap, currentColumn, currentRow);
         if (hasEdge == true)
         {
           ++edgeCount;
@@ -337,8 +331,10 @@ void te::urban::calculateUrbanIndexes(const std::string& inputFileName, const In
   urbanIndexes["edgeIndex"] = edgeIndex;
 }
 
-te::urban::UrbanRasters te::urban::prepareRaster(const std::string& inputFileName, const InputClassesMap& inputClassesMap, double radius, const std::string& outputPath, const std::string& outputPrefix)
+te::urban::UrbanRasters te::urban::prepareRaster(te::rst::Raster* inputRaster, const InputClassesMap& inputClassesMap, double radius, const std::string& outputPath, const std::string& outputPrefix)
 {
+  assert(inputRaster);
+
   //define the prefix to the file names
   std::string urbanizedPrefix = outputPrefix + "_urbanized";
   std::string footprintPrefix = outputPrefix + "_footprint";
@@ -355,11 +351,11 @@ te::urban::UrbanRasters te::urban::prepareRaster(const std::string& inputFileNam
   UrbanRasters urbanRaster;
 
   //step 1 - classify the urbanized areas
-  urbanRaster .m_urbanizedAreaRaster = classifyUrbanizedArea(inputFileName, inputClassesMap, radius);
+  urbanRaster .m_urbanizedAreaRaster = classifyUrbanizedArea(inputRaster, inputClassesMap, radius);
   saveRaster(urbanizedAreaFileName, urbanRaster.m_urbanizedAreaRaster.get());
 
   //step 2 - classify the urban footprints
-  urbanRaster.m_urbanFootprintRaster = classifyUrbanFootprint(inputFileName, inputClassesMap, radius);
+  urbanRaster.m_urbanFootprintRaster = classifyUrbanFootprint(inputRaster, inputClassesMap, radius);
   saveRaster(urbanFootprintsFileName, urbanRaster.m_urbanFootprintRaster.get());
 
   //step 3 - classify fringe open areas

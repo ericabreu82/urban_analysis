@@ -226,6 +226,9 @@ void te::urban::qt::ReclassifyWidget::execute()
     //remap
   }
 
+  int defaultValue = 0;
+  std::map<int, int> mapValues;
+
   //execute operation
   UrbanRasters urbanRaster_t_n0;
   UrbanRasters urbanRaster_t_n1;
@@ -233,18 +236,21 @@ void te::urban::qt::ReclassifyWidget::execute()
 
   for (int i = 0; i < m_ui->m_imgFilesListWidget->count(); ++i)
   {
-    std::string inputImgName = m_ui->m_imgFilesListWidget->item(i)->text().toStdString();
+    std::string inputFileName = m_ui->m_imgFilesListWidget->item(i)->text().toStdString();
     std::string currentOutputPrefix = outputPrefix + "_t" + boost::lexical_cast<std::string>(i + 1);
 
+    std::auto_ptr<te::rst::Raster> inputRaster = openRaster(inputFileName);
+    std::auto_ptr<te::rst::Raster> normalizedInputRaster = reclassify(inputRaster.get(), mapValues, defaultValue);
+
     urbanRaster_t_n0 = urbanRaster_t_n1;
-    urbanRaster_t_n1 = prepareRaster(inputImgName, inputClassesMap, radius, outputPath, currentOutputPrefix);
+    urbanRaster_t_n1 = prepareRaster(normalizedInputRaster.get(), inputClassesMap, radius, outputPath, currentOutputPrefix);
 
     if (calculateIndexes)
     {
       UrbanIndexes urbanIndexes;
-      calculateUrbanIndexes(inputImgName, inputClassesMap, radius, urbanIndexes);
+      calculateUrbanIndexes(normalizedInputRaster.get(), inputClassesMap, radius, urbanIndexes);
 
-      urbanSummary[inputImgName] = urbanIndexes;
+      urbanSummary[inputFileName] = urbanIndexes;
     }
 
     if (i > 0)

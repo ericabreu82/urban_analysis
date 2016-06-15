@@ -130,6 +130,8 @@ namespace te
     //Gets a random subset of the given coordinate vector 
     TEGROWTHEXPORT std::vector<te::gm::Coord2D> getRandomCoordSubset(const std::vector<te::gm::Coord2D>& vecUrbanCoords, std::size_t subsetSize);
 
+    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> reclassify(te::rst::Raster* inputRaster, const std::map<int, int>& mapValues, int defaultValue);
+
   }
 }
 
