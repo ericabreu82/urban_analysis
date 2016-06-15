@@ -34,7 +34,7 @@ TerraLib Team at <terralib-team@terralib.org>.
 
 std::auto_ptr<te::rst::Raster> te::urban::classifyUrbanizedArea(te::rst::Raster* inputRaster, const InputClassesMap& inputClassesMap, double radius)
 {
-  assert(inputRaster.get());
+  assert(inputRaster);
 
   std::auto_ptr<te::rst::Raster> outputRaster = cloneRasterIntoMem(inputRaster, false);
 
@@ -92,7 +92,7 @@ std::auto_ptr<te::rst::Raster> te::urban::classifyUrbanizedArea(te::rst::Raster*
 
 std::auto_ptr<te::rst::Raster> te::urban::classifyUrbanFootprint(te::rst::Raster* inputRaster, const InputClassesMap& inputClassesMap, double radius)
 {
-  assert(inputRaster.get());
+  assert(inputRaster);
 
   std::auto_ptr<te::rst::Raster> outputRaster = cloneRasterIntoMem(inputRaster, false);
 

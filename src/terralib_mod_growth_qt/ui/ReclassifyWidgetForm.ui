@@ -350,6 +350,11 @@
            </column>
            <column>
             <property name="text">
+             <string>Class Count (pixels)</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
              <string>Class Name</string>
             </property>
            </column>

@@ -30,6 +30,7 @@ TerraLib Team at <terralib-team@terralib.org>.
 
 //Terralib
 #include <terralib/common/progress/ProgressManager.h>
+#include <terralib/raster/Band.h>
 #include <terralib/qt/widgets/progress/ProgressViewerDialog.h>
 #include <terralib/qt/widgets/Utils.h>
 
@@ -122,27 +123,40 @@ void te::urban::qt::ReclassifyWidget::onRemapCheckBoxClicked(bool flag)
 
   m_ui->m_tabWidget->setCurrentIndex(1);
 
-  std::set<double> values;/// MARIO DO IT
+  std::map<double, unsigned int> values;
+
+  if (m_ui->m_imgFilesListWidget->count() != 0)
+  {
+    std::string inputFileName = m_ui->m_imgFilesListWidget->item(0)->text().toStdString();
+    std::auto_ptr<te::rst::Raster> inputRaster = openRaster(inputFileName);
+
+    values = inputRaster->getBand(0)->getHistogramR();
+  }
 
   m_ui->m_remapTableWidget->setRowCount(0);
 
-  std::set<double>::iterator it;
+  std::map<double, unsigned int>::iterator it;
 
   for (it = values.begin(); it != values.end(); ++it)
   {
     int newrow = m_ui->m_remapTableWidget->rowCount();
     m_ui->m_remapTableWidget->insertRow(newrow);
 
-    QTableWidgetItem* itemValue = new QTableWidgetItem(QString::number(*it));
+    QTableWidgetItem* itemValue = new QTableWidgetItem(QString::number(it->first));
     itemValue->setFlags(Qt::ItemIsEnabled);
     m_ui->m_remapTableWidget->setItem(newrow, 0, itemValue);
 
+    QTableWidgetItem* itemCount = new QTableWidgetItem(QString("%L1").arg(it->second));
+    itemCount->setFlags(Qt::ItemIsEnabled);
+    m_ui->m_remapTableWidget->setItem(newrow, 1, itemCount);
+
     QComboBox* cmbBox = new QComboBox(m_ui->m_remapTableWidget);
+    cmbBox->addItem("No Data", INPUT_NODATA);
     cmbBox->addItem("Other", INPUT_OTHER);
     cmbBox->addItem("Water", INPUT_WATER);
     cmbBox->addItem("Urban", INPUT_URBAN);
     
-    m_ui->m_remapTableWidget->setCellWidget(newrow, 1, cmbBox);
+    m_ui->m_remapTableWidget->setCellWidget(newrow, 2, cmbBox);
   }
 
   m_ui->m_remapTableWidget->resizeColumnToContents(0);
@@ -215,24 +229,30 @@ void te::urban::qt::ReclassifyWidget::execute()
   te::qt::widgets::ProgressViewerDialog* dlgViewer = new te::qt::widgets::ProgressViewerDialog(this);
   int dlgViewerId = te::common::ProgressManager::getInstance().addViewer(dlgViewer);
 
-  InputClassesMap inputClassesMap;
+  int defaultValue = 0;
+  std::map<int, int> mapValues;
 
   if (m_ui->m_remapCheckBox->isChecked())
   {
-    // mario do it
+    int nRows = m_ui->m_remapTableWidget->rowCount();
 
-    //get values from table
+    for (int i = 0; i < nRows; ++i)
+    {
+      int pixelValue = m_ui->m_remapTableWidget->item(i, 0)->text().toInt();
 
-    //remap
+      QComboBox* cmbBox = dynamic_cast<QComboBox*>(m_ui->m_remapTableWidget->cellWidget(i, 2));
+      int inputClassValue = cmbBox->currentData().toInt();
+
+      mapValues[pixelValue] = inputClassValue;
+    }
   }
-
-  int defaultValue = 0;
-  std::map<int, int> mapValues;
 
   //execute operation
   UrbanRasters urbanRaster_t_n0;
   UrbanRasters urbanRaster_t_n1;
   UrbanSummary urbanSummary;
+
+  InputClassesMap inputClassesMap;
 
   for (int i = 0; i < m_ui->m_imgFilesListWidget->count(); ++i)
   {
@@ -240,15 +260,19 @@ void te::urban::qt::ReclassifyWidget::execute()
     std::string currentOutputPrefix = outputPrefix + "_t" + boost::lexical_cast<std::string>(i + 1);
 
     std::auto_ptr<te::rst::Raster> inputRaster = openRaster(inputFileName);
-    std::auto_ptr<te::rst::Raster> normalizedInputRaster = reclassify(inputRaster.get(), mapValues, defaultValue);
+
+    if (m_ui->m_remapCheckBox->isChecked())
+    {
+      inputRaster = reclassify(inputRaster.get(), mapValues, defaultValue);
+    }
 
     urbanRaster_t_n0 = urbanRaster_t_n1;
-    urbanRaster_t_n1 = prepareRaster(normalizedInputRaster.get(), inputClassesMap, radius, outputPath, currentOutputPrefix);
+    urbanRaster_t_n1 = prepareRaster(inputRaster.get(), inputClassesMap, radius, outputPath, currentOutputPrefix);
 
     if (calculateIndexes)
     {
       UrbanIndexes urbanIndexes;
-      calculateUrbanIndexes(normalizedInputRaster.get(), inputClassesMap, radius, urbanIndexes);
+      calculateUrbanIndexes(inputRaster.get(), inputClassesMap, radius, urbanIndexes);
 
       urbanSummary[inputFileName] = urbanIndexes;
     }

@@ -50,7 +50,7 @@ namespace te
   {
     enum InputUrbanClasses
     {
-      INPUT_WATER = 1, INPUT_URBAN = 2, INPUT_OTHER = 3
+      INPUT_NODATA = 0, INPUT_WATER = 1, INPUT_URBAN = 2, INPUT_OTHER = 3
     };
 
     enum OutputUrbanClasses
