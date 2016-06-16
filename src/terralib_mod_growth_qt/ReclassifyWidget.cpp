@@ -32,6 +32,7 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include <terralib/common/progress/ProgressManager.h>
 #include <terralib/raster/Band.h>
 #include <terralib/qt/widgets/progress/ProgressViewerDialog.h>
+#include <terralib/qt/widgets/utils/ScopedCursor.h>
 #include <terralib/qt/widgets/Utils.h>
 
 
@@ -118,6 +119,8 @@ void te::urban::qt::ReclassifyWidget::onReclassOutputRepoToolButtonClicked()
 
 void te::urban::qt::ReclassifyWidget::onRemapCheckBoxClicked(bool flag)
 {
+  te::qt::widgets::ScopedCursor c(Qt::WaitCursor);
+
   if (!m_ui->m_remapCheckBox->isChecked())
     return;
 

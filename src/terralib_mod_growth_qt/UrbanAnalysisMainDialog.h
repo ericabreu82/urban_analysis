@@ -68,6 +68,8 @@ namespace te
 
           void onSprawlMetricsToolButtonClicked();
 
+          void onRemapClassToolButtonClicked();
+
         private:
 
           std::auto_ptr<Ui::UrbanAnalysisMainDialogForm> m_ui;
