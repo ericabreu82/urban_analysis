@@ -256,6 +256,10 @@ void te::urban::qt::ReclassifyWidget::execute()
   UrbanSummary urbanSummary;
 
   InputClassesMap inputClassesMap;
+  inputClassesMap[INPUT_NODATA] = INPUT_NODATA;
+  inputClassesMap[INPUT_WATER] = INPUT_WATER;
+  inputClassesMap[INPUT_URBAN] = INPUT_URBAN;
+  inputClassesMap[INPUT_OTHER] = INPUT_OTHER;
 
   for (int i = 0; i < m_ui->m_imgFilesListWidget->count(); ++i)
   {
