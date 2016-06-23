@@ -28,10 +28,14 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include <terralib/common.h>
 #include <terralib/common/TerraLib.h>
 #include <terralib/core/utils/Platform.h>
+#include <terralib/dataaccess/datasource/DataSourceFactory.h>
 #include <terralib/geometry/Coord2D.h>
+#include <terralib/geometry/GeometryProperty.h>
 #include <terralib/geometry/Point.h>
 #include <terralib/geometry/Polygon.h>
 #include <terralib/memory/CachedRaster.h>
+#include <terralib/memory/DataSet.h>
+#include <terralib/memory/DataSetItem.h>
 #include <terralib/plugin.h>
 #include <terralib/raster/Raster.h>
 #include <terralib/raster/RasterFactory.h>
@@ -86,7 +90,9 @@ std::auto_ptr<te::rst::Raster> te::urban::cloneRasterIntoMem(te::rst::Raster* ra
   for (size_t t = 0; t < raster->getNumberOfBands(); ++t)
   {
     te::rst::Band* band = raster->getBand(t);
-    te::rst::BandProperty* bp = new te::rst::BandProperty(t, band->getProperty()->getType(), "");
+
+    te::rst::BandProperty* bp = new te::rst::BandProperty(*band->getProperty());
+    
     bprops.push_back(bp);
   }
 
@@ -142,10 +148,37 @@ std::auto_ptr<te::rst::Raster> te::urban::createRaster(const std::string& fileNa
   return createdRasterPtr;
 }
 
+std::auto_ptr<te::da::DataSource> te::urban::createDataSourceOGR(const std::string& fileName)
+{
+  std::map<std::string, std::string> connInfo;
+  connInfo["URI"] = fileName;
+
+  std::auto_ptr<te::da::DataSource> dsOGR = te::da::DataSourceFactory::make("OGR");
+  dsOGR->setConnectionInfo(connInfo);
+  dsOGR->open();
+
+  return dsOGR;
+}
+
 void te::urban::saveRaster(const std::string& fileName, te::rst::Raster* raster)
 {
   std::auto_ptr<te::rst::Raster> outputRaster = createRaster(fileName, raster);
   te::rst::Copy(*raster, *outputRaster);
+}
+
+void te::urban::saveVector(const std::string& fileName, const std::string& filePath, const std::vector<te::gm::Geometry*>& vecGeometries, const int& srid)
+{
+  //create datasource
+  std::auto_ptr<te::da::DataSource> ds = createDataSourceOGR(filePath);
+
+  //create dataSetType
+  std::auto_ptr<te::da::DataSetType> dsType = createDataSetType(fileName, srid);
+
+  //create dataSet
+  std::auto_ptr<te::mem::DataSet> dsMem = createDataSet(dsType.get(), vecGeometries);
+
+  //save dataSet
+  saveDataSet(dsMem.get(), dsType.get(), ds.get(), fileName);
 }
 
 boost::numeric::ublas::matrix<bool> te::urban::createRadiusMask(double resolution, double radius)
@@ -846,4 +879,58 @@ std::auto_ptr<te::rst::Raster> te::urban::reclassify(te::rst::Raster* inputRaste
   }
 
   return outputRaster;
+}
+
+std::auto_ptr<te::da::DataSetType> te::urban::createDataSetType(std::string dataSetName, int srid)
+{
+  std::auto_ptr<te::da::DataSetType> dsType(new te::da::DataSetType(dataSetName));
+
+  //create id property
+  te::dt::SimpleProperty* idProperty = new te::dt::SimpleProperty("id", te::dt::INT32_TYPE);
+  dsType->add(idProperty);
+
+  //create geometry property
+  te::gm::GeometryProperty* geomProperty = new te::gm::GeometryProperty("geom", srid, te::gm::PolygonType);
+  dsType->add(geomProperty);
+
+  //create primary key
+  std::string pkName = "pk_id";
+  pkName += "_" + dataSetName;
+  te::da::PrimaryKey* pk = new te::da::PrimaryKey(pkName, dsType.get());
+  pk->add(idProperty);
+
+  return dsType;
+}
+
+std::auto_ptr<te::mem::DataSet> te::urban::createDataSet(te::da::DataSetType* dsType, const std::vector<te::gm::Geometry*>& geoms)
+{
+  std::auto_ptr<te::mem::DataSet> ds(new te::mem::DataSet(dsType));
+
+  for (std::size_t t = 0; t < geoms.size(); ++t)
+  {
+    //create dataset item
+    te::mem::DataSetItem* item = new te::mem::DataSetItem(ds.get());
+
+    //set id
+    item->setInt32("id", (int)t);
+
+    //set geometry
+    item->setGeometry("geom", (te::gm::Geometry*)geoms[t]->clone());
+
+    ds->add(item);
+  }
+
+  return ds;
+}
+
+void te::urban::saveDataSet(te::mem::DataSet* dataSet, te::da::DataSetType* dsType, te::da::DataSource* ds, std::string dataSetName)
+{
+  //save dataset
+  dataSet->moveBeforeFirst();
+
+  std::map<std::string, std::string> options;
+
+  ds->createDataSet(dsType, options);
+
+  ds->add(dataSetName, dataSet, options);
 }

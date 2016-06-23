@@ -28,6 +28,7 @@ TerraLib Team at <terralib-team@terralib.org>.
 
 #include "Config.h"
 
+#include <terralib/dataaccess/datasource/DataSource.h>
 #include <terralib/raster/Raster.h>
 
 #include <boost/numeric/ublas/matrix.hpp>
@@ -40,10 +41,20 @@ TerraLib Team at <terralib-team@terralib.org>.
 
 namespace te
 {
+  namespace da
+  {
+    class DataSetType;
+  }
+
   namespace gm
   {
     struct Coord2D;
     class Geometry;
+  }
+
+  namespace mem
+  {
+    class DataSet;
   }
 
   namespace urban
@@ -82,8 +93,12 @@ namespace te
     TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> cloneRasterIntoMem(te::rst::Raster* raster, bool copyData);
 
     TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> createRaster(const std::string& fileName, te::rst::Raster* raster);
+    
+    TEGROWTHEXPORT std::auto_ptr<te::da::DataSource> createDataSourceOGR(const std::string& fileName);
 
     TEGROWTHEXPORT void saveRaster(const std::string& fileName, te::rst::Raster* raster);
+
+    TEGROWTHEXPORT void saveVector(const std::string& fileName, const std::string& filePath, const std::vector<te::gm::Geometry*>& vecGeometries, const int& srid);
 
     TEGROWTHEXPORT boost::numeric::ublas::matrix<bool> createRadiusMask(double resolution, double radius);
 
@@ -131,6 +146,15 @@ namespace te
     TEGROWTHEXPORT std::vector<te::gm::Coord2D> getRandomCoordSubset(const std::vector<te::gm::Coord2D>& vecUrbanCoords, std::size_t subsetSize);
 
     TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> reclassify(te::rst::Raster* inputRaster, const std::map<int, int>& mapValues, int defaultValue);
+
+    /*! Function used to create the output dataset type */
+    TEGROWTHEXPORT std::auto_ptr<te::da::DataSetType> createDataSetType(std::string dataSetName, int srid);
+
+    /*! Function used to create the output data */
+    TEGROWTHEXPORT std::auto_ptr<te::mem::DataSet> createDataSet(te::da::DataSetType* dsType, const std::vector<te::gm::Geometry*>& geoms);
+
+    /*! Function used to save the output dataset */
+    TEGROWTHEXPORT void saveDataSet(te::mem::DataSet* dataSet, te::da::DataSetType* dsType, te::da::DataSource* ds, std::string dataSetName);
 
   }
 }

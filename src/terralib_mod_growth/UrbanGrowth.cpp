@@ -28,6 +28,7 @@ TerraLib Team at <terralib-team@terralib.org>.
 
 //Terralib
 #include <terralib/common/progress/TaskProgress.h>
+#include <terralib/common/STLUtils.h>
 #include <terralib/raster/Raster.h>
 #include <terralib/raster/Utils.h>
 
@@ -194,22 +195,41 @@ void te::urban::classifyUrbanOpenArea(te::rst::Raster* urbanFootprintRaster, dou
   }
 }
 
-std::auto_ptr<te::rst::Raster> te::urban::identifyIsolatedOpenPatches(te::rst::Raster* raster)
+std::auto_ptr<te::rst::Raster> te::urban::identifyIsolatedOpenPatches(te::rst::Raster* raster, const std::string& outputPath, const std::string& outputPrefix)
 {
   //we first need to create a binary image containing only the urban pixels
   std::auto_ptr<te::rst::Raster> binaryUrbanRaster = filterUrbanPixels(raster);
+  std::string binaryFilePath = outputPath + "/" + outputPrefix + "_binary.tif";
+  saveRaster(binaryFilePath, binaryUrbanRaster.get());
 
   //then we vectorize the result
   std::vector<te::gm::Geometry*> vecGeometries;
   binaryUrbanRaster->vectorize(vecGeometries, 0);
 
+  //export
+  std::string vectorizedFileName = outputPrefix + "_vectorized";
+  std::string vectorizedFilePath = outputPath + "/" + outputPrefix + "_vectorized.shp";
+  saveVector(vectorizedFileName, vectorizedFilePath, vecGeometries, raster->getSRID());
+
   te::rst::FillRaster(binaryUrbanRaster.get(), 0.);
 
   std::vector<te::gm::Geometry*> vecGaps = getGaps(vecGeometries, 200.);
 
+  te::common::FreeContents(vecGeometries);
+
+  //export
+  if (!vecGaps.empty())
+  {
+    std::string vectorizedGapsFileName = outputPrefix + "_gaps";
+    std::string vectorizedGapsFilePath = outputPath + "/" + outputPrefix + "_gaps.shp";
+    saveVector(vectorizedGapsFileName, vectorizedGapsFilePath, vecGaps, raster->getSRID());
+  }
+
   std::vector<double> vecClass;
   vecClass.resize(vecGaps.size(), 1.);
   binaryUrbanRaster->rasterize(vecGaps, vecClass);
+
+  te::common::FreeContents(vecGaps);
 
   return binaryUrbanRaster;
 }
@@ -256,9 +276,9 @@ void te::urban::addIsolatedOpenPatches(te::rst::Raster* urbanRaster, te::rst::Ra
   }
 }
 
-void te::urban::classifyIsolatedOpenPatches(te::rst::Raster* raster)
+void te::urban::classifyIsolatedOpenPatches(te::rst::Raster* raster, const std::string& outputPath, const std::string& outputPrefix)
 {
-  std::auto_ptr<te::rst::Raster> isolatedOpenPatchesRaster = identifyIsolatedOpenPatches(raster);
+  std::auto_ptr<te::rst::Raster> isolatedOpenPatchesRaster = identifyIsolatedOpenPatches(raster, outputPath, outputPrefix);
 
   addIsolatedOpenPatches(raster, isolatedOpenPatchesRaster.get());
 }
@@ -363,8 +383,8 @@ te::urban::UrbanRasters te::urban::prepareRaster(te::rst::Raster* inputRaster, c
   saveRaster(urbanFootprintsOpenAreaFileName, urbanRaster.m_urbanFootprintRaster.get());
 
   //step 4 and 5- identify isolated patches and classify them into the given raster
-  classifyIsolatedOpenPatches(urbanRaster.m_urbanizedAreaRaster.get());
-  classifyIsolatedOpenPatches(urbanRaster.m_urbanFootprintRaster.get());
+  classifyIsolatedOpenPatches(urbanRaster.m_urbanizedAreaRaster.get(), outputPath, urbanizedPrefix);
+  classifyIsolatedOpenPatches(urbanRaster.m_urbanFootprintRaster.get(), outputPath, footprintPrefix);
 
   saveRaster(urbanizedIsolatedOpenPatchesFileName, urbanRaster.m_urbanizedAreaRaster.get());
   saveRaster(urbanFootprintsIsolatedOpenPatchesFileName, urbanRaster.m_urbanFootprintRaster.get());

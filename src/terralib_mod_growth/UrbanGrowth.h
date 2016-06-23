@@ -55,13 +55,13 @@ namespace te
     TEGROWTHEXPORT void classifyUrbanOpenArea(te::rst::Raster* urbanFootprintRaster, double radius);
 
     //step 4 - this reclassification analyses the entire raster and returns a binary image containing the areas lower than 100 hectares that are completely sorrounded by urban areas
-    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> identifyIsolatedOpenPatches(te::rst::Raster* raster);
+    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> identifyIsolatedOpenPatches(te::rst::Raster* raster, const std::string& outputPath, const std::string& outputPrefix);
     
     //step 5 - add isoleted patches to map
     TEGROWTHEXPORT void addIsolatedOpenPatches(te::rst::Raster* urbanRaster, te::rst::Raster* isolatedOpenPatchesRaster);
 
     //steps 4 and 5
-    TEGROWTHEXPORT void classifyIsolatedOpenPatches(te::rst::Raster* raster);
+    TEGROWTHEXPORT void classifyIsolatedOpenPatches(te::rst::Raster* raster, const std::string& outputPath, const std::string& outputPrefix);
 
     //the indexes calculation only considers the study area
     TEGROWTHEXPORT void calculateUrbanIndexes(te::rst::Raster* inputRaster, const InputClassesMap& inputClassesMap, double radius, UrbanIndexes& urbanIndexes);
