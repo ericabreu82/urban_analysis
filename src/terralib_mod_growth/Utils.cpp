@@ -27,6 +27,7 @@ TerraLib Team at <terralib-team@terralib.org>.
 
 #include <terralib/common.h>
 #include <terralib/common/TerraLib.h>
+#include <terralib/core/utils/Platform.h>
 #include <terralib/geometry/Coord2D.h>
 #include <terralib/geometry/Point.h>
 #include <terralib/geometry/Polygon.h>
@@ -47,7 +48,7 @@ void te::urban::init()
 
   te::plugin::PluginInfo* info;
 
-  std::string plugins_path = te::common::FindInTerraLibPath("share/terralib/plugins");
+  std::string plugins_path = te::core::FindInTerraLibPath("share/terralib/plugins");
 
 #ifdef TERRALIB_MOD_OGR_ENABLED
   info = te::plugin::GetInstalledPlugin(plugins_path + "/te.da.ogr.teplg");
@@ -152,7 +153,8 @@ boost::numeric::ublas::matrix<bool> te::urban::createRadiusMask(double resolutio
   int  radiusInPixels = te::rst::Round(radius / resolution);
   int range = (radiusInPixels * 2) + 1;
 
-  te::gm::Coord2D referenceCoord((radiusInPixels + 1) * resolution, (radiusInPixels + 1) * resolution);
+  //te::gm::Coord2D referenceCoord((radiusInPixels + 1) * resolution, (radiusInPixels + 1) * resolution);
+  te::gm::Coord2D referenceCoord(radiusInPixels * resolution, radiusInPixels * resolution);
 
   boost::numeric::ublas::matrix<bool> mask(range, range);
 
@@ -173,7 +175,6 @@ boost::numeric::ublas::matrix<bool> te::urban::createRadiusMask(double resolutio
       mask(localRow, localColumn) = maskOn;
     }
   }
-
   return mask;
 }
 
