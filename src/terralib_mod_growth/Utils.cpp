@@ -42,6 +42,7 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include <terralib/raster/RasterSummary.h>
 #include <terralib/raster/RasterSummaryManager.h>
 #include <terralib/raster/Utils.h>
+#include <terralib/vp/Utils.h>
 
 #include <cstdlib>
 
@@ -564,7 +565,7 @@ std::auto_ptr<te::rst::Raster> te::urban::filterUrbanPixels(te::rst::Raster* ras
 
 std::vector<te::gm::Geometry*> te::urban::getGaps(const std::vector<te::gm::Geometry*>& vecInput, double area)
 {
-  std::vector<te::gm::Geometry*> vecOutput;
+  std::vector<te::gm::Geometry*> vecGaps;
 
   //for all the geometries inside the vector
   for (std::size_t i = 0; i < vecInput.size(); ++i)
@@ -595,7 +596,7 @@ std::vector<te::gm::Geometry*> te::urban::getGaps(const std::vector<te::gm::Geom
 
       if (newPolArea < area)
       {
-        vecOutput.push_back(newPolygon);
+        vecGaps.push_back(newPolygon);
       }
       else
       {
@@ -603,6 +604,11 @@ std::vector<te::gm::Geometry*> te::urban::getGaps(const std::vector<te::gm::Geom
       }
     }
   }
+
+  std::auto_ptr<te::gm::Geometry> geomUnion = te::vp::GetGeometryUnion(vecGaps);
+
+  std::vector<te::gm::Geometry*> vecOutput;
+  te::gm::Multi2Single(geomUnion.get(), vecOutput);
 
   return vecOutput;
 }
