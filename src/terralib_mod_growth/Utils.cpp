@@ -934,3 +934,27 @@ void te::urban::saveDataSet(te::mem::DataSet* dataSet, te::da::DataSetType* dsTy
 
   ds->add(dataSetName, dataSet, options);
 }
+
+std::vector<te::gm::Geometry*> te::urban::fixGeometries(const std::vector<te::gm::Geometry*>& vecGeometries)
+{
+  std::vector<te::gm::Geometry*> result;
+
+  for (std::size_t t = 0; t < vecGeometries.size(); ++t)
+  {
+    if (vecGeometries[t]->isValid())
+    {
+      result.push_back((te::gm::Geometry*)vecGeometries[t]->clone());
+    }
+    else
+    {
+      //magic
+      te::gm::Geometry* geom = vecGeometries[t];
+
+      te::gm::Geometry*geomBuffer = geom->buffer(0.0);
+
+      result.push_back(geomBuffer);
+    }
+  }
+
+  return result;
+}

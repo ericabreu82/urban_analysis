@@ -206,16 +206,19 @@ std::auto_ptr<te::rst::Raster> te::urban::identifyIsolatedOpenPatches(te::rst::R
   std::vector<te::gm::Geometry*> vecGeometries;
   binaryUrbanRaster->vectorize(vecGeometries, 0);
 
+  std::vector<te::gm::Geometry*> fixedVecGeometries = te::urban::fixGeometries(vecGeometries);
+
   //export
   std::string vectorizedFileName = outputPrefix + "_vectorized";
   std::string vectorizedFilePath = outputPath + "/" + outputPrefix + "_vectorized.shp";
-  saveVector(vectorizedFileName, vectorizedFilePath, vecGeometries, raster->getSRID());
+  saveVector(vectorizedFileName, vectorizedFilePath, fixedVecGeometries, raster->getSRID());
 
   te::rst::FillRaster(binaryUrbanRaster.get(), 0.);
 
-  std::vector<te::gm::Geometry*> vecGaps = getGaps(vecGeometries, 200.);
+  std::vector<te::gm::Geometry*> vecGaps = getGaps(fixedVecGeometries, 200.);
 
   te::common::FreeContents(vecGeometries);
+  te::common::FreeContents(fixedVecGeometries);
 
   //export
   if (!vecGaps.empty())

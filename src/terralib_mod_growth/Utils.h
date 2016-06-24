@@ -156,6 +156,8 @@ namespace te
     /*! Function used to save the output dataset */
     TEGROWTHEXPORT void saveDataSet(te::mem::DataSet* dataSet, te::da::DataSetType* dsType, te::da::DataSource* ds, std::string dataSetName);
 
+    TEGROWTHEXPORT std::vector<te::gm::Geometry*> fixGeometries(const std::vector<te::gm::Geometry*>& vecGeometries);
+
   }
 }
 
