@@ -264,7 +264,7 @@ void te::urban::qt::ReclassifyWidget::execute()
   for (int i = 0; i < m_ui->m_imgFilesListWidget->count(); ++i)
   {
     std::string inputFileName = m_ui->m_imgFilesListWidget->item(i)->text().toStdString();
-    std::string currentOutputPrefix = outputPrefix + "_t" + boost::lexical_cast<std::string>(i + 1);
+    std::string currentOutputPrefix = outputPrefix + "_t" + boost::lexical_cast<std::string>(i);
 
     std::auto_ptr<te::rst::Raster> inputRaster = openRaster(inputFileName);
 

@@ -92,6 +92,10 @@ std::auto_ptr<te::rst::Raster> te::urban::cloneRasterIntoMem(te::rst::Raster* ra
     te::rst::Band* band = raster->getBand(t);
 
     te::rst::BandProperty* bp = new te::rst::BandProperty(*band->getProperty());
+    if (bp->m_noDataValue == std::numeric_limits<double>::max())
+    {
+      bp->m_noDataValue = 0;
+    }
     
     bprops.push_back(bp);
   }
