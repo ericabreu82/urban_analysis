@@ -565,7 +565,7 @@ std::auto_ptr<te::rst::Raster> te::urban::filterUrbanPixels(te::rst::Raster* ras
 
 std::vector<te::gm::Geometry*> te::urban::getGaps(const std::vector<te::gm::Geometry*>& vecInput, double area)
 {
-  std::vector<te::gm::Geometry*> vecGaps;
+  std::vector<te::gm::Geometry*> vecOutput;
 
   //for all the geometries inside the vector
   for (std::size_t i = 0; i < vecInput.size(); ++i)
@@ -596,7 +596,7 @@ std::vector<te::gm::Geometry*> te::urban::getGaps(const std::vector<te::gm::Geom
 
       if (newPolArea < area)
       {
-        vecGaps.push_back(newPolygon);
+        vecOutput.push_back(newPolygon);
       }
       else
       {
@@ -604,11 +604,6 @@ std::vector<te::gm::Geometry*> te::urban::getGaps(const std::vector<te::gm::Geom
       }
     }
   }
-
-  std::auto_ptr<te::gm::Geometry> geomUnion = te::vp::GetGeometryUnion(vecGaps);
-
-  std::vector<te::gm::Geometry*> vecOutput;
-  te::gm::Multi2Single(geomUnion.get(), vecOutput);
 
   return vecOutput;
 }
@@ -950,18 +945,27 @@ void te::urban::saveDataSet(te::mem::DataSet* dataSet, te::da::DataSetType* dsTy
 
 std::vector<te::gm::Geometry*> te::urban::fixGeometries(const std::vector<te::gm::Geometry*>& vecGeometries)
 {
-  std::vector<te::gm::Geometry*> result;
+  std::auto_ptr<te::gm::Geometry> geomUnion = te::vp::GetGeometryUnion(vecGeometries);
 
-  for (std::size_t t = 0; t < vecGeometries.size(); ++t)
+  std::vector<te::gm::Geometry*> vecOutput;
+  te::gm::Multi2Single(geomUnion.get(), vecOutput);
+
+  std::vector<te::gm::Geometry*> result;
+  for (std::size_t t = 0; t < vecOutput.size(); ++t)
   {
-    if (vecGeometries[t]->isValid())
+    if (vecOutput[t]->getGeomTypeId() == te::gm::PolygonType)
     {
-      result.push_back((te::gm::Geometry*)vecGeometries[t]->clone());
+        int a = 0;
+    }
+
+    if (vecOutput[t]->isValid())
+    {
+      result.push_back((te::gm::Geometry*)vecOutput[t]->clone());
     }
     else
     {
       //magic
-      te::gm::Geometry* geom = vecGeometries[t];
+      te::gm::Geometry* geom = vecOutput[t];
 
       te::gm::Geometry*geomBuffer = geom->buffer(0.0);
 
