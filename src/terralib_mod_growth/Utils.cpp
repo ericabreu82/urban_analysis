@@ -30,6 +30,8 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include <terralib/core/utils/Platform.h>
 #include <terralib/dataaccess/datasource/DataSourceFactory.h>
 #include <terralib/geometry/Coord2D.h>
+#include <terralib/geometry/Geometry.h>
+#include <terralib/geometry/GeometryCollection.h>
 #include <terralib/geometry/GeometryProperty.h>
 #include <terralib/geometry/Point.h>
 #include <terralib/geometry/Polygon.h>
@@ -565,12 +567,15 @@ std::auto_ptr<te::rst::Raster> te::urban::filterUrbanPixels(te::rst::Raster* ras
 
 std::vector<te::gm::Geometry*> te::urban::getGaps(const std::vector<te::gm::Geometry*>& vecInput, double area)
 {
-  std::vector<te::gm::Geometry*> vecOutput;
+  std::auto_ptr<te::gm::GeometryCollection> inputCollection(new te::gm::GeometryCollection(0, te::gm::GeometryCollectionType, vecInput[0]->getSRID()));
+  std::auto_ptr<te::gm::GeometryCollection> outputCollection(new te::gm::GeometryCollection(0, te::gm::GeometryCollectionType, vecInput[0]->getSRID()));
 
   //for all the geometries inside the vector
   for (std::size_t i = 0; i < vecInput.size(); ++i)
   {
     te::gm::Geometry* geometry = vecInput[i];
+    inputCollection->add((te::gm::Geometry*)geometry->clone());
+
     if (geometry->getGeomTypeId() != te::gm::PolygonType)
     {
       continue;
@@ -596,7 +601,7 @@ std::vector<te::gm::Geometry*> te::urban::getGaps(const std::vector<te::gm::Geom
 
       if (newPolArea < area)
       {
-        vecOutput.push_back(newPolygon);
+        outputCollection->add(newPolygon);
       }
       else
       {
@@ -604,6 +609,11 @@ std::vector<te::gm::Geometry*> te::urban::getGaps(const std::vector<te::gm::Geom
       }
     }
   }
+
+  std::auto_ptr<te::gm::Geometry> outputGeometry(outputCollection->difference(inputCollection.get()));
+
+  std::vector<te::gm::Geometry*> vecOutput;
+  te::gm::Multi2Single(outputGeometry.release(), vecOutput);
 
   return vecOutput;
 }
