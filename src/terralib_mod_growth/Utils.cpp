@@ -191,6 +191,23 @@ void te::urban::saveVector(const std::string& fileName, const std::string& fileP
   saveDataSet(dsMem.get(), dsType.get(), ds.get(), fileName);
 }
 
+te::gm::Geometry* te::urban::createGeometryCollection(const std::vector<te::gm::Geometry*> vecGeometries)
+{
+  te::gm::GeometryCollection* geometryCollection = new te::gm::GeometryCollection(0, te::gm::GeometryCollectionType, vecGeometries[0]->getSRID());
+  for (std::size_t i = 0; i < vecGeometries.size(); ++i)
+  {
+    te::gm::Geometry* geometry = vecGeometries[i];
+    if (geometry->getGeomTypeId() != te::gm::PolygonType)
+    {
+      continue;
+    }
+
+    geometryCollection->add((te::gm::Geometry*)geometry->clone());
+  }
+
+  return geometryCollection;
+}
+
 boost::numeric::ublas::matrix<bool> te::urban::createRadiusMask(double resolution, double radius)
 {
   int  radiusInPixels = te::rst::Round(radius / resolution);
@@ -526,7 +543,7 @@ bool te::urban::calculateEdge(te::rst::Raster* raster, const InputClassesMap& in
   return false;
 }
 
-std::auto_ptr<te::rst::Raster> te::urban::filterUrbanPixels(te::rst::Raster* raster)
+std::auto_ptr<te::rst::Raster> te::urban::filterUrbanPixels(te::rst::Raster* raster, bool invertFilter)
 {
   te::rst::Raster* inputRaster = raster;
 
@@ -541,7 +558,14 @@ std::auto_ptr<te::rst::Raster> te::urban::filterUrbanPixels(te::rst::Raster* ras
   double resX = inputRaster->getResolutionX();
   double resY = inputRaster->getResolutionY();
 
-  double noDataValue = 0.;
+  double NoDataValue = 0.;
+  double UrbanValue = 1.;
+
+  if (invertFilter == true)
+  {
+    NoDataValue = 1.;
+    UrbanValue = 0.;
+  }
 
   for (std::size_t currentRow = 0; currentRow < numRows; ++currentRow)
   {
@@ -551,10 +575,10 @@ std::auto_ptr<te::rst::Raster> te::urban::filterUrbanPixels(te::rst::Raster* ras
       double centerPixel = 0;
       inputRaster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, centerPixel);
 
-      double value = noDataValue;
+      double value = NoDataValue;
       if (centerPixel == 1 || centerPixel == 2 || centerPixel == 4)
       {
-        value = 1.;
+        value = UrbanValue;
       }
 
       //gets the pixels surrounding pixels that intersects the given radiouss
@@ -565,17 +589,12 @@ std::auto_ptr<te::rst::Raster> te::urban::filterUrbanPixels(te::rst::Raster* ras
   return outputRaster;
 }
 
-std::vector<te::gm::Geometry*> te::urban::getGaps(const std::vector<te::gm::Geometry*>& vecInput, double area)
+std::vector<te::gm::Geometry*> te::urban::getGaps(const std::vector<te::gm::Geometry*>& vecCandidateGaps, double area)
 {
-  std::auto_ptr<te::gm::GeometryCollection> inputCollection(new te::gm::GeometryCollection(0, te::gm::GeometryCollectionType, vecInput[0]->getSRID()));
-  std::auto_ptr<te::gm::GeometryCollection> outputCollection(new te::gm::GeometryCollection(0, te::gm::GeometryCollectionType, vecInput[0]->getSRID()));
-
-  //for all the geometries inside the vector
-  for (std::size_t i = 0; i < vecInput.size(); ++i)
+  std::vector<te::gm::Geometry*> vecOutput;
+  for (std::size_t i = 0; i < vecCandidateGaps.size(); ++i)
   {
-    te::gm::Geometry* geometry = vecInput[i];
-    inputCollection->add((te::gm::Geometry*)geometry->clone());
-
+    te::gm::Geometry* geometry = vecCandidateGaps[i];
     if (geometry->getGeomTypeId() != te::gm::PolygonType)
     {
       continue;
@@ -587,33 +606,13 @@ std::vector<te::gm::Geometry*> te::urban::getGaps(const std::vector<te::gm::Geom
       continue;
     }
 
-    //now we analyse all the holes of the polygon. If a hole has area smaller the the given area, we convert it to a polygon add it to the output list
-    for (std::size_t j = 0; j < polygon->getNumInteriorRings(); ++j)
+    double newPolArea = polygon->getArea() / 10000.; //convert to hectare
+
+    if (newPolArea < area)
     {
-      te::gm::Curve* curve = polygon->getInteriorRingN(j);
-
-      te::gm::Curve* newCurve = static_cast<te::gm::Curve*>(curve->clone());
-
-      te::gm::Polygon* newPolygon = new te::gm::Polygon(1, te::gm::PolygonType, polygon->getSRID());
-      newPolygon->setRingN(0, newCurve);
-
-      double newPolArea = newPolygon->getArea() / 10000.; //convert to hectare
-
-      if (newPolArea < area)
-      {
-        outputCollection->add(newPolygon);
-      }
-      else
-      {
-        delete newPolygon;
-      }
+      vecOutput.push_back((te::gm::Geometry*)polygon->clone());
     }
   }
-
-  std::auto_ptr<te::gm::Geometry> outputGeometry(outputCollection->difference(inputCollection.get()));
-
-  std::vector<te::gm::Geometry*> vecOutput;
-  te::gm::Multi2Single(outputGeometry.release(), vecOutput);
 
   return vecOutput;
 }
@@ -955,31 +954,27 @@ void te::urban::saveDataSet(te::mem::DataSet* dataSet, te::da::DataSetType* dsTy
 
 std::vector<te::gm::Geometry*> te::urban::fixGeometries(const std::vector<te::gm::Geometry*>& vecGeometries)
 {
-  std::auto_ptr<te::gm::Geometry> geomUnion = te::vp::GetGeometryUnion(vecGeometries);
-
-  std::vector<te::gm::Geometry*> vecOutput;
-  te::gm::Multi2Single(geomUnion.get(), vecOutput);
-
   std::vector<te::gm::Geometry*> result;
-  for (std::size_t t = 0; t < vecOutput.size(); ++t)
+  for (std::size_t t = 0; t < vecGeometries.size(); ++t)
   {
-    if (vecOutput[t]->getGeomTypeId() == te::gm::PolygonType)
+    if (vecGeometries[t]->isValid())
     {
-        int a = 0;
-    }
-
-    if (vecOutput[t]->isValid())
-    {
-      result.push_back((te::gm::Geometry*)vecOutput[t]->clone());
+      result.push_back((te::gm::Geometry*)vecGeometries[t]->clone());
     }
     else
     {
       //magic
-      te::gm::Geometry* geom = vecOutput[t];
+      te::gm::Geometry* geom = vecGeometries[t];
 
-      te::gm::Geometry*geomBuffer = geom->buffer(0.0);
+      std::auto_ptr<te::gm::Geometry> geomBuffer(geom->buffer(0.0));
 
-      result.push_back(geomBuffer);
+      std::vector<te::gm::Geometry*> vecSingleGeoms;
+      te::gm::Multi2Single(geomBuffer.get(), vecSingleGeoms);
+
+      for (std::size_t j = 0; j < vecSingleGeoms.size(); ++j)
+      {
+        result.push_back((te::gm::Geometry*)vecSingleGeoms[j]->clone());
+      }
     }
   }
 

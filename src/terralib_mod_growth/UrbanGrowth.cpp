@@ -198,27 +198,27 @@ void te::urban::classifyUrbanOpenArea(te::rst::Raster* urbanFootprintRaster, dou
 std::auto_ptr<te::rst::Raster> te::urban::identifyIsolatedOpenPatches(te::rst::Raster* raster, const std::string& outputPath, const std::string& outputPrefix)
 {
   //we first need to create a binary image containing only the urban pixels
-  std::auto_ptr<te::rst::Raster> binaryUrbanRaster = filterUrbanPixels(raster);
-  std::string binaryFilePath = outputPath + "/" + outputPrefix + "_binary.tif";
-  saveRaster(binaryFilePath, binaryUrbanRaster.get());
+  std::auto_ptr<te::rst::Raster> binaryNonUrbanRaster = filterUrbanPixels(raster, true);
+  std::string binaryInvertedFilePath = outputPath + "/" + outputPrefix + "_binary_inverted.tif";
+  saveRaster(binaryInvertedFilePath, binaryNonUrbanRaster.get());
 
   //then we vectorize the result
-  std::vector<te::gm::Geometry*> vecGeometries;
-  binaryUrbanRaster->vectorize(vecGeometries, 0);
+  std::vector<te::gm::Geometry*> vecNonUrbanGeometries;
+  binaryNonUrbanRaster->vectorize(vecNonUrbanGeometries, 0);
 
-  std::vector<te::gm::Geometry*> fixedVecGeometries = te::urban::fixGeometries(vecGeometries);
+  std::vector<te::gm::Geometry*> vecFixedNonUrbanGeometries = te::urban::fixGeometries(vecNonUrbanGeometries);
 
   //export
-  std::string vectorizedFileName = outputPrefix + "_vectorized";
-  std::string vectorizedFilePath = outputPath + "/" + outputPrefix + "_vectorized.shp";
-  saveVector(vectorizedFileName, vectorizedFilePath, fixedVecGeometries, raster->getSRID());
+  std::string vectorizedCandidatesFileName = outputPrefix + "_vectorized_candidates";
+  std::string vectorizedCandidatesFilePath = outputPath + "/" + outputPrefix + "_vectorized_candidates.shp";
+  saveVector(vectorizedCandidatesFileName, vectorizedCandidatesFilePath, vecFixedNonUrbanGeometries, raster->getSRID());
 
-  te::rst::FillRaster(binaryUrbanRaster.get(), 0.);
+  te::rst::FillRaster(binaryNonUrbanRaster.get(), 0.);
 
-  std::vector<te::gm::Geometry*> vecGaps = getGaps(fixedVecGeometries, 200.);
+  std::vector<te::gm::Geometry*> vecGaps = getGaps(vecFixedNonUrbanGeometries, 200.);
 
-  te::common::FreeContents(vecGeometries);
-  te::common::FreeContents(fixedVecGeometries);
+  te::common::FreeContents(vecNonUrbanGeometries);
+  te::common::FreeContents(vecFixedNonUrbanGeometries);
 
   //export
   if (!vecGaps.empty())
@@ -230,11 +230,11 @@ std::auto_ptr<te::rst::Raster> te::urban::identifyIsolatedOpenPatches(te::rst::R
 
   std::vector<double> vecClass;
   vecClass.resize(vecGaps.size(), 1.);
-  binaryUrbanRaster->rasterize(vecGaps, vecClass);
+  binaryNonUrbanRaster->rasterize(vecGaps, vecClass);
 
   te::common::FreeContents(vecGaps);
 
-  return binaryUrbanRaster;
+  return binaryNonUrbanRaster;
 }
 
 void te::urban::addIsolatedOpenPatches(te::rst::Raster* urbanRaster, te::rst::Raster* isolatedOpenPatchesRaster)

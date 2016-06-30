@@ -100,6 +100,8 @@ namespace te
 
     TEGROWTHEXPORT void saveVector(const std::string& fileName, const std::string& filePath, const std::vector<te::gm::Geometry*>& vecGeometries, const int& srid);
 
+    TEGROWTHEXPORT te::gm::Geometry* createGeometryCollection(const std::vector<te::gm::Geometry*> vecGeometries);
+
     TEGROWTHEXPORT boost::numeric::ublas::matrix<bool> createRadiusMask(double resolution, double radius);
 
     //!< Returns all the pixels within the given radius
@@ -120,10 +122,10 @@ namespace te
     TEGROWTHEXPORT bool calculateEdge(te::rst::Raster* raster, const InputClassesMap& inputClassesMap, std::size_t column, std::size_t line);
 
     //this reclassification analyses the entire raster, where the output will be 1 if the pixel is urban and no_data if the pixel is not urban
-    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> filterUrbanPixels(te::rst::Raster* raster);
+    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> filterUrbanPixels(te::rst::Raster* raster, bool invertFilter);
 
     //!< Search for all the gaps (holes) that [optionally] have area smaller then the given reference area
-    TEGROWTHEXPORT std::vector<te::gm::Geometry*> getGaps(const std::vector<te::gm::Geometry*>& vecPolygons, double area = 0.);
+    TEGROWTHEXPORT std::vector<te::gm::Geometry*> getGaps(const std::vector<te::gm::Geometry*>& vecCandidateGaps, double area = 0.);
 
     //!< For each region, creates a new group using sequential values
     TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> createDistinctGroups(te::rst::Raster* inputRaster);
