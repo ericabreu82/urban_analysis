@@ -59,7 +59,7 @@ set_target_properties(terralib_mod_growth
                                  SOVERSION ${URBANANALYSIS_VERSION_MAJOR}.${URBANANALYSIS_VERSION_MINOR})
 
 install(TARGETS terralib_mod_growth
-        EXPORT terralib-targets
+        EXPORT urbanAnalysis-targets
         RUNTIME DESTINATION ${URBANANALYSIS_DESTINATION_RUNTIME} COMPONENT runtime
         LIBRARY DESTINATION ${URBANANALYSIS_DESTINATION_LIBRARY} COMPONENT runtime
         ARCHIVE DESTINATION ${URBANANALYSIS_DESTINATION_ARCHIVE} COMPONENT runtime)
@@ -67,4 +67,4 @@ install(TARGETS terralib_mod_growth
 install(FILES ${GROWTH_HDR_FILES}
         DESTINATION ${URBANANALYSIS_DESTINATION_HEADERS}/terralib_mod_growth COMPONENT devel)
 
-export(TARGETS terralib_mod_growth APPEND FILE ${CMAKE_BINARY_DIR}/terralib-exports.cmake)
+export(TARGETS terralib_mod_growth APPEND FILE ${CMAKE_BINARY_DIR}/urbanAnalysis-exports.cmake)

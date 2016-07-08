@@ -58,6 +58,11 @@ if(Qt5_FOUND)
   add_executable(urbanAnalysisApp ${URBANANALYSIS_SRC_FILES} ${URBANANALYSIS_HDR_FILES} ${GROWTH_RESOURCES})
   
   target_link_libraries(urbanAnalysisApp ${URBANANALYSIS_DEPENDENCIES})
+  
+  SET (QT_USE_QTMAIN TRUE)
+  
+  set_target_properties(urbanAnalysisApp PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
+  
 endif()
 
 set_target_properties(urbanAnalysisApp
@@ -65,7 +70,7 @@ set_target_properties(urbanAnalysisApp
                                  SOVERSION ${URBANANALYSIS_VERSION_MAJOR}.${URBANANALYSIS_VERSION_MINOR})
 
 install(TARGETS urbanAnalysisApp
-        EXPORT terralib-targets
+        EXPORT urbanAnalysis-targets
         RUNTIME DESTINATION ${URBANANALYSIS_DESTINATION_RUNTIME} COMPONENT runtime
         LIBRARY DESTINATION ${URBANANALYSIS_DESTINATION_LIBRARY} COMPONENT runtime
         ARCHIVE DESTINATION ${URBANANALYSIS_DESTINATION_ARCHIVE} COMPONENT runtime)

@@ -68,7 +68,7 @@ if(Qt5_FOUND)
 endif()
 
 install(TARGETS terralib_mod_growth_qt
-        EXPORT terralib-targets
+        EXPORT urbanAnalysis-targets
         RUNTIME DESTINATION ${URBANANALYSIS_DESTINATION_RUNTIME} COMPONENT runtime
         LIBRARY DESTINATION ${URBANANALYSIS_DESTINATION_LIBRARY} COMPONENT runtime
         ARCHIVE DESTINATION ${URBANANALYSIS_DESTINATION_ARCHIVE} COMPONENT runtime)
@@ -76,4 +76,4 @@ install(TARGETS terralib_mod_growth_qt
 install(FILES ${GROWTH_HDR_FILES}
         DESTINATION ${URBANANALYSIS_DESTINATION_HEADERS}/terralib_mod_growth_qt COMPONENT devel)
 
-export(TARGETS terralib_mod_growth_qt APPEND FILE ${CMAKE_BINARY_DIR}/terralib-exports.cmake)
+export(TARGETS terralib_mod_growth_qt APPEND FILE ${CMAKE_BINARY_DIR}/urbanAnalysis-exports.cmake)

@@ -35,7 +35,7 @@ set(URBANANALYSIS_VERSION_STRING "${URBANANALYSIS_VERSION_MAJOR}.${URBANANALYSIS
 set(URBANANALYSIS_VERSION "0x050000")
 set(URBANANALYSIS_PKG_VERSION ${URBANANALYSIS_VERSION_MAJOR}.${URBANANALYSIS_VERSION_MINOR}.${URBANANALYSIS_VERSION_PATCH})
 
-find_package(terralib REQUIRED)
+find_package(terralib 5.2 REQUIRED)
 
 find_package(Boost REQUIRED)
 
@@ -56,6 +56,8 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 set(URBANANALYSIS_BASE_DESTINATION_DIR "")
+
+set (TE_3RDPARTY "$ENV{TE_3RDPARTY}" CACHE PATH "Where to find TerraLib 3rdParty?")
 
 if(NOT DEFINED URBANANALYSIS_DESTINATION_LIBRARY)
   set(URBANANALYSIS_DESTINATION_LIBRARY "${URBANANALYSIS_BASE_DESTINATION_DIR}lib")
@@ -86,4 +88,68 @@ include_directories(${terralib_DIR}
  add_subdirectory(terralib_mod_growth)
  add_subdirectory(terralib_mod_growth_qt)
  add_subdirectory(urbanAnalysis_app)
+
+# Track dependencies
+MACRO ( TeGetPlugins _plugins )
+  foreach(plugin ${TERRALIB_PLUGINS})
+    get_target_property(_loc ${plugin} LOCATION_RELEASE)
+    list(APPEND ${_plugins} ${_loc})
+    
+    get_target_property(_locd ${plugin} LOCATION_DEBUG)
+    list(APPEND ${_plugins} ${_locd})
+  endforeach()
+ENDMACRO(TeGetPlugins)
+
+TeInstallQt5Plugins()
+
+set(_teplugins "")
+
+TeGetPlugins (_teplugins)
+
+if(WIN32)
+  get_filename_component(_teShare ${terralib_INCLUDE_DIRS}/../share/terralib DIRECTORY)  
+  
+  install (
+    FILES ${_teplugins} ${_dep}
+    DESTINATION bin
+    COMPONENT runtime
+  )  
+  
+  install(
+    DIRECTORY ${_teShare}
+    DESTINATION .
+    COMPONENT runtime
+  )
+endif()
+
+include(InstallRequiredSystemLibraries)
+
+#set(UA_APPLICATION "bbb")
+
+
+configure_file(${CMAKE_SOURCE_DIR}/urban_analysis-fix-bundle.cmake.in
+               ${CMAKE_BINARY_DIR}/FixBundleUrban_analysis.cmake @ONLY)
+
+install(SCRIPT ${CMAKE_BINARY_DIR}/FixBundleUrban_analysis.cmake
+        COMPONENT runtime)
+		
+#set(GDAL_DATA_DIR ${TE_3RDPARTY}/data)
+
+#install(DIRECTORY ${GDAL_DATA_DIR}
+       #DESTINATION share
+       #COMPONENT runtime) 
+
+# CPack
+set(CPACK_GENERATOR NSIS)
+set(CPACK_PACKAGE_NAME "UrbanAnalysis")
+set(CPACK_PACKAGE_VENDOR "Terralib3rdParty")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Urban Analysis")
+set(CPACK_PACKAGE_VERSION "1.0.0")
+set(CPACK_PACKAGE_VERSION_MAJOR "1")
+set(CPACK_PACKAGE_VERSION_MINOR "0")
+set(CPACK_PACKAGE_VERSION_PATCH "0")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY "UrbanAnalysisApp")
+SET(CPACK_NSIS_MODIFY_PATH ON)
+
+INCLUDE(CPack)
 
