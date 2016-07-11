@@ -158,7 +158,7 @@ void te::urban::qt::ReclassifyWidget::onRemapCheckBoxClicked(bool flag)
     cmbBox->addItem("Other", INPUT_OTHER);
     cmbBox->addItem("Water", INPUT_WATER);
     cmbBox->addItem("Urban", INPUT_URBAN);
-    
+
     m_ui->m_remapTableWidget->setCellWidget(newrow, 2, cmbBox);
   }
 
@@ -172,13 +172,13 @@ void te::urban::qt::ReclassifyWidget::execute()
   //double r = 564.;
   //std::string oPath = "D:\\Workspace\\FGV\\temp";
   //std::string oPrefix = "belem_aug92_t90_final1_reclass";
-  
+
   //ERIC HOME
   //std::string inputFileName = "D:\\Projects\\FGV\\data\\belem_aug92_t90_final1.tif";
   //double r = 564.;
   //std::string oPath = "D:\\Projects\\FGV\\temp";
   //std::string oPrefix = "t1";
-  
+
   //MARIO
   //std::string inputFileName = "D:\\temp\\miguel_fred\\entrada\\belem_aug92_t90_final1.tif";
   //double r = 564.;
@@ -211,6 +211,13 @@ void te::urban::qt::ReclassifyWidget::execute()
     return;
   }
 
+  std::string spatialLimitsFileName;
+
+  if(m_ui->m_vecFileLineEdit->text().isEmpty() == false)
+  {
+    spatialLimitsFileName = m_ui->m_vecFileLineEdit->text().toStdString();
+  }
+
   if (m_ui->m_reclassOutputRepoLineEdit->text().isEmpty() == true)
   {
     QMessageBox::warning(this, tr("Urban Analysis"), tr("Select the output repository location."));
@@ -225,7 +232,15 @@ void te::urban::qt::ReclassifyWidget::execute()
 
   bool calculateIndexes = m_ui->m_indexCheckBox->isChecked();
 
+  QString qOutputIntermediatePath = m_ui->m_reclassOutputRepoLineEdit->text() + "/intermediate";
+  QDir qDir(qOutputIntermediatePath);
+  if (qDir.exists() == false)
+  {
+    qDir.mkpath(qOutputIntermediatePath);
+  }
+
   std::string outputPath = m_ui->m_reclassOutputRepoLineEdit->text().toStdString();
+  std::string outputIntermediatePath = qOutputIntermediatePath.toStdString();
   std::string outputPrefix = m_ui->m_reclassOutputNameLineEdit->text().toStdString();
 
   //add task viewer
@@ -274,21 +289,21 @@ void te::urban::qt::ReclassifyWidget::execute()
     }
 
     urbanRaster_t_n0 = urbanRaster_t_n1;
-    urbanRaster_t_n1 = prepareRaster(inputRaster.get(), inputClassesMap, radius, outputPath, currentOutputPrefix);
+    urbanRaster_t_n1 = prepareRaster(inputRaster.get(), inputClassesMap, radius, outputIntermediatePath, currentOutputPrefix);
 
     if (calculateIndexes)
     {
       UrbanIndexes urbanIndexes;
-      calculateUrbanIndexes(inputRaster.get(), inputClassesMap, radius, urbanIndexes);
+      calculateUrbanIndexes(inputRaster.get(), inputClassesMap, radius, spatialLimitsFileName, urbanIndexes);
 
       urbanSummary[inputFileName] = urbanIndexes;
     }
 
     if (i > 0)
     {
-      std::auto_ptr<te::rst::Raster> newDevelopmentRaster = compareRasterPeriods(urbanRaster_t_n0, urbanRaster_t_n1, outputPath, currentOutputPrefix);
+      std::auto_ptr<te::rst::Raster> newDevelopmentRaster = compareRasterPeriods(urbanRaster_t_n0, urbanRaster_t_n1, outputIntermediatePath, currentOutputPrefix);
 
-      std::string newDevelopmentPrefix = outputPrefix + "_newDevelopment";
+      std::string newDevelopmentPrefix = currentOutputPrefix + "_newDevelopment";
       std::string newDevelopmentRasterFileName = outputPath + "/" + newDevelopmentPrefix + ".tif";
       saveRaster(newDevelopmentRasterFileName, newDevelopmentRaster.get());
     }

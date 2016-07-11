@@ -29,6 +29,7 @@ TerraLib Team at <terralib-team@terralib.org>.
 //Terralib
 #include <terralib/common/progress/TaskProgress.h>
 #include <terralib/common/STLUtils.h>
+#include <terralib/raster/PositionIterator.h>
 #include <terralib/raster/Raster.h>
 #include <terralib/raster/Utils.h>
 
@@ -286,7 +287,7 @@ void te::urban::classifyIsolatedOpenPatches(te::rst::Raster* raster, const std::
   addIsolatedOpenPatches(raster, isolatedOpenPatchesRaster.get());
 }
 
-void te::urban::calculateUrbanIndexes(te::rst::Raster* inputRaster, const InputClassesMap& inputClassesMap, double radius, UrbanIndexes& urbanIndexes)
+void te::urban::calculateUrbanIndexes(te::rst::Raster* inputRaster, const InputClassesMap& inputClassesMap, double radius, const std::string& spatialLimits, UrbanIndexes& urbanIndexes)
 {
   assert(inputRaster);
 
@@ -300,6 +301,7 @@ void te::urban::calculateUrbanIndexes(te::rst::Raster* inputRaster, const InputC
 
   boost::numeric::ublas::matrix<bool> mask = createRadiusMask(resX, radius);
 
+  int numUrbanPixels = 0;
   int numPix = 0;
   int edgeCount = 0; //edge index
   double sumPerUrb = 0;
@@ -308,47 +310,61 @@ void te::urban::calculateUrbanIndexes(te::rst::Raster* inputRaster, const InputC
   task.setTotalSteps((int)(numRows * numColumns));
   task.useTimer(true);
 
-  //TODO: we must consider the given study area
+  const te::gm::Envelope* rasterEnvelope = inputRaster->getExtent();
+  te::gm::Polygon* limitPolygon = (te::gm::Polygon*)te::gm::GetGeomFromEnvelope(rasterEnvelope, inputRaster->getSRID());
 
-  for (size_t currentRow = 0; currentRow < numRows; ++currentRow)
+  te::rst::PolygonIterator<double> it = te::rst::PolygonIterator<double>::begin(inputRaster, limitPolygon);
+  te::rst::PolygonIterator<double> itend = te::rst::PolygonIterator<double>::end(inputRaster, limitPolygon);
+
+  while (it != itend)
   {
-    for (size_t currentColumn = 0; currentColumn < numColumns; ++currentColumn)
+    unsigned int currentRow = it.getRow();
+    unsigned int currentColumn = it.getColumn();
+
+    //gets the value of the current center pixel
+    double centerPixel = 0;
+    inputRaster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, centerPixel);
+
+    task.pulse();
+
+    if (centerPixel != InputUrban && centerPixel != InputOther)
     {
-      //gets the value of the current center pixel
-      double centerPixel = 0;
-      inputRaster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, centerPixel);
+      ++it;
+      continue;
+    }
 
-      task.pulse();
+    //gets the pixels surrounding pixels that intersects the given radious
+    std::vector<short> vecPixels = getPixelsWithinRadious(inputRaster, currentRow, currentColumn, radius, mask);
 
-      if (centerPixel != InputUrban && centerPixel != InputOther)
+    double permUrb = 0.;
+    double value = calculateUrbanizedArea((short)centerPixel, inputClassesMap, vecPixels, permUrb);
+
+    if (centerPixel == InputUrban)
+    {
+      ++numUrbanPixels;
+      //then we check if there is at least one pixel that is not also urban in the adjacency
+      bool hasEdge = calculateEdge(inputRaster, inputClassesMap, currentColumn, currentRow);
+      if (hasEdge == true)
       {
-        continue;
-      }
-
-      //gets the pixels surrounding pixels that intersects the given radious
-      std::vector<short> vecPixels = getPixelsWithinRadious(inputRaster, currentRow, currentColumn, radius, mask);
-
-      double permUrb = 0.;
-      double value = calculateUrbanizedArea((short)centerPixel, inputClassesMap, vecPixels, permUrb);
-
-      //sum the perviousness
-      //TODO: we need to check if the pixel is in the study area
-      if (centerPixel == InputOther)
-      {
-        sumPerUrb += permUrb;
-        ++numPix;
-
-        bool hasEdge = calculateEdge(inputRaster, inputClassesMap, currentColumn, currentRow);
-        if (hasEdge == true)
-        {
-          ++edgeCount;
-        }
+        ++edgeCount;
       }
     }
+    
+
+    //sum the perviousness
+    //TODO: we need to check if the pixel is in the study area
+    if (centerPixel == InputOther)
+    {
+      sumPerUrb += permUrb;
+      ++numPix;
+
+      
+    }
+    ++it;
   }
 
-  double openness = 1 - (sumPerUrb / numPix);
-  double edgeIndex = double(edgeCount) / numPix;
+  double openness = 1. - (sumPerUrb / numPix);
+  double edgeIndex = double(edgeCount) / numUrbanPixels;
 
   urbanIndexes["openness"] = openness;
   urbanIndexes["edgeIndex"] = edgeIndex;

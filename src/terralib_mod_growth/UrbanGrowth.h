@@ -64,7 +64,7 @@ namespace te
     TEGROWTHEXPORT void classifyIsolatedOpenPatches(te::rst::Raster* raster, const std::string& outputPath, const std::string& outputPrefix);
 
     //the indexes calculation only considers the study area
-    TEGROWTHEXPORT void calculateUrbanIndexes(te::rst::Raster* inputRaster, const InputClassesMap& inputClassesMap, double radius, UrbanIndexes& urbanIndexes);
+    TEGROWTHEXPORT void calculateUrbanIndexes(te::rst::Raster* inputRaster, const InputClassesMap& inputClassesMap, double radius, const std::string& spatialLimits, UrbanIndexes& urbanIndexes);
 
     TEGROWTHEXPORT UrbanRasters prepareRaster(te::rst::Raster* inputRaster, const InputClassesMap& inputClassesMap, double radius, const std::string& outputPath, const std::string& outputPrefix);
 

@@ -512,32 +512,50 @@ double te::urban::calculateUrbanOpenArea(short centerPixelValue, const std::vect
 
 bool te::urban::calculateEdge(te::rst::Raster* raster, const InputClassesMap& inputClassesMap, size_t column, size_t line)
 {
+  //we check if there is at least one urban pixel in the adjacency
+  assert(raster);
+
+  unsigned int numRows = raster->getNumberOfRows();
+  unsigned int numColumns = raster->getNumberOfColumns();
+
   //the script seems to be wrong. double check
   const short InputUrban = inputClassesMap.find(INPUT_URBAN)->second;
 
   double value = 0;
-  raster->getValue((unsigned int)column, (unsigned int)(line - 1), value, 0);
-  if (value != InputUrban)
+  if (line > 0)
   {
-    return true;
+    raster->getValue((unsigned int)column, (unsigned int)(line - 1), value, 0);
+    if (value != InputUrban)
+    {
+      return true;
+    }
+  }
+  
+  if (column > 0)
+  {
+    raster->getValue((unsigned int)(column - 1), (unsigned int)line, value, 0);
+    if (value != InputUrban)
+    {
+      return true;
+    }
   }
 
-  raster->getValue((unsigned int)(column - 1), (unsigned int)line, value, 0);
-  if (value != InputUrban)
+  if (line < numRows)
   {
-    return true;
+    raster->getValue((unsigned int)column, (unsigned int)(line + 1), value, 0);
+    if (value != InputUrban)
+    {
+      return true;
+    }
   }
 
-  raster->getValue((unsigned int)(column + 1), (unsigned int)line, value, 0);
-  if (value != InputUrban)
+  if (column < numColumns)
   {
-    return true;
-  }
-
-  raster->getValue((unsigned int)column, (unsigned int)(line + 1), value, 0);
-  if (value != InputUrban)
-  {
-    return true;
+    raster->getValue((unsigned int)(column + 1), (unsigned int)line, value, 0);
+    if (value != InputUrban)
+    {
+      return true;
+    }
   }
 
   return false;
