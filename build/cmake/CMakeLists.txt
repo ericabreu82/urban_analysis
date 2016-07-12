@@ -100,7 +100,7 @@ include_directories(${terralib_DIR}
 #  endforeach()
 #ENDMACRO(TeGetPlugins)
 
-#TeInstallQt5Plugins()
+TeInstallQt5Plugins()
 #TeInstallQt5Plugins("qgif;qico;qjpeg;qmng;qtiff;qsvg;qsvgicon;qsqlite;qwindows;qcocoa")  
 
 #set(_teplugins "")
@@ -109,7 +109,8 @@ include_directories(${terralib_DIR}
 
 if(WIN32)
   get_filename_component(_teShare ${terralib_INCLUDE_DIRS}/../share/terralib DIRECTORY) 
-  
+  get_filename_component(_qtPlugins ${terralib_INCLUDE_DIRS}/../qtplugins/platforms DIRECTORY) 
+
   install (
     FILES ${_teplugins} ${_dep}
     DESTINATION bin
@@ -121,6 +122,13 @@ if(WIN32)
     DESTINATION .
     COMPONENT runtime
   )
+  
+    
+  #install(
+  #  DIRECTORY ${_qtPlugins}
+  #  DESTINATION .
+  #  COMPONENT runtime
+  #)
   
   file(GLOB _teBins ${terralib_DIR}/../../../bin/*.dll)
   
@@ -157,6 +165,15 @@ set(CPACK_PACKAGE_VERSION_MINOR "0")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "UrbanAnalysisApp")
 SET(CPACK_NSIS_MODIFY_PATH ON)
+
+#for the sortcuts
+set(shortCutName "urban_analysis_${CPACK_PACKAGE_VERSION_MAJOR}_${CPACK_PACKAGE_VERSION_MINOR}_${CPACK_PACKAGE_VERSION_PATCH}${bitName}")
+
+set(CPACK_PACKAGE_EXECUTABLES "urbanAnalysisApp;${shortCutName}")
+  
+set(CPACK_NSIS_CREATE_ICONS_EXTRA "SetOutPath \\\"$INSTDIR\\\\bin\\\";CreateShortCut \\\"$SMPROGRAMS\\\\$STARTMENU_FOLDER/${shortCutName}.lnk\\\" \\\"$INSTDIRb\\\\bin\\\\urbanAnalysisApp.exe\\\" \\\"\\\" \\\"$INSTDIR\\\\share\\\\terralib\\\\images\\\\ico\\\\terralib-globe.ico\\\";CreateShortCut \\\"$DESKTOP\\\\${shortCutName}.lnk\\\" \\\"$INSTDIR\\\\bin\\\\urbanAnalysisApp.exe\\\" \\\"\\\" \\\"$INSTDIR\\\\share\\\\terralib\\\\images\\\\ico\\\\terralib-globe.ico\\\"")
+
+list (APPEND CPACK_NSIS_DELETE_ICONS_EXTRA "Delete \\\"$SMPROGRAMS\\\\$MUI_TEMP\\\\${shortCutName}.lnk\\\";Delete \\\"$DESKTOP\\\\${shortCutName}.lnk\\\"")
 
 INCLUDE(CPack)
 
