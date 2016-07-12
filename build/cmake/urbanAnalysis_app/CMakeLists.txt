@@ -71,9 +71,18 @@ set_target_properties(urbanAnalysisApp
 
 install(TARGETS urbanAnalysisApp
         EXPORT urbanAnalysis-targets
+		BUNDLE DESTINATION . COMPONENT runtime
         RUNTIME DESTINATION ${URBANANALYSIS_DESTINATION_RUNTIME} COMPONENT runtime
         LIBRARY DESTINATION ${URBANANALYSIS_DESTINATION_LIBRARY} COMPONENT runtime
         ARCHIVE DESTINATION ${URBANANALYSIS_DESTINATION_ARCHIVE} COMPONENT runtime)
 
 install(FILES ${URBANANALYSIS_HDR_FILES}
         DESTINATION ${URBANANALYSIS_DESTINATION_HEADERS}/urbanAnalysisApp COMPONENT devel)
+		
+if(WIN32)
+  file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/qt.conf
+       "[Paths]\nBinaries = .\nPlugins = ../qtplugins\nTranslations = ../share/terralib/translations")
+         
+  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/qt.conf
+          DESTINATION ${URBANANALYSIS_DESTINATION_RUNTIME} COMPONENT runtime)
+endif()

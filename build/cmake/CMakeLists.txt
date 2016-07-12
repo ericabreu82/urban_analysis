@@ -90,24 +90,25 @@ include_directories(${terralib_DIR}
  add_subdirectory(urbanAnalysis_app)
 
 # Track dependencies
-MACRO ( TeGetPlugins _plugins )
-  foreach(plugin ${TERRALIB_PLUGINS})
-    get_target_property(_loc ${plugin} LOCATION_RELEASE)
-    list(APPEND ${_plugins} ${_loc})
+#MACRO ( TeGetPlugins _plugins )
+#  foreach(plugin ${TERRALIB_PLUGINS})
+#    get_target_property(_loc ${plugin} LOCATION_RELEASE)
+#    list(APPEND ${_plugins} ${_loc})
     
-    get_target_property(_locd ${plugin} LOCATION_DEBUG)
-    list(APPEND ${_plugins} ${_locd})
-  endforeach()
-ENDMACRO(TeGetPlugins)
+#    get_target_property(_locd ${plugin} LOCATION_DEBUG)
+#    list(APPEND ${_plugins} ${_locd})
+#  endforeach()
+#ENDMACRO(TeGetPlugins)
 
-TeInstallQt5Plugins()
+#TeInstallQt5Plugins()
+#TeInstallQt5Plugins("qgif;qico;qjpeg;qmng;qtiff;qsvg;qsvgicon;qsqlite;qwindows;qcocoa")  
 
-set(_teplugins "")
+#set(_teplugins "")
 
-TeGetPlugins (_teplugins)
+#TeGetPlugins (_teplugins)
 
 if(WIN32)
-  get_filename_component(_teShare ${terralib_INCLUDE_DIRS}/../share/terralib DIRECTORY)  
+  get_filename_component(_teShare ${terralib_INCLUDE_DIRS}/../share/terralib DIRECTORY) 
   
   install (
     FILES ${_teplugins} ${_dep}
@@ -120,18 +121,24 @@ if(WIN32)
     DESTINATION .
     COMPONENT runtime
   )
+  
+  file(GLOB _teBins ${terralib_DIR}/../../../bin/*.dll)
+  
+  install(
+    FILES ${_teBins}
+    DESTINATION bin
+    COMPONENT runtime
+  )
 endif()
+
 
 include(InstallRequiredSystemLibraries)
 
-#set(UA_APPLICATION "bbb")
+#configure_file(${CMAKE_SOURCE_DIR}/urban_analysis-fix-bundle.cmake.in
+#               ${CMAKE_BINARY_DIR}/FixBundleUrban_analysis.cmake @ONLY)
 
-
-configure_file(${CMAKE_SOURCE_DIR}/urban_analysis-fix-bundle.cmake.in
-               ${CMAKE_BINARY_DIR}/FixBundleUrban_analysis.cmake @ONLY)
-
-install(SCRIPT ${CMAKE_BINARY_DIR}/FixBundleUrban_analysis.cmake
-        COMPONENT runtime)
+#install(SCRIPT ${CMAKE_BINARY_DIR}/FixBundleUrban_analysis.cmake
+ #       COMPONENT runtime)
 		
 #set(GDAL_DATA_DIR ${TE_3RDPARTY}/data)
 
