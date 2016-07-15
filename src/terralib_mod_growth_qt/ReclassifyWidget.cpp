@@ -276,38 +276,69 @@ void te::urban::qt::ReclassifyWidget::execute()
   inputClassesMap[INPUT_URBAN] = INPUT_URBAN;
   inputClassesMap[INPUT_OTHER] = INPUT_OTHER;
 
-  for (int i = 0; i < m_ui->m_imgFilesListWidget->count(); ++i)
+  try
   {
-    std::string inputFileName = m_ui->m_imgFilesListWidget->item(i)->text().toStdString();
-    std::string currentOutputPrefix = outputPrefix + "_t" + boost::lexical_cast<std::string>(i);
-
-    std::auto_ptr<te::rst::Raster> inputRaster = openRaster(inputFileName);
-
-    if (m_ui->m_remapCheckBox->isChecked())
+    for (int i = 0; i < m_ui->m_imgFilesListWidget->count(); ++i)
     {
-      inputRaster = reclassify(inputRaster.get(), mapValues, defaultValue);
-    }
+      std::string inputFileName = m_ui->m_imgFilesListWidget->item(i)->text().toStdString();
+      std::string currentOutputPrefix = outputPrefix + "_t" + boost::lexical_cast<std::string>(i);
 
-    urbanRaster_t_n0 = urbanRaster_t_n1;
-    urbanRaster_t_n1 = prepareRaster(inputRaster.get(), inputClassesMap, radius, outputIntermediatePath, currentOutputPrefix);
+      std::auto_ptr<te::rst::Raster> inputRaster = openRaster(inputFileName);
 
-    if (calculateIndexes)
-    {
-      UrbanIndexes urbanIndexes;
-      calculateUrbanIndexes(inputRaster.get(), inputClassesMap, radius, spatialLimitsFileName, urbanIndexes);
+      if (m_ui->m_remapCheckBox->isChecked())
+      {
+        inputRaster = reclassify(inputRaster.get(), mapValues, defaultValue);
+      }
 
-      urbanSummary[inputFileName] = urbanIndexes;
-    }
+      if(i > 0)
+      {
+        if (needNormalization(inputRaster.get(), urbanRaster_t_n1.m_urbanizedAreaRaster.get()))
+        {
+          inputRaster = normalizeRaster(inputRaster.get(), urbanRaster_t_n1.m_urbanizedAreaRaster.get());
 
-    if (i > 0)
-    {
-      std::auto_ptr<te::rst::Raster> newDevelopmentRaster = compareRasterPeriods(urbanRaster_t_n0, urbanRaster_t_n1, outputIntermediatePath, currentOutputPrefix);
+          std::string normalizedPrefix = currentOutputPrefix + "_normalized";
+          std::string normalizedRasterFileName = outputIntermediatePath + "/" + normalizedPrefix + ".tif";
+          saveRaster(normalizedRasterFileName, inputRaster.get());
+        }
+      }
 
-      std::string newDevelopmentPrefix = currentOutputPrefix + "_newDevelopment";
-      std::string newDevelopmentRasterFileName = outputPath + "/" + newDevelopmentPrefix + ".tif";
-      saveRaster(newDevelopmentRasterFileName, newDevelopmentRaster.get());
+      urbanRaster_t_n0 = urbanRaster_t_n1;
+      urbanRaster_t_n1 = prepareRaster(inputRaster.get(), inputClassesMap, radius, outputIntermediatePath, currentOutputPrefix);
+
+      if (calculateIndexes)
+      {
+        UrbanIndexes urbanIndexes;
+        calculateUrbanIndexes(inputRaster.get(), inputClassesMap, radius, spatialLimitsFileName, urbanIndexes);
+
+        urbanSummary[inputFileName] = urbanIndexes;
+      }
+
+      if (i > 0)
+      {
+        std::auto_ptr<te::rst::Raster> newDevelopmentRaster = compareRasterPeriods(urbanRaster_t_n0, urbanRaster_t_n1, outputIntermediatePath, currentOutputPrefix);
+
+        std::string newDevelopmentPrefix = currentOutputPrefix + "_newDevelopment";
+        std::string newDevelopmentRasterFileName = outputPath + "/" + newDevelopmentPrefix + ".tif";
+        saveRaster(newDevelopmentRasterFileName, newDevelopmentRaster.get());
+      }
     }
   }
+  catch (const te::common::Exception& e)
+  {
+    te::common::ProgressManager::getInstance().removeViewer(dlgViewerId);
+    delete dlgViewer;
+
+    QString message = tr("Error in the execution.");
+    if (e.what() != 0)
+    {
+      message += QString("\n");
+      message += QString(e.what());
+    }
+
+    QMessageBox::information(this, tr("Urban Analysis"),  message);
+    return;
+  }
+
 
   if (calculateIndexes)
   {

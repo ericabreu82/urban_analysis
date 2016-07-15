@@ -104,6 +104,10 @@ namespace te
 
     TEGROWTHEXPORT boost::numeric::ublas::matrix<bool> createRadiusMask(double resolution, double radius);
 
+    TEGROWTHEXPORT bool needNormalization(te::rst::Raster* inputRaster, te::rst::Raster* referenceRaster);
+
+    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> normalizeRaster(te::rst::Raster* inputRaster, te::rst::Raster* referenceRaster);
+
     //!< Returns all the pixels within the given radius
     TEGROWTHEXPORT std::vector<short> getPixelsWithinRadious(te::rst::Raster* raster, std::size_t referenceRow, std::size_t referenceColumn, double radius, const boost::numeric::ublas::matrix<bool>& mask);
 

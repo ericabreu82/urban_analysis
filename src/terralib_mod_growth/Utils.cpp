@@ -238,6 +238,75 @@ boost::numeric::ublas::matrix<bool> te::urban::createRadiusMask(double resolutio
   return mask;
 }
 
+bool te::urban::needNormalization(te::rst::Raster* inputRaster, te::rst::Raster* referenceRaster)
+{
+  assert(inputRaster);
+  assert(referenceRaster);
+
+  std::size_t numRowsInput = inputRaster->getNumberOfRows();
+  std::size_t numColumnsInput = inputRaster->getNumberOfColumns();
+
+  std::size_t numRowsReference = referenceRaster->getNumberOfRows();
+  std::size_t numColumnsReference = referenceRaster->getNumberOfColumns();
+
+  bool normalize = false;
+
+  //we check if we need to normalize the raster
+  if (numRowsInput != numRowsReference)
+  {
+    normalize = true;
+  }
+
+  if (numColumnsInput != numColumnsReference)
+  {
+    normalize = true;
+  }
+
+  return normalize;
+}
+
+std::auto_ptr<te::rst::Raster> te::urban::normalizeRaster(te::rst::Raster* inputRaster, te::rst::Raster* referenceRaster)
+{
+  assert(inputRaster);
+  assert(referenceRaster);
+
+  //we first clone the reference raster metadata. this raster will receive the values from the input raster
+  std::auto_ptr<te::rst::Raster> normalizedRaster = cloneRasterIntoMem(referenceRaster, false);
+  
+  unsigned int numRows = normalizedRaster->getNumberOfRows();
+  unsigned int numColumns = normalizedRaster->getNumberOfColumns();
+
+  unsigned int inputNumRows = inputRaster->getNumberOfRows();
+  unsigned int inputNumColumns = inputRaster->getNumberOfColumns();
+
+  //then we normalize the input raster by copying its values to the normalized raster
+  for (unsigned int currentRow = 0; currentRow < numRows; ++currentRow)
+  {
+    for (unsigned int currentColumn = 0; currentColumn < numColumns; ++currentColumn)
+    {
+      //we first the the spatial location of the current pixel
+      te::gm::Coord2D refCoordGeo = normalizedRaster->getGrid()->gridToGeo((double)currentColumn, (double)currentRow);
+
+      //then we find out its position in the inputRaster
+      te::gm::Coord2D inputCoordGrid = inputRaster->getGrid()->geoToGrid(refCoordGeo.getX(), refCoordGeo.getY());
+      int inputColumn = te::rst::Round(inputCoordGrid.getX());
+      int inputRow = te::rst::Round(inputCoordGrid.getY());
+
+      //then we get the value from the input
+      double value = INPUT_NODATA;
+      if (inputColumn >= 0 && inputColumn < (int)inputNumColumns && inputRow >= 0 && inputRow < (int)inputNumRows)
+      {
+        inputRaster->getValue((unsigned int)inputColumn, (unsigned int)inputRow, value);
+      }
+
+      //finally we set value in the normalized raster
+      normalizedRaster->setValue(currentColumn, currentRow, value);
+    }
+  }
+
+  return normalizedRaster;
+}
+
 std::vector<short> te::urban::getPixelsWithinRadious(te::rst::Raster* raster, size_t referenceRow, size_t referenceColumn, double radius, const boost::numeric::ublas::matrix<bool>& mask)
 {
   std::size_t numRows = raster->getNumberOfRows();
@@ -729,11 +798,11 @@ void te::urban::generateInfillOtherDevRasters(te::rst::Raster* rasterT1, te::rst
 
   if (numRows != rasterT2->getNumberOfRows())
   {
-    return;
+    throw te::common::Exception("Raster t1 differs from raster t2 in the number of rows. Error in function: generateInfillOtherDevRasters");
   }
   if (numColumns != rasterT2->getNumberOfColumns())
   {
-    return;
+    throw te::common::Exception("Raster t1 differs from raster t2 in the number of columns. Error in function: generateInfillOtherDevRasters");
   }
 
   for (std::size_t row = 0; row < numRows; ++row)
