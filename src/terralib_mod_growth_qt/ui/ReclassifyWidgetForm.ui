@@ -92,7 +92,7 @@
         <item row="0" column="0">
          <widget class="QLabel" name="label">
           <property name="text">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The expected land cover classes are following:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;0 = no data; 1 = water; 2 = urban; 3 = other&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The expected input land cover classes are the following:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;0 = no data; 1 = water; 2 = urban; 3 = other&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
          </widget>
         </item>
@@ -457,9 +457,6 @@
     </layout>
    </item>
   </layout>
-  <zorder>groupBox_2</zorder>
-  <zorder>groupBox_2</zorder>
-  <zorder>groupBox_4</zorder>
  </widget>
  <tabstops>
   <tabstop>m_imgFilesListWidget</tabstop>

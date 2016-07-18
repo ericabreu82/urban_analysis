@@ -45,11 +45,30 @@ namespace te
     typedef std::map<std::string, double> UrbanIndexes;
     typedef std::map<std::string, UrbanIndexes> UrbanSummary;
 
+    struct CalculateUrbanIndexesParams
+    {
+      te::rst::Raster* m_inputRaster;
+      InputClassesMap m_inputClassesMap;
+      double m_radius;
+      std::string m_spatialLimits;
+      UrbanIndexes m_urbanIndexes;
+    };
+
+    struct ClassifyParams
+    {
+      te::rst::Raster* m_inputRaster;
+      InputClassesMap m_inputClassesMap;
+      double m_radius;
+
+      std::auto_ptr<te::rst::Raster> m_outputRaster;
+    };
+
+
     //step 1 - this reclassification analyses the entire raster. Classify the urbanized area
-    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> classifyUrbanizedArea(te::rst::Raster* inputRaster, const InputClassesMap& inputClassesMap, double radius);
+    TEGROWTHEXPORT void classifyUrbanizedArea(ClassifyParams* params);
 
     //step 2 - this reclassification analyses the entire raster. Classify the urban footprint
-    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> classifyUrbanFootprint(te::rst::Raster* inputRaster, const InputClassesMap& inputClassesMap, double radius);
+    TEGROWTHEXPORT void classifyUrbanFootprint(ClassifyParams* params);
 
     //step 3 - this reclassification analyses the entire raster. Classify the urban open area
     TEGROWTHEXPORT void classifyUrbanOpenArea(te::rst::Raster* urbanFootprintRaster, double radius);
@@ -64,7 +83,7 @@ namespace te
     TEGROWTHEXPORT void classifyIsolatedOpenPatches(te::rst::Raster* raster, const std::string& outputPath, const std::string& outputPrefix);
 
     //the indexes calculation only considers the study area
-    TEGROWTHEXPORT void calculateUrbanIndexes(te::rst::Raster* inputRaster, const InputClassesMap& inputClassesMap, double radius, const std::string& spatialLimits, UrbanIndexes& urbanIndexes);
+    TEGROWTHEXPORT void calculateUrbanIndexes(CalculateUrbanIndexesParams* parms);
 
     TEGROWTHEXPORT UrbanRasters prepareRaster(te::rst::Raster* inputRaster, const InputClassesMap& inputClassesMap, double radius, const std::string& outputPath, const std::string& outputPrefix);
 

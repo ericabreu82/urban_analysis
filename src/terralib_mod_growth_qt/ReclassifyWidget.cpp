@@ -302,15 +302,27 @@ void te::urban::qt::ReclassifyWidget::execute()
         }
       }
 
+      std::auto_ptr<boost::thread> threadIndexes;
+
+      std::auto_ptr<CalculateUrbanIndexesParams> urbanIndexesParams;
+      if (calculateIndexes)
+      {
+        urbanIndexesParams.reset(new CalculateUrbanIndexesParams());
+        urbanIndexesParams->m_inputRaster = inputRaster.get();
+        urbanIndexesParams->m_inputClassesMap = inputClassesMap;
+        urbanIndexesParams->m_radius = radius;
+        urbanIndexesParams->m_spatialLimits = spatialLimitsFileName;
+
+        threadIndexes.reset(new boost::thread(&calculateUrbanIndexes, urbanIndexesParams.get()));
+      }
+
       urbanRaster_t_n0 = urbanRaster_t_n1;
       urbanRaster_t_n1 = prepareRaster(inputRaster.get(), inputClassesMap, radius, outputIntermediatePath, currentOutputPrefix);
 
-      if (calculateIndexes)
+      if (threadIndexes.get() != 0)
       {
-        UrbanIndexes urbanIndexes;
-        calculateUrbanIndexes(inputRaster.get(), inputClassesMap, radius, spatialLimitsFileName, urbanIndexes);
-
-        urbanSummary[inputFileName] = urbanIndexes;
+        threadIndexes->join();
+        urbanSummary[inputFileName] = urbanIndexesParams->m_urbanIndexes;
       }
 
       if (i > 0)

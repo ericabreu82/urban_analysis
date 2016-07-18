@@ -34,9 +34,13 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include <terralib/raster/Utils.h>
 
 
-std::auto_ptr<te::rst::Raster> te::urban::classifyUrbanizedArea(te::rst::Raster* inputRaster, const InputClassesMap& inputClassesMap, double radius)
+void te::urban::classifyUrbanizedArea(ClassifyParams* params)
 {
-  assert(inputRaster);
+  assert(params);
+
+  te::rst::Raster* inputRaster = params->m_inputRaster;
+  InputClassesMap inputClassesMap = params->m_inputClassesMap;
+  double radius = params->m_radius;
 
   std::auto_ptr<te::rst::Raster> outputRaster = cloneRasterIntoMem(inputRaster, false);
 
@@ -89,12 +93,16 @@ std::auto_ptr<te::rst::Raster> te::urban::classifyUrbanizedArea(te::rst::Raster*
     }
   }
 
-  return outputRaster;
+  params->m_outputRaster.reset(outputRaster.release());
 }
 
-std::auto_ptr<te::rst::Raster> te::urban::classifyUrbanFootprint(te::rst::Raster* inputRaster, const InputClassesMap& inputClassesMap, double radius)
+void te::urban::classifyUrbanFootprint(ClassifyParams* params)
 {
-  assert(inputRaster);
+  assert(params);
+
+  te::rst::Raster* inputRaster = params->m_inputRaster;
+  InputClassesMap inputClassesMap = params->m_inputClassesMap;
+  double radius = params->m_radius;
 
   std::auto_ptr<te::rst::Raster> outputRaster = cloneRasterIntoMem(inputRaster, false);
 
@@ -152,7 +160,7 @@ std::auto_ptr<te::rst::Raster> te::urban::classifyUrbanFootprint(te::rst::Raster
     }
   }
 
-  return outputRaster;
+  params->m_outputRaster.reset(outputRaster.release());
 }
 
 void te::urban::classifyUrbanOpenArea(te::rst::Raster* urbanFootprintRaster, double radius)
@@ -287,9 +295,14 @@ void te::urban::classifyIsolatedOpenPatches(te::rst::Raster* raster, const std::
   addIsolatedOpenPatches(raster, isolatedOpenPatchesRaster.get());
 }
 
-void te::urban::calculateUrbanIndexes(te::rst::Raster* inputRaster, const InputClassesMap& inputClassesMap, double radius, const std::string& spatialLimits, UrbanIndexes& urbanIndexes)
+void te::urban::calculateUrbanIndexes(CalculateUrbanIndexesParams* params)
 {
-  assert(inputRaster);
+  assert(params);
+
+  te::rst::Raster* inputRaster = params->m_inputRaster;
+  InputClassesMap inputClassesMap = params->m_inputClassesMap;
+  double radius = params->m_radius;
+  std::string spatialLimits = params->m_spatialLimits;
 
   const short InputUrban = inputClassesMap.find(INPUT_URBAN)->second;
   const short InputOther = inputClassesMap.find(INPUT_OTHER)->second;
@@ -357,8 +370,6 @@ void te::urban::calculateUrbanIndexes(te::rst::Raster* inputRaster, const InputC
     {
       sumPerUrb += permUrb;
       ++numPix;
-
-      
     }
     ++it;
   }
@@ -366,8 +377,8 @@ void te::urban::calculateUrbanIndexes(te::rst::Raster* inputRaster, const InputC
   double openness = 1. - (sumPerUrb / numPix);
   double edgeIndex = double(edgeCount) / numUrbanPixels;
 
-  urbanIndexes["openness"] = openness;
-  urbanIndexes["edgeIndex"] = edgeIndex;
+  params->m_urbanIndexes["openness"] = openness;
+  params->m_urbanIndexes["edgeIndex"] = edgeIndex;
 }
 
 te::urban::UrbanRasters te::urban::prepareRaster(te::rst::Raster* inputRaster, const InputClassesMap& inputClassesMap, double radius, const std::string& outputPath, const std::string& outputPrefix)
@@ -390,20 +401,40 @@ te::urban::UrbanRasters te::urban::prepareRaster(te::rst::Raster* inputRaster, c
   UrbanRasters urbanRaster;
 
   //step 1 - classify the urbanized areas
-  urbanRaster .m_urbanizedAreaRaster = classifyUrbanizedArea(inputRaster, inputClassesMap, radius);
-  saveRaster(urbanizedAreaFileName, urbanRaster.m_urbanizedAreaRaster.get());
+  std::auto_ptr<ClassifyParams> urbanizedParams(new ClassifyParams());
+  urbanizedParams->m_inputRaster = inputRaster;
+  urbanizedParams->m_inputClassesMap = inputClassesMap;
+  urbanizedParams->m_radius = radius;
+  boost::thread threadStep1(&classifyUrbanizedArea, urbanizedParams.get());
 
   //step 2 - classify the urban footprints
-  urbanRaster.m_urbanFootprintRaster = classifyUrbanFootprint(inputRaster, inputClassesMap, radius);
-  saveRaster(urbanFootprintsFileName, urbanRaster.m_urbanFootprintRaster.get());
+  std::auto_ptr<ClassifyParams> footprintParams(new ClassifyParams());
+  footprintParams->m_inputRaster = inputRaster;
+  footprintParams->m_inputClassesMap = inputClassesMap;
+  footprintParams->m_radius = radius;
+  boost::thread threadStep2(&classifyUrbanFootprint, footprintParams.get());
 
+  //we join step 2. step 2 normally finishes first. So we start step 3
+  threadStep2.join();
+  urbanRaster.m_urbanFootprintRaster = footprintParams->m_outputRaster;
+  saveRaster(urbanFootprintsFileName, urbanRaster.m_urbanFootprintRaster.get());
+  
   //step 3 - classify fringe open areas
-  classifyUrbanOpenArea(urbanRaster.m_urbanFootprintRaster.get(), radius);
+  boost::thread threadStep3(&classifyUrbanOpenArea, urbanRaster.m_urbanFootprintRaster.get(), radius);
+  threadStep3.join();
   saveRaster(urbanFootprintsOpenAreaFileName, urbanRaster.m_urbanFootprintRaster.get());
 
+  //we join step 1
+  threadStep1.join();
+  urbanRaster.m_urbanizedAreaRaster = urbanizedParams->m_outputRaster;
+  saveRaster(urbanizedAreaFileName, urbanRaster.m_urbanizedAreaRaster.get());
+
   //step 4 and 5- identify isolated patches and classify them into the given raster
-  classifyIsolatedOpenPatches(urbanRaster.m_urbanizedAreaRaster.get(), outputPath, urbanizedPrefix);
-  classifyIsolatedOpenPatches(urbanRaster.m_urbanFootprintRaster.get(), outputPath, footprintPrefix);
+  boost::thread threadIsolated1(&classifyIsolatedOpenPatches, urbanRaster.m_urbanizedAreaRaster.get(), outputPath, urbanizedPrefix);
+  boost::thread threadIsolated2(&classifyIsolatedOpenPatches, urbanRaster.m_urbanFootprintRaster.get(), outputPath, footprintPrefix);
+
+  threadIsolated1.join();
+  threadIsolated2.join();
 
   saveRaster(urbanizedIsolatedOpenPatchesFileName, urbanRaster.m_urbanizedAreaRaster.get());
   saveRaster(urbanFootprintsIsolatedOpenPatchesFileName, urbanRaster.m_urbanFootprintRaster.get());
