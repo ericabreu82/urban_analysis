@@ -406,12 +406,12 @@
              </column>
              <column>
               <property name="text">
-               <string>Edge</string>
+               <string>Openness</string>
               </property>
              </column>
              <column>
               <property name="text">
-               <string>Openness</string>
+               <string>Edge</string>
               </property>
              </column>
             </widget>
