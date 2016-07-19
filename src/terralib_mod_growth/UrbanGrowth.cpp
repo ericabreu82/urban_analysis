@@ -315,7 +315,6 @@ void te::urban::calculateUrbanIndexes(CalculateUrbanIndexesParams* params)
   boost::numeric::ublas::matrix<bool> mask = createRadiusMask(resX, radius);
 
   int numUrbanPixels = 0;
-  int numPix = 0;
   int edgeCount = 0; //edge index
   double sumPerUrb = 0;
 
@@ -340,7 +339,7 @@ void te::urban::calculateUrbanIndexes(CalculateUrbanIndexesParams* params)
 
     task.pulse();
 
-    if (centerPixel != InputUrban && centerPixel != InputOther)
+    if (centerPixel != InputUrban)
     {
       ++it;
       continue;
@@ -355,6 +354,9 @@ void te::urban::calculateUrbanIndexes(CalculateUrbanIndexesParams* params)
     if (centerPixel == InputUrban)
     {
       ++numUrbanPixels;
+
+      sumPerUrb += permUrb;
+
       //then we check if there is at least one pixel that is not also urban in the adjacency
       bool hasEdge = calculateEdge(inputRaster, inputClassesMap, currentColumn, currentRow);
       if (hasEdge == true)
@@ -362,19 +364,10 @@ void te::urban::calculateUrbanIndexes(CalculateUrbanIndexesParams* params)
         ++edgeCount;
       }
     }
-    
-
-    //sum the perviousness
-    //TODO: we need to check if the pixel is in the study area
-    if (centerPixel == InputOther)
-    {
-      sumPerUrb += permUrb;
-      ++numPix;
-    }
     ++it;
   }
 
-  double openness = 1. - (sumPerUrb / numPix);
+  double openness = 1. - (sumPerUrb / numUrbanPixels);
   double edgeIndex = double(edgeCount) / numUrbanPixels;
 
   params->m_urbanIndexes["openness"] = openness;
