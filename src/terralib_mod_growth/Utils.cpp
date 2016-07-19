@@ -404,6 +404,8 @@ std::vector<short> te::urban::getAdjacentPixels(te::rst::Raster* raster, size_t 
 
 double te::urban::calculateUrbanizedArea(short centerPixelValue, const InputClassesMap& inputClassesMap, const std::vector<short>& vecPixels, double& permUrb)
 {
+  permUrb = 0.;
+
   //INPUT CLASSES
   //NO_DATA = 0
   //OTHER = 1
@@ -426,7 +428,7 @@ double te::urban::calculateUrbanizedArea(short centerPixelValue, const InputClas
 
   for (std::size_t i = 0; i < size; ++i)
   {
-    double currentValue = vecPixels[i];
+    short currentValue = vecPixels[i];
     if (currentValue != InputWater && currentValue != InputUrban && currentValue != InputOther)
     {
       continue;

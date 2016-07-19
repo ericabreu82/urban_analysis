@@ -351,19 +351,24 @@ void te::urban::calculateUrbanIndexes(CalculateUrbanIndexesParams* params)
     double permUrb = 0.;
     double value = calculateUrbanizedArea((short)centerPixel, inputClassesMap, vecPixels, permUrb);
 
-    if (centerPixel == InputUrban)
+    //if the index could not be calculated, we continue to the next iteration
+    if (value == OUTPUT_NO_DATA)
     {
-      ++numUrbanPixels;
-
-      sumPerUrb += permUrb;
-
-      //then we check if there is at least one pixel that is not also urban in the adjacency
-      bool hasEdge = calculateEdge(inputRaster, inputClassesMap, currentColumn, currentRow);
-      if (hasEdge == true)
-      {
-        ++edgeCount;
-      }
+      ++it;
+      continue;
     }
+
+    ++numUrbanPixels;
+
+    sumPerUrb += permUrb;
+
+    //then we check if there is at least one pixel that is not also urban in the adjacency
+    bool hasEdge = calculateEdge(inputRaster, inputClassesMap, currentColumn, currentRow);
+    if (hasEdge == true)
+    {
+      ++edgeCount;
+    }
+
     ++it;
   }
 
