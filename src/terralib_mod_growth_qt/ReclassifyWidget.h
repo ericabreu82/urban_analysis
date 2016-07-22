@@ -64,6 +64,8 @@ namespace te
 
           void onRemapCheckBoxClicked(bool flag);
 
+          void onExportIndexInfoToolButton();
+
           void execute();
 
         private:

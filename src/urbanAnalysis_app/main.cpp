@@ -23,11 +23,17 @@ TerraLib Team at <terralib-team@terralib.org>.
 \brief It contains the main routine of urbanAnalysisApp.
 */
 
+// Terralib
+#include <terralib/core/utils/Platform.h>
+#include <terralib/core/logger/Logger.h>
+
 // UrbanAnalysis
 #include "../terralib_mod_growth_qt/UrbanAnalysisMainDialog.h"
 
 // Qt
 #include <QApplication>
+
+#define MY_LOG_WARN(message) TE_CORE_LOG_WARN("mylogger", message)
 
 int main(int argc, char** argv)
 {
@@ -35,6 +41,28 @@ int main(int argc, char** argv)
 
   qApp->setApplicationName("UrbanAnalysis");
   qApp->setOrganizationName("TE_3RDPARTY");
+
+  //Initializing terralib default logger
+  TE_INIT_DEFAULT_LOGGER("logs/urbanAnalysis.log");
+
+  //Adding a logger from a configuration file.
+  TE_ADD_LOGGER_FROM_FILE(te::core::FindInTerraLibPath("share/terralib/config/te-log.ini"));
+
+
+  //TE_LOG_TRACE("This is a trace log.");
+  //TE_LOG_INFO("This is a info log");
+  //TE_LOG_ERROR("This is a error log");
+
+  //te::core::Logger::instance().log("This is a trace log INFO.", "urbanAnalysis", boost::log::trivial::info);
+  //te::core::Logger::instance().log("This is a trace log WARNING.", "urbanAnalysis", boost::log::trivial::warning);
+  //te::core::Logger::instance().log("This is a trace log ERROR.", "urbanAnalysis", boost::log::trivial::error);
+  //te::core::Logger::instance().log("This is a trace log FATAL.", "urbanAnalysis", boost::log::trivial::fatal);
+
+  //Adding a new logger without configuration file.
+  TE_ADD_LOGGER("mylogger", "log/mylogs.log", "[%TimeStamp%]{%ThreadID%} %Process%(%ProcessID%) <%Severity%>: %Message%");
+
+  //MY_LOG_WARN("This is a warning log.");
+
 
   int waitVal = EXIT_FAILURE;
 

@@ -58,12 +58,14 @@ te::urban::qt::ReclassifyWidget::ReclassifyWidget(QWidget* parent, Qt::WindowFla
   m_ui->m_reclassRemoveImageToolButton->setIcon(QIcon(":/images/list-remove.svg"));
   m_ui->m_reclassAddVecToolButton->setIcon(QIcon(":/images/folder.svg"));
   m_ui->m_reclassOutputRepoToolButton->setIcon(QIcon(":/images/folder.svg"));
+  m_ui->m_exportIndexInfoToolButton->setIcon(QIcon(":/images/document-save.svg"));
 
   //connects
   connect(m_ui->m_reclassAddImageToolButton, SIGNAL(clicked()), this, SLOT(onReclassAddImageToolButtonClicked()));
   connect(m_ui->m_reclassRemoveImageToolButton, SIGNAL(clicked()), this, SLOT(onReclassRemoveImageToolButtonClicked()));
   connect(m_ui->m_reclassAddVecToolButton, SIGNAL(clicked()), this, SLOT(onReclassAddVecToolButtonClicked()));
   connect(m_ui->m_reclassOutputRepoToolButton, SIGNAL(clicked()), this, SLOT(onReclassOutputRepoToolButtonClicked()));
+  connect(m_ui->m_exportIndexInfoToolButton, SIGNAL(clicked()), this, SLOT(onExportIndexInfoToolButton()));
   connect(m_ui->m_remapCheckBox, SIGNAL(clicked(bool)), this, SLOT(onRemapCheckBoxClicked(bool)));
 }
 
@@ -163,6 +165,59 @@ void te::urban::qt::ReclassifyWidget::onRemapCheckBoxClicked(bool flag)
   }
 
   m_ui->m_remapTableWidget->resizeColumnToContents(0);
+}
+
+void te::urban::qt::ReclassifyWidget::onExportIndexInfoToolButton()
+{
+  //check output location
+  if (m_ui->m_reclassOutputRepoLineEdit->text().isEmpty() == true)
+  {
+    QMessageBox::warning(this, tr("Urban Analysis"), tr("Select the output repository location."));
+    return;
+  }
+
+  if (m_ui->m_reclassOutputNameLineEdit->text().isEmpty() == true)
+  {
+    QMessageBox::warning(this, tr("Urban Analysis"), tr("Select the output data name."));
+    return;
+  }
+
+  std::string outputPath = m_ui->m_reclassOutputRepoLineEdit->text().toStdString();
+  std::string outputPrefix = m_ui->m_reclassOutputNameLineEdit->text().toStdString();
+  std::string logFile = outputPath + "/" + outputPrefix + "_indexes.txt";
+
+  //check index table
+  if (m_ui->m_indexTableWidget->rowCount() == 0)
+  {
+    QMessageBox::warning(this, tr("Urban Analysis"), tr("Indexes not calculated."));
+    return;
+  }
+
+  //create output file
+  FILE* indexFile;
+  indexFile = fopen(logFile.c_str(), "a+"); // a+ (create + append)
+
+  if (indexFile == NULL)
+  {
+    QMessageBox::warning(this, tr("Urban Analysis"), tr("Error creating Index File."));
+    return;
+  }
+  
+  fprintf(indexFile, "\t\tUrban Analysis - INDEX LOG INFORMATION \n\n");
+
+  for (int i = 0; i < m_ui->m_indexTableWidget->rowCount(); ++i)
+  {
+    std::string msg  = "Image: " + m_ui->m_indexTableWidget->item(i, 0)->text().toStdString();
+                msg += "\t\t Opennes: " + m_ui->m_indexTableWidget->item(i, 1)->text().toStdString();
+                msg += "\t\t Edge: " + m_ui->m_indexTableWidget->item(i, 2)->text().toStdString();
+                msg += "\n";
+
+    fprintf(indexFile, msg.c_str());
+  }
+
+  fprintf(indexFile, "-------------------------------------------------------------------");
+
+  fclose(indexFile);
 }
 
 void te::urban::qt::ReclassifyWidget::execute()

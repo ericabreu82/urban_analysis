@@ -51,13 +51,14 @@ source_group("Header Files"  FILES ${URBANANALYSIS_HDR_FILES})
 
 set(URBANANALYSIS_DEPENDENCIES "terralib_mod_growth")
 list(APPEND URBANANALYSIS_DEPENDENCIES "terralib_mod_growth_qt")
+list(APPEND URBANANALYSIS_DEPENDENCIES "terralib_mod_core")
 
 if(Qt5_FOUND)
   QT5_ADD_RESOURCES(GROWTH_RESOURCES ${GROWTH_RESOURCES_FILES})
   
   add_executable(urbanAnalysisApp ${URBANANALYSIS_SRC_FILES} ${URBANANALYSIS_HDR_FILES} ${GROWTH_RESOURCES})
   
-  target_link_libraries(urbanAnalysisApp ${URBANANALYSIS_DEPENDENCIES})
+  target_link_libraries(urbanAnalysisApp ${URBANANALYSIS_DEPENDENCIES} ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY})
   
   SET (QT_USE_QTMAIN TRUE)
   

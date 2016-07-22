@@ -3,5 +3,6 @@
     <file>images/folder.svg</file>
 	<file>images/list-add.svg</file>
 	<file>images/list-remove.svg</file>
+	<file>images/document-save.svg</file>
 </qresource>
 </RCC>
