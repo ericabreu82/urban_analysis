@@ -418,7 +418,7 @@ te::urban::UrbanRasters te::urban::prepareRaster(te::rst::Raster* inputRaster, c
   saveRaster(urbanFootprintsFileName, urbanRaster.m_urbanFootprintRaster.get());
   
   //step 3 - classify fringe open areas
-  boost::thread threadStep3(&classifyUrbanOpenArea, urbanRaster.m_urbanFootprintRaster.get(), radius);
+  boost::thread threadStep3(&classifyUrbanOpenArea, urbanRaster.m_urbanFootprintRaster.get(), 100);
   threadStep3.join();
   saveRaster(urbanFootprintsOpenAreaFileName, urbanRaster.m_urbanFootprintRaster.get());
 
