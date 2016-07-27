@@ -25,7 +25,6 @@ TerraLib Team at <terralib-team@terralib.org>.
 
 // Terralib
 #include <terralib/core/utils/Platform.h>
-#include <terralib/core/logger/Logger.h>
 
 // UrbanAnalysis
 #include "../terralib_mod_growth_qt/UrbanAnalysisMainDialog.h"
@@ -33,19 +32,12 @@ TerraLib Team at <terralib-team@terralib.org>.
 // Qt
 #include <QApplication>
 
-#define MY_LOG_WARN(message) TE_CORE_LOG_WARN("UrbanAnalysisLogger", message)
-
 int main(int argc, char** argv)
 {
   QApplication app(argc, argv);
 
   qApp->setApplicationName("UrbanAnalysis");
   qApp->setOrganizationName("TE_3RDPARTY");
-
-  //Adding a new logger without configuration file.
-  TE_ADD_LOGGER("UrbanAnalysisLogger", "log/UrbanAnalysis.log", "[%TimeStamp%]{%ThreadID%} %Process%(%ProcessID%) <%Severity%>: %Message%");
-
-  MY_LOG_WARN("This is a warning log.");
 
   int waitVal = EXIT_FAILURE;
 

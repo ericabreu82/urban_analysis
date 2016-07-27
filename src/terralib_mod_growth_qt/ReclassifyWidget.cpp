@@ -222,28 +222,6 @@ void te::urban::qt::ReclassifyWidget::onExportIndexInfoToolButton()
 
 void te::urban::qt::ReclassifyWidget::execute()
 {
-  //ERIC FUNC
-  //std::string inputFileName = "D:\\Workspace\\FGV\\data\\belem_aug92_t90_final1.tif";
-  //double r = 564.;
-  //std::string oPath = "D:\\Workspace\\FGV\\temp";
-  //std::string oPrefix = "belem_aug92_t90_final1_reclass";
-
-  //ERIC HOME
-  //std::string inputFileName = "D:\\Projects\\FGV\\data\\belem_aug92_t90_final1.tif";
-  //double r = 564.;
-  //std::string oPath = "D:\\Projects\\FGV\\temp";
-  //std::string oPrefix = "t1";
-
-  //MARIO
-  //std::string inputFileName = "D:\\temp\\miguel_fred\\entrada\\belem_aug92_t90_final1.tif";
-  //double r = 564.;
-  //std::string oPath = "D:\\temp\\miguel_fred";
-  //std::string oPrefix = "t1";
-
-
-  //UrbanRasters outputRaster = prepareRaster(inputFileName, r, oPath, oPrefix);
-  //return;
-
   //check input parameters
   if (m_ui->m_imgFilesListWidget->count() == 0)
   {
@@ -331,6 +309,13 @@ void te::urban::qt::ReclassifyWidget::execute()
   inputClassesMap[INPUT_URBAN] = INPUT_URBAN;
   inputClassesMap[INPUT_OTHER] = INPUT_OTHER;
 
+  std::string logFileName = outputPath + "\\log\\UrbanAnalysis_" + outputPrefix + ".log";
+  initLogger(logFileName);
+
+  logInfo("Starting process");
+
+  Timer timer;
+
   try
   {
     for (int i = 0; i < m_ui->m_imgFilesListWidget->count(); ++i)
@@ -402,10 +387,14 @@ void te::urban::qt::ReclassifyWidget::execute()
       message += QString(e.what());
     }
 
+    logError(message.toStdString());
+    logInfo("Process finished with Error in " + boost::lexical_cast<std::string>(timer.getElapsedTimeMinutes()) + " minutes");
+
     QMessageBox::information(this, tr("Urban Analysis"),  message);
     return;
   }
 
+  logInfo("Process finished with success in " + boost::lexical_cast<std::string>(timer.getElapsedTimeMinutes()) + " minutes");
 
   if (calculateIndexes)
   {

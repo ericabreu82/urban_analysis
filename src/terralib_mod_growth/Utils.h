@@ -33,6 +33,7 @@ TerraLib Team at <terralib-team@terralib.org>.
 
 #include <boost/numeric/ublas/matrix.hpp>
 
+#include <ctime>
 
 #include <memory>
 #include <set>
@@ -84,9 +85,42 @@ namespace te
       std::auto_ptr<te::rst::Raster> m_urbanFootprintRaster;
     };
 
+    struct Timer
+    {
+      Timer()
+        : m_startTime(clock())
+      {
+      }
+
+      double getElapsedTimeInSeconds()
+      {
+        clock_t endTime = clock();
+        double elapsedTime = double(endTime - m_startTime) / CLOCKS_PER_SEC;
+
+        return elapsedTime;
+      }
+
+      double getElapsedTimeMinutes()
+      {
+        double timeInSeconds = getElapsedTimeInSeconds();
+        double timeInMinutes = timeInSeconds / 60.;
+        return timeInMinutes;
+      }
+
+      clock_t m_startTime;
+    };
+
     TEGROWTHEXPORT void init();
 
     TEGROWTHEXPORT void finalize();
+
+    TEGROWTHEXPORT void initLogger(const std::string& logFileName);
+
+    TEGROWTHEXPORT void logInfo(const std::string& message);
+
+    TEGROWTHEXPORT void logWarning(const std::string& message);
+
+    TEGROWTHEXPORT void logError(const std::string& message);
 
     TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> openRaster(const std::string& fileName);
 

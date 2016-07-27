@@ -33,10 +33,14 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include <terralib/raster/Raster.h>
 #include <terralib/raster/Utils.h>
 
+#include <boost/lexical_cast.hpp>
+
 
 void te::urban::classifyUrbanizedArea(ClassifyParams* params)
 {
   assert(params);
+
+  Timer timer;
 
   te::rst::Raster* inputRaster = params->m_inputRaster;
   InputClassesMap inputClassesMap = params->m_inputClassesMap;
@@ -94,11 +98,15 @@ void te::urban::classifyUrbanizedArea(ClassifyParams* params)
   }
 
   params->m_outputRaster.reset(outputRaster.release());
+
+  logInfo("classifyUrbanizedArea for  " + inputRaster->getInfo()["URI"] + " executed in " + boost::lexical_cast<std::string>(timer.getElapsedTimeMinutes()) + " minutes");
 }
 
 void te::urban::classifyUrbanFootprint(ClassifyParams* params)
 {
   assert(params);
+
+  Timer timer;
 
   te::rst::Raster* inputRaster = params->m_inputRaster;
   InputClassesMap inputClassesMap = params->m_inputClassesMap;
@@ -161,10 +169,14 @@ void te::urban::classifyUrbanFootprint(ClassifyParams* params)
   }
 
   params->m_outputRaster.reset(outputRaster.release());
+
+  logInfo("classifyUrbanFootprint for  " + inputRaster->getInfo()["URI"] + " executed in " + boost::lexical_cast<std::string>(timer.getElapsedTimeMinutes()) + " minutes");
 }
 
 void te::urban::classifyUrbanOpenArea(te::rst::Raster* urbanFootprintRaster, double radius)
 {
+  Timer timer;
+
   assert(urbanFootprintRaster);
 
   unsigned int numRows = urbanFootprintRaster->getNumberOfRows();
@@ -202,6 +214,8 @@ void te::urban::classifyUrbanOpenArea(te::rst::Raster* urbanFootprintRaster, dou
       task.pulse();
     }
   }
+
+  logInfo("classifyUrbanOpenArea for  " + urbanFootprintRaster->getInfo()["URI"] + " executed in " + boost::lexical_cast<std::string>(timer.getElapsedTimeMinutes()) + " minutes");
 }
 
 std::auto_ptr<te::rst::Raster> te::urban::identifyIsolatedOpenPatches(te::rst::Raster* raster, const std::string& outputPath, const std::string& outputPrefix)
@@ -290,14 +304,20 @@ void te::urban::addIsolatedOpenPatches(te::rst::Raster* urbanRaster, te::rst::Ra
 
 void te::urban::classifyIsolatedOpenPatches(te::rst::Raster* raster, const std::string& outputPath, const std::string& outputPrefix)
 {
+  Timer timer;
+
   std::auto_ptr<te::rst::Raster> isolatedOpenPatchesRaster = identifyIsolatedOpenPatches(raster, outputPath, outputPrefix);
 
   addIsolatedOpenPatches(raster, isolatedOpenPatchesRaster.get());
+
+  logInfo("classifyIsolatedOpenPatches for  " + raster->getInfo()["URI"] + " executed in " + boost::lexical_cast<std::string>(timer.getElapsedTimeMinutes()) + " minutes");
 }
 
 void te::urban::calculateUrbanIndexes(CalculateUrbanIndexesParams* params)
 {
   assert(params);
+
+  Timer timer;
 
   te::rst::Raster* inputRaster = params->m_inputRaster;
   InputClassesMap inputClassesMap = params->m_inputClassesMap;
@@ -377,6 +397,12 @@ void te::urban::calculateUrbanIndexes(CalculateUrbanIndexesParams* params)
 
   params->m_urbanIndexes["openness"] = openness;
   params->m_urbanIndexes["edgeIndex"] = edgeIndex;
+
+  std::string message = "Indexes calculated for  " + inputRaster->getInfo()["URI"]  + " executed in " + boost::lexical_cast<std::string>(timer.getElapsedTimeMinutes()) + " minutes";
+  message += "\nopenness=" + boost::lexical_cast<std::string>(openness);
+  message += "\nedgeIndex=" + boost::lexical_cast<std::string>(edgeIndex);
+
+  logInfo(message);
 }
 
 te::urban::UrbanRasters te::urban::prepareRaster(te::rst::Raster* inputRaster, const InputClassesMap& inputClassesMap, double radius, const std::string& outputPath, const std::string& outputPrefix)
@@ -442,6 +468,8 @@ te::urban::UrbanRasters te::urban::prepareRaster(te::rst::Raster* inputRaster, c
 
 std::auto_ptr<te::rst::Raster> te::urban::compareRasterPeriods(const UrbanRasters& t1, const UrbanRasters& t2, const std::string& outputPath, const std::string& outputPrefix)
 {
+  Timer timer;
+
   assert(t1.m_urbanizedAreaRaster.get());
   assert(t2.m_urbanizedAreaRaster.get());
 
@@ -468,5 +496,8 @@ std::auto_ptr<te::rst::Raster> te::urban::compareRasterPeriods(const UrbanRaster
 
   //4 - then we calculate the new development classification
   std::auto_ptr<te::rst::Raster> newDevelopmentRaster = classifyNewDevelopment(infillRaster.get(), otherDevGroupedRaster.get(), setEdgeOpenAreaGroups);
+
+  logInfo("compareRasterPeriods for  " + newDevelopmentRaster->getInfo()["URI"] + " executed in " + boost::lexical_cast<std::string>(timer.getElapsedTimeMinutes()) + " minutes");
+
   return newDevelopmentRaster;
 }

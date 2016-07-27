@@ -27,6 +27,7 @@ TerraLib Team at <terralib-team@terralib.org>.
 
 #include <terralib/common.h>
 #include <terralib/common/TerraLib.h>
+#include <terralib/core/logger/Logger.h>
 #include <terralib/core/utils/Platform.h>
 #include <terralib/dataaccess/datasource/DataSourceFactory.h>
 #include <terralib/geometry/Coord2D.h>
@@ -78,11 +79,31 @@ void te::urban::init()
 
 void te::urban::finalize()
 {
-  
   te::plugin::PluginManager::getInstance().unloadAll();
 
   TerraLib::getInstance().finalize();
-  
+}
+
+void te::urban::initLogger(const std::string& logFileName)
+{
+  //Adding a new logger without configuration file.
+  //TE_ADD_LOGGER("UrbanAnalysisLogger", logFileName, "[%TimeStamp%]{%ThreadID%} %Process%(%ProcessID%) <%Severity%>: %Message%");
+  TE_ADD_LOGGER("UrbanAnalysisLogger", logFileName, "[%TimeStamp%] <%Severity%>: %Message%");
+}
+
+void te::urban::logInfo(const std::string& message)
+{
+  TE_CORE_LOG_INFO("UrbanAnalysisLogger", message);
+}
+
+void te::urban::logWarning(const std::string& message)
+{
+  TE_CORE_LOG_WARN("UrbanAnalysisLogger", message);
+}
+
+void te::urban::logError(const std::string& message)
+{
+  TE_CORE_LOG_ERROR("UrbanAnalysisLogger", message);
 }
 
 std::auto_ptr<te::rst::Raster> te::urban::cloneRasterIntoMem(te::rst::Raster* raster, bool copyData)
@@ -131,6 +152,11 @@ std::auto_ptr<te::rst::Raster> te::urban::openRaster(const std::string& fileName
 
   std::auto_ptr<te::rst::Raster> rasterPointer(te::rst::RasterFactory::open(rasterInfo));
 
+  if (rasterPointer->getSRID() <= 0)
+  {
+    throw te::common::Exception("The SRID of the openned raster is invalid. Error in function: openRaster");
+  }
+
   std::auto_ptr<te::rst::Raster> memRaster = cloneRasterIntoMem(rasterPointer.get(), true);
   return memRaster;
 }
@@ -172,12 +198,24 @@ std::auto_ptr<te::da::DataSource> te::urban::createDataSourceOGR(const std::stri
 
 void te::urban::saveRaster(const std::string& fileName, te::rst::Raster* raster)
 {
+  if (raster->getSRID() <= 0)
+  {
+    throw te::common::Exception("The SRID of the raster data is invalid. Error in function: saveRaster");
+  }
+
   std::auto_ptr<te::rst::Raster> outputRaster = createRaster(fileName, raster);
   te::rst::Copy(*raster, *outputRaster);
 }
 
 void te::urban::saveVector(const std::string& fileName, const std::string& filePath, const std::vector<te::gm::Geometry*>& vecGeometries, const int& srid)
 {
+  assert(srid > 0);
+
+  if (srid <= 0)
+  {
+    throw te::common::Exception("The SRID of the vector data is invalid. Error in function: saveVector");
+  }
+
   //create datasource
   std::auto_ptr<te::da::DataSource> ds = createDataSourceOGR(filePath);
 
