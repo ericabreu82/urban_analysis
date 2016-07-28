@@ -121,8 +121,6 @@ void te::urban::qt::ReclassifyWidget::onReclassOutputRepoToolButtonClicked()
 
 void te::urban::qt::ReclassifyWidget::onRemapCheckBoxClicked(bool flag)
 {
-  te::qt::widgets::ScopedCursor c(Qt::WaitCursor);
-
   if (!m_ui->m_remapCheckBox->isChecked())
     return;
 
@@ -130,14 +128,35 @@ void te::urban::qt::ReclassifyWidget::onRemapCheckBoxClicked(bool flag)
 
   std::map<double, unsigned int> values;
 
-  if (m_ui->m_imgFilesListWidget->count() != 0)
+  if (m_ui->m_imgFilesListWidget->count() == 0)
   {
-    std::string inputFileName = m_ui->m_imgFilesListWidget->item(0)->text().toStdString();
+	  return;
+  }
+
+  std::string inputFileName = m_ui->m_imgFilesListWidget->item(0)->text().toStdString();
+  
+  try
+  {
     std::auto_ptr<te::rst::Raster> inputRaster = openRaster(inputFileName);
 
     values = inputRaster->getBand(0)->getHistogramR();
   }
+  catch (const std::exception& e)
+  {
+    QString message = tr("Error in the execution.");
+    if (e.what() != 0)
+    {
+      message += QString("\n");
+      message += QString(e.what());
+    }
 
+    QMessageBox::information(this, tr("Urban Analysis"), message);
+
+    return;
+  }
+
+  te::qt::widgets::ScopedCursor c(Qt::WaitCursor);
+  
   m_ui->m_remapTableWidget->setRowCount(0);
 
   std::map<double, unsigned int>::iterator it;
@@ -375,7 +394,7 @@ void te::urban::qt::ReclassifyWidget::execute()
       }
     }
   }
-  catch (const te::common::Exception& e)
+  catch (const std::exception& e)
   {
     te::common::ProgressManager::getInstance().removeViewer(dlgViewerId);
     delete dlgViewer;
@@ -389,12 +408,14 @@ void te::urban::qt::ReclassifyWidget::execute()
 
     logError(message.toStdString());
     logInfo("Process finished with Error in " + boost::lexical_cast<std::string>(timer.getElapsedTimeMinutes()) + " minutes");
+    removeAllLoggers();
 
     QMessageBox::information(this, tr("Urban Analysis"),  message);
     return;
   }
 
   logInfo("Process finished with success in " + boost::lexical_cast<std::string>(timer.getElapsedTimeMinutes()) + " minutes");
+  removeAllLoggers();
 
   if (calculateIndexes)
   {

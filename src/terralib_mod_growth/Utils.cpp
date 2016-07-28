@@ -106,6 +106,11 @@ void te::urban::logError(const std::string& message)
   TE_CORE_LOG_ERROR("UrbanAnalysisLogger", message);
 }
 
+void te::urban::removeAllLoggers()
+{
+  te::core::Logger::instance().removeAllLoggers();
+}
+
 std::auto_ptr<te::rst::Raster> te::urban::cloneRasterIntoMem(te::rst::Raster* raster, bool copyData)
 {
   //load to mem

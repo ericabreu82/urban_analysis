@@ -122,6 +122,8 @@ namespace te
 
     TEGROWTHEXPORT void logError(const std::string& message);
 
+    TEGROWTHEXPORT void removeAllLoggers();
+
     TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> openRaster(const std::string& fileName);
 
     TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> cloneRasterIntoMem(te::rst::Raster* raster, bool copyData);

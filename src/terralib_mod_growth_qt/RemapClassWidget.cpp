@@ -164,19 +164,37 @@ void te::urban::qt::RemapClassWidget::execute()
     mapValues[pixelValue] = inputClassValue;
   }
 
-  //execute operation
-  for (int i = 0; i < m_ui->m_imgFilesListWidget->count(); ++i)
+  try
   {
-    QFileInfo file(m_ui->m_imgFilesListWidget->item(i)->text());
-    
-    std::string outputFileName = file.baseName().toStdString() + "_" + outputSufix + ".tif";
-    std::string outputFilePath = outputPath + "/" + outputFileName;
+    //execute operation
+    for (int i = 0; i < m_ui->m_imgFilesListWidget->count(); ++i)
+    {
+      QFileInfo file(m_ui->m_imgFilesListWidget->item(i)->text());
 
-    std::auto_ptr<te::rst::Raster> inputRaster = openRaster(m_ui->m_imgFilesListWidget->item(i)->text().toStdString());
+      std::string outputFileName = file.baseName().toStdString() + "_" + outputSufix + ".tif";
+      std::string outputFilePath = outputPath + "/" + outputFileName;
 
-    inputRaster = reclassify(inputRaster.get(), mapValues, defaultValue);
+      std::auto_ptr<te::rst::Raster> inputRaster = openRaster(m_ui->m_imgFilesListWidget->item(i)->text().toStdString());
 
-    saveRaster(outputFilePath, inputRaster.get());
+      inputRaster = reclassify(inputRaster.get(), mapValues, defaultValue);
+
+      saveRaster(outputFilePath, inputRaster.get());
+    }
+  }
+  catch (const std::exception& e)
+  {
+    te::common::ProgressManager::getInstance().removeViewer(dlgViewerId);
+    delete dlgViewer;
+
+    QString message = tr("Error in the execution.");
+    if (e.what() != 0)
+    {
+      message += QString("\n");
+      message += QString(e.what());
+    }
+
+    QMessageBox::information(this, tr("Urban Analysis"), message);
+    return;
   }
 
   te::common::ProgressManager::getInstance().removeViewer(dlgViewerId);
