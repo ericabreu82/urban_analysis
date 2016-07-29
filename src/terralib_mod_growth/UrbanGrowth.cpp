@@ -220,6 +220,8 @@ void te::urban::classifyUrbanOpenArea(te::rst::Raster* urbanFootprintRaster, dou
 
 std::auto_ptr<te::rst::Raster> te::urban::identifyIsolatedOpenPatches(te::rst::Raster* raster, const std::string& outputPath, const std::string& outputPrefix)
 {
+  Timer timer;
+
   //we first need to create a binary image containing only the urban pixels
   std::auto_ptr<te::rst::Raster> binaryNonUrbanRaster = filterUrbanPixels(raster, true);
   std::string binaryInvertedFilePath = outputPath + "/" + outputPrefix + "_binary_inverted.tif";
@@ -257,6 +259,8 @@ std::auto_ptr<te::rst::Raster> te::urban::identifyIsolatedOpenPatches(te::rst::R
 
   te::common::FreeContents(vecGaps);
 
+  logInfo("identifyIsolatedOpenPatches for  " + raster->getInfo()["URI"] + " executed in " + boost::lexical_cast<std::string>(timer.getElapsedTimeMinutes()) + " minutes");
+
   return binaryNonUrbanRaster;
 }
 
@@ -268,14 +272,7 @@ void te::urban::addIsolatedOpenPatches(te::rst::Raster* urbanRaster, te::rst::Ra
   std::size_t numRows = urbanRaster->getNumberOfRows();
   std::size_t numColumns = urbanRaster->getNumberOfColumns();
 
-  if (numRows != isolatedOpenPatchesRaster->getNumberOfRows())
-  {
-    return;
-  }
-  if (numColumns != isolatedOpenPatchesRaster->getNumberOfColumns())
-  {
-    return;
-  }
+  Timer timer;
 
   for (std::size_t row = 0; row < numRows; ++row)
   {
@@ -300,6 +297,8 @@ void te::urban::addIsolatedOpenPatches(te::rst::Raster* urbanRaster, te::rst::Ra
       }
     }
   }
+
+  logInfo("addIsolatedOpenPatches for  " + urbanRaster->getInfo()["URI"] + " executed in " + boost::lexical_cast<std::string>(timer.getElapsedTimeMinutes()) + " minutes");
 }
 
 void te::urban::classifyIsolatedOpenPatches(te::rst::Raster* raster, const std::string& outputPath, const std::string& outputPrefix)
