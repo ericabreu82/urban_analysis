@@ -28,6 +28,7 @@ TerraLib Team at <terralib-team@terralib.org>.
 
 #include "ReclassifyWidget.h"
 #include "RemapClassWidget.h"
+#include "StatisticsWidget.h"
 
 #include "terralib_mod_growth/Utils.h"
 
@@ -75,6 +76,10 @@ void te::urban::qt::UrbanAnalysisMainDialog::buildDialog()
   //remap
   QToolButton* remapClassToolButton = createButton("Remap Class");
   connect(remapClassToolButton, SIGNAL(clicked()), this, SLOT(onRemapClassToolButtonClicked()));
+
+  //statistics
+  QToolButton* statisticsToolButton = createButton("Statistics");
+  connect(statisticsToolButton, SIGNAL(clicked()), this, SLOT(onStatisticsToolButtonClicked()));
   
   //leave this for last
   createSpacer();
@@ -149,6 +154,27 @@ void te::urban::qt::UrbanAnalysisMainDialog::onRemapClassToolButtonClicked()
     delete m_currentWidget;
 
   te::urban::qt::RemapClassWidget* widget = new te::urban::qt::RemapClassWidget(m_ui->m_widget);
+
+  m_layout->addWidget(widget);
+
+  widget->show();
+
+  connect(m_ui->m_okPushButton, SIGNAL(clicked()), widget, SLOT(execute()));
+
+  m_currentWidget = widget;
+}
+
+void te::urban::qt::UrbanAnalysisMainDialog::onStatisticsToolButtonClicked()
+{
+  QToolButton* button = dynamic_cast<QToolButton*>(QObject::sender());
+
+  if (button)
+    button->setChecked(true);
+
+  if (m_currentWidget)
+    delete m_currentWidget;
+
+  te::urban::qt::StatisticsWidget* widget = new te::urban::qt::StatisticsWidget(m_ui->m_widget);
 
   m_layout->addWidget(widget);
 

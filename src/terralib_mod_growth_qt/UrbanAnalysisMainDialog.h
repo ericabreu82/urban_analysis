@@ -70,6 +70,8 @@ namespace te
 
           void onRemapClassToolButtonClicked();
 
+          void onStatisticsToolButtonClicked();
+
         private:
 
           std::auto_ptr<Ui::UrbanAnalysisMainDialogForm> m_ui;
