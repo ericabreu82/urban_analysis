@@ -321,7 +321,7 @@ void te::urban::calculateUrbanIndexes(CalculateUrbanIndexesParams* params)
   te::rst::Raster* inputRaster = params->m_inputRaster;
   InputClassesMap inputClassesMap = params->m_inputClassesMap;
   double radius = params->m_radius;
-  std::string spatialLimits = params->m_spatialLimits;
+  te::gm::Geometry* spatialLimits = params->m_spatialLimits;
 
   const short InputUrban = inputClassesMap.find(INPUT_URBAN)->second;
   const short InputOther = inputClassesMap.find(INPUT_OTHER)->second;
@@ -342,7 +342,20 @@ void te::urban::calculateUrbanIndexes(CalculateUrbanIndexesParams* params)
   task.useTimer(true);
 
   const te::gm::Envelope* rasterEnvelope = inputRaster->getExtent();
-  te::gm::Polygon* limitPolygon = (te::gm::Polygon*)te::gm::GetGeomFromEnvelope(rasterEnvelope, inputRaster->getSRID());
+  te::gm::Polygon* limitPolygon = 0;
+  if (spatialLimits != 0)
+  {
+    limitPolygon = dynamic_cast<te::gm::Polygon*>(spatialLimits);
+  }
+  else
+  {
+    limitPolygon = (te::gm::Polygon*)te::gm::GetGeomFromEnvelope(rasterEnvelope, inputRaster->getSRID());
+  }
+
+  if (limitPolygon == 0)
+  {
+    return;
+  }
 
   te::rst::PolygonIterator<double> it = te::rst::PolygonIterator<double>::begin(inputRaster, limitPolygon);
   te::rst::PolygonIterator<double> itend = te::rst::PolygonIterator<double>::end(inputRaster, limitPolygon);
@@ -404,8 +417,16 @@ void te::urban::calculateUrbanIndexes(CalculateUrbanIndexesParams* params)
   logInfo(message);
 }
 
-te::urban::UrbanRasters te::urban::prepareRaster(te::rst::Raster* inputRaster, const InputClassesMap& inputClassesMap, double radius, const std::string& outputPath, const std::string& outputPrefix)
+void te::urban::prepareRaster(PrepareRasterParams* params)
 {
+  assert(params);
+
+  te::rst::Raster* inputRaster = params->m_inputRaster;
+  const InputClassesMap& inputClassesMap = params->m_inputClassesMap;
+  double radius = params->m_radius;
+  const std::string& outputPath = params->m_outputPath;
+  const std::string& outputPrefix = params->m_outputPrefix;
+
   assert(inputRaster);
 
   //define the prefix to the file names
@@ -421,48 +442,42 @@ te::urban::UrbanRasters te::urban::prepareRaster(te::rst::Raster* inputRaster, c
   std::string urbanizedIsolatedOpenPatchesFileName = outputPath + "/" + urbanizedPrefix + "_isolated_open_patches.tif";
   std::string urbanFootprintsIsolatedOpenPatchesFileName = outputPath + "/" + footprintPrefix + "_isolated_open_patches.tif";
 
-  UrbanRasters urbanRaster;
-
   //step 1 - classify the urbanized areas
-  std::auto_ptr<ClassifyParams> urbanizedParams(new ClassifyParams());
-  urbanizedParams->m_inputRaster = inputRaster;
-  urbanizedParams->m_inputClassesMap = inputClassesMap;
-  urbanizedParams->m_radius = radius;
-  boost::thread threadStep1(&classifyUrbanizedArea, urbanizedParams.get());
+  ClassifyParams urbanizedParams;
+  urbanizedParams.m_inputRaster = inputRaster;
+  urbanizedParams.m_inputClassesMap = inputClassesMap;
+  urbanizedParams.m_radius = radius;
+  classifyUrbanizedArea(&urbanizedParams);
 
   //step 2 - classify the urban footprints
-  std::auto_ptr<ClassifyParams> footprintParams(new ClassifyParams());
-  footprintParams->m_inputRaster = inputRaster;
-  footprintParams->m_inputClassesMap = inputClassesMap;
-  footprintParams->m_radius = radius;
-  boost::thread threadStep2(&classifyUrbanFootprint, footprintParams.get());
+  ClassifyParams footprintParams;
+  footprintParams.m_inputRaster = inputRaster;
+  footprintParams.m_inputClassesMap = inputClassesMap;
+  footprintParams.m_radius = radius;
+  classifyUrbanFootprint(&footprintParams);
 
-  //we join step 2. step 2 normally finishes first. So we start step 3
-  threadStep2.join();
-  urbanRaster.m_urbanFootprintRaster = footprintParams->m_outputRaster;
-  saveRaster(urbanFootprintsFileName, urbanRaster.m_urbanFootprintRaster.get());
+  params->m_result.m_urbanFootprintRaster = footprintParams.m_outputRaster;
+  saveRaster(urbanFootprintsFileName, params->m_result.m_urbanFootprintRaster.get());
   
   //step 3 - classify fringe open areas
-  boost::thread threadStep3(&classifyUrbanOpenArea, urbanRaster.m_urbanFootprintRaster.get(), 100);
-  threadStep3.join();
-  saveRaster(urbanFootprintsOpenAreaFileName, urbanRaster.m_urbanFootprintRaster.get());
+  classifyUrbanOpenArea(params->m_result.m_urbanFootprintRaster.get(), 100);
+  saveRaster(urbanFootprintsOpenAreaFileName, params->m_result.m_urbanFootprintRaster.get());
 
-  //we join step 1
-  threadStep1.join();
-  urbanRaster.m_urbanizedAreaRaster = urbanizedParams->m_outputRaster;
-  saveRaster(urbanizedAreaFileName, urbanRaster.m_urbanizedAreaRaster.get());
+  params->m_result.m_urbanizedAreaRaster = urbanizedParams.m_outputRaster;
+  saveRaster(urbanizedAreaFileName, params->m_result.m_urbanizedAreaRaster.get());
 
   //step 4 and 5- identify isolated patches and classify them into the given raster
-  boost::thread threadIsolated1(&classifyIsolatedOpenPatches, urbanRaster.m_urbanizedAreaRaster.get(), outputPath, urbanizedPrefix);
-  boost::thread threadIsolated2(&classifyIsolatedOpenPatches, urbanRaster.m_urbanFootprintRaster.get(), outputPath, footprintPrefix);
+  boost::thread isolatedThread1(&classifyIsolatedOpenPatches, params->m_result.m_urbanizedAreaRaster.get(), outputPath, urbanizedPrefix);
+  boost::thread isolatedThread2(&classifyIsolatedOpenPatches, params->m_result.m_urbanFootprintRaster.get(), outputPath, footprintPrefix);
 
-  threadIsolated1.join();
-  threadIsolated2.join();
+  isolatedThread1.join();
+  isolatedThread2.join();
 
-  saveRaster(urbanizedIsolatedOpenPatchesFileName, urbanRaster.m_urbanizedAreaRaster.get());
-  saveRaster(urbanFootprintsIsolatedOpenPatchesFileName, urbanRaster.m_urbanFootprintRaster.get());
+  //classifyIsolatedOpenPatches(params->m_result.m_urbanizedAreaRaster.get(), outputPath, urbanizedPrefix);
+  //classifyIsolatedOpenPatches(params->m_result.m_urbanFootprintRaster.get(), outputPath, footprintPrefix);
 
-  return urbanRaster;
+  saveRaster(urbanizedIsolatedOpenPatchesFileName, params->m_result.m_urbanizedAreaRaster.get());
+  saveRaster(urbanFootprintsIsolatedOpenPatchesFileName, params->m_result.m_urbanFootprintRaster.get());
 }
 
 std::auto_ptr<te::rst::Raster> te::urban::compareRasterPeriods(const UrbanRasters& t1, const UrbanRasters& t2, const std::string& outputPath, const std::string& outputPrefix)
