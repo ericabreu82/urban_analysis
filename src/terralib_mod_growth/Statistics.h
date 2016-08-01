@@ -47,8 +47,8 @@ namespace te
   namespace urban
   {
     //calculates the statistics for a result image from urban growth method (infill, leapfrog, extension)
-    TEGROWTHEXPORT void CalculateStatistics(te::rst::Raster* raster, te::da::DataSourcePtr ds, const std::string& dataSetName, 
-                                            const bool& calculateArea, const bool& calculateCount, const std::string& outPath);
+    TEGROWTHEXPORT void CalculateStatistics(te::rst::Raster* raster, te::da::DataSource* ds, const std::string& dataSetName, 
+                                            const bool& calculateArea, const bool& calculateCount, const std::string& outPath, const std::string& outDataSetName);
 
     TEGROWTHEXPORT std::auto_ptr<te::da::DataSetType> createStatisticsDataSetType(std::string dataSetName, te::da::DataSetType* inputDsType, 
                                                                                   const bool& calculateArea, const bool& calculateCount);

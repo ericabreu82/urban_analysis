@@ -24,19 +24,55 @@ TerraLib Team at <terralib-team@terralib.org>.
 */
 
 #include "Statistics.h"
+#include "Utils.h"
 
+#include <terralib/dataaccess/dataset/DataSetType.h>
+#include <terralib/dataaccess/utils/Utils.h>
 #include <terralib/geometry/GeometryProperty.h>
+#include <terralib/geometry/Utils.h>
 #include <terralib/memory/DataSet.h>
 #include <terralib/memory/DataSetItem.h>
+#include <terralib/raster/PositionIterator.h>
+#include <terralib/srs/Config.h>
 
-void te::urban::CalculateStatistics(te::rst::Raster* raster, te::da::DataSourcePtr ds, const std::string& dataSetName,
-                                    const bool& calculateArea, const bool& calculateCount, const std::string& outPath)
+void te::urban::CalculateStatistics(te::rst::Raster* raster, te::da::DataSource* ds, const std::string& dataSetName,
+                                    const bool& calculateArea, const bool& calculateCount, const std::string& outPath, const std::string& outDataSetName)
 {
   assert(raster);
-  assert(ds.get());
+  assert(ds);
 
   //validate SRID information
+  if (raster->getSRID() == TE_UNKNOWN_SRS)
+  {
+    throw te::common::Exception("The SRID of the selected raster is invalid. Error in function: CalculateStatistics");
+  }
+  
+  std::auto_ptr<te::da::DataSetType> dsType = ds->getDataSetType(dataSetName);
 
+  if (!dsType.get())
+  {
+    throw te::common::Exception("Error getting data set from data source. Error in function: CalculateStatistics");
+  }
+
+  te::gm::GeometryProperty* gp = te::da::GetFirstGeomProperty(dsType.get());
+
+  if (!gp || gp->getSRID() == TE_UNKNOWN_SRS)
+  {
+    throw te::common::Exception("Invalid geometric property or SRID from data set. Error in function: CalculateStatistics");
+  }
+
+  //create dataset type
+  std::auto_ptr<te::da::DataSetType> outDsType = createStatisticsDataSetType(outDataSetName, dsType.get(), calculateArea, calculateCount);
+
+  //fill dataset
+  std::auto_ptr<te::da::DataSet> inDataSet = ds->getDataSet(dataSetName);
+
+  std::auto_ptr<te::mem::DataSet> outDataSet = createStatisticsDataSet(raster, outDsType.get(), inDataSet.get(), calculateArea, calculateCount);
+
+  //save dataset
+  std::auto_ptr<te::da::DataSource> outDs = te::urban::createDataSourceOGR(outPath);
+
+  saveStatisticsDataSet(outDataSet.get(), outDsType.get(), outDs.get(), outDataSetName);
 }
 
 std::auto_ptr<te::da::DataSetType> te::urban::createStatisticsDataSetType(std::string dataSetName, te::da::DataSetType* inputDsType, 
@@ -163,5 +199,53 @@ void te::urban::calculateStatisticsDataSet(te::rst::Raster* raster, te::gm::Geom
                                            double& if_area, double& lf_area, double& ext_area,
                                            const bool& calculateArea, const bool& calculateCount)
 {
+  //infill       outputValue = 1;
+  if_count = 0;
+  if_area = 0.;
 
+  //extensio     outputValue = 2;
+  ext_count = 0;
+  ext_area = 0.;
+
+  //leapfrog     outputValue = 3;
+  lf_count = 0;
+  lf_area = 0.;
+
+  //raster pixel area
+  double pixelArea = raster->getResolutionX() * raster->getResolutionY();
+
+  std::vector<te::gm::Geometry*> geomVec;
+  
+  te::gm::Multi2Single(geom, geomVec);
+
+  for (std::size_t g = 0; g < geomVec.size(); ++g)
+  {
+    te::gm::Polygon* polygon = dynamic_cast<te::gm::Polygon*>(geomVec[g]);
+
+    if (!polygon)
+      continue;
+
+    te::rst::PolygonIterator<double> it = te::rst::PolygonIterator<double>::begin(raster, polygon);
+    te::rst::PolygonIterator<double> itend = te::rst::PolygonIterator<double>::end(raster, polygon);
+
+    while (it != itend)
+    {
+      double value = 0.;
+
+      raster->getValue(it.getColumn(), it.getRow(), value, 0);
+
+      if (value == 1)
+        if_count++;
+      else if (value == 2)
+        ext_count++;
+      else if (value == 3)
+        lf_count++;
+
+      ++it;
+    }
+  }
+
+  if_area  = if_count  * pixelArea;
+  ext_area = ext_count * pixelArea;
+  lf_area  = lf_count  * pixelArea;
 }

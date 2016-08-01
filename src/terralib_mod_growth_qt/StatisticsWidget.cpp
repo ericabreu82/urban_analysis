@@ -23,11 +23,14 @@ TerraLib Team at <terralib-team@terralib.org>.
 \brief This class represents the Statistics Widget class.
 */
 
+#include "../terralib_mod_growth/Statistics.h"
+#include "../terralib_mod_growth/Utils.h"
 #include "StatisticsWidget.h"
 #include "ui_StatisticsWidgetForm.h"
 
 //Terralib
 #include <terralib/common/progress/ProgressManager.h>
+#include <terralib/dataaccess/utils/Utils.h>
 #include <terralib/raster/Band.h>
 #include <terralib/qt/widgets/progress/ProgressViewerDialog.h>
 #include <terralib/qt/widgets/utils/ScopedCursor.h>
@@ -93,13 +96,18 @@ void te::urban::qt::StatisticsWidget::onAddVectorToolButtonClicked()
 
 void te::urban::qt::StatisticsWidget::onOutputRepoToolButtonClicked()
 {
-  QString dirName = QFileDialog::getSaveFileName(this, tr("Select output data location"), te::qt::widgets::GetFilePathFromSettings("urbanAnalysis_outDir"));
+  QString fileName = QFileDialog::getSaveFileName(this, tr("Select output data location"), te::qt::widgets::GetFilePathFromSettings("urbanAnalysis_outDir"), tr("Shape Files (*.shp *.SHP)"));
 
-  if (!dirName.isEmpty())
+  if (!fileName.isEmpty())
   {
-    te::qt::widgets::AddFilePathToSettings(dirName, "urbanAnalysis_outDir");
+    QFileInfo file(fileName);
 
-    m_ui->m_outputRepoLineEdit->setText(dirName);
+    if (file.suffix().isEmpty())
+      fileName.append(".shp");
+
+    m_ui->m_outputRepoLineEdit->setText(fileName);
+
+    te::qt::widgets::AddFilePathToSettings(file.absolutePath(), "urbanAnalysis_outDir");
   }
 }
 
@@ -111,27 +119,47 @@ void te::urban::qt::StatisticsWidget::execute()
     QMessageBox::warning(this, tr("Urban Analysis"), tr("Select the input image data."));
     return;
   }
+  std::string rasterFileName = m_ui->m_imageLineEdit->text().toStdString();
 
   if (m_ui->m_vectorLineEdit->text().isEmpty() == true)
   {
     QMessageBox::warning(this, tr("Urban Analysis"), tr("Select the input vector data."));
     return;
   }
+  std::string ogrFileName = m_ui->m_vectorLineEdit->text().toStdString();
 
   if (m_ui->m_outputRepoLineEdit->text().isEmpty() == true)
   {
     QMessageBox::warning(this, tr("Urban Analysis"), tr("Select the output repository location."));
     return;
   }
+  std::string outPath = m_ui->m_outputRepoLineEdit->text().toStdString();
+  
+  QFileInfo file(outPath.c_str());
+
+  bool calculateArea = m_ui->m_areaCheckBox->isChecked();
+
+  bool calculateCount = m_ui->m_countCheckBox->isChecked();
 
   //add task viewer
   te::qt::widgets::ProgressViewerDialog* dlgViewer = new te::qt::widgets::ProgressViewerDialog(this);
   int dlgViewerId = te::common::ProgressManager::getInstance().addViewer(dlgViewer);
 
-
   try
   {
-   
+    //get raster
+    std::auto_ptr<te::rst::Raster> raster = te::urban::openRaster(rasterFileName);
+
+    //get datasource
+    std::auto_ptr<te::da::DataSource> ds = te::urban::createDataSourceOGR(ogrFileName);
+    if (ds->getDataSetNames().empty())
+    {
+      QMessageBox::warning(this, tr("Urban Analysis"), tr("Error getting data set from data source."));
+      return;
+    }
+    std::string dataSetName = ds->getDataSetNames()[0];
+
+    te::urban::CalculateStatistics(raster.get(), ds.get(), dataSetName, calculateArea, calculateCount, outPath, file.baseName().toStdString());
   }
   catch (const std::exception& e)
   {
