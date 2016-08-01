@@ -40,6 +40,11 @@ namespace te
     class Raster;
   }
 
+  namespace gm
+  {
+    class Geometry;
+  }
+
   namespace urban
   {
     typedef std::map<std::string, double> UrbanIndexes;
@@ -47,10 +52,11 @@ namespace te
 
     struct CalculateUrbanIndexesParams
     {
+      std::string m_inputFileName;
       te::rst::Raster* m_inputRaster;
       InputClassesMap m_inputClassesMap;
       double m_radius;
-      std::string m_spatialLimits;
+      te::gm::Geometry* m_spatialLimits;
       UrbanIndexes m_urbanIndexes;
     };
 
@@ -63,6 +69,20 @@ namespace te
       std::auto_ptr<te::rst::Raster> m_outputRaster;
     };
 
+    struct PrepareRasterParams
+    {
+      PrepareRasterParams()
+        : m_inputRaster(0)
+        , m_radius(0)
+      {}
+
+      te::rst::Raster* m_inputRaster;
+      InputClassesMap m_inputClassesMap;
+      double m_radius;
+      std::string m_outputPath;
+      std::string m_outputPrefix;
+      UrbanRasters m_result;
+    };
 
     //step 1 - this reclassification analyses the entire raster. Classify the urbanized area
     TEGROWTHEXPORT void classifyUrbanizedArea(ClassifyParams* params);
@@ -85,7 +105,7 @@ namespace te
     //the indexes calculation only considers the study area
     TEGROWTHEXPORT void calculateUrbanIndexes(CalculateUrbanIndexesParams* parms);
 
-    TEGROWTHEXPORT UrbanRasters prepareRaster(te::rst::Raster* inputRaster, const InputClassesMap& inputClassesMap, double radius, const std::string& outputPath, const std::string& outputPrefix);
+    TEGROWTHEXPORT void prepareRaster(PrepareRasterParams* params);
 
     //step 9 - analyze new development
     TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> compareRasterPeriods(const UrbanRasters& t1, const UrbanRasters& t2, const std::string& outputPath, const std::string& outputPrefix);

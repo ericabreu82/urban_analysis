@@ -29,6 +29,7 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include "../terralib_mod_growth/UrbanGrowth.h"
 
 //Terralib
+#include <terralib/common/STLUtils.h>
 #include <terralib/common/progress/ProgressManager.h>
 #include <terralib/raster/Band.h>
 #include <terralib/qt/widgets/progress/ProgressViewerDialog.h>
@@ -318,9 +319,10 @@ void te::urban::qt::ReclassifyWidget::execute()
   }
 
   //execute operation
-  UrbanRasters urbanRaster_t_n0;
-  UrbanRasters urbanRaster_t_n1;
-  UrbanSummary urbanSummary;
+  std::vector<te::rst::Raster*> vecInputRasters;
+  std::vector<PrepareRasterParams*> vecPreparedRasters;
+  std::vector<CalculateUrbanIndexesParams*> vecCalculatedIndexes;
+  
 
   InputClassesMap inputClassesMap;
   inputClassesMap[INPUT_NODATA] = INPUT_NODATA;
@@ -333,8 +335,24 @@ void te::urban::qt::ReclassifyWidget::execute()
 
   logInfo("Starting process");
 
+  boost::thread_group threadGroup;
+
   Timer timer;
 
+  //just a reference to be used in the raster normalization optional step
+  te::rst::Raster* referenceRaster = 0;
+
+  //in the preprocessing step, we need to read the given ShapeFile that represents the limits of the analysed regeion.
+  //then dissolve all the polygons from the ShapeFile
+  std::auto_ptr<te::gm::Geometry> geometryLimit;
+  if (spatialLimitsFileName.empty() == false)
+  {
+    //temporarily disabled
+    //std::auto_ptr<te::da::DataSet> dataSet = openVector(spatialLimitsFileName);
+    //geometryLimit = dissolveDataSet(dataSet.get());
+  }
+
+  //we first prepared all the rasters
   try
   {
     for (int i = 0; i < m_ui->m_imgFilesListWidget->count(); ++i)
@@ -344,16 +362,22 @@ void te::urban::qt::ReclassifyWidget::execute()
 
       std::auto_ptr<te::rst::Raster> inputRaster = openRaster(inputFileName);
 
+      //we reclassify the raster if necessary
       if (m_ui->m_remapCheckBox->isChecked())
       {
         inputRaster = reclassify(inputRaster.get(), mapValues, defaultValue);
       }
 
-      if(i > 0)
+      //we normalize the raster if necessary
+      if (i == 0)
       {
-        if (needNormalization(inputRaster.get(), urbanRaster_t_n1.m_urbanizedAreaRaster.get()))
+        referenceRaster = inputRaster.get();
+      }
+      else
+      {
+        if (needNormalization(inputRaster.get(), referenceRaster))
         {
-          inputRaster = normalizeRaster(inputRaster.get(), urbanRaster_t_n1.m_urbanizedAreaRaster.get());
+          inputRaster = normalizeRaster(inputRaster.get(), referenceRaster);
 
           std::string normalizedPrefix = currentOutputPrefix + "_normalized";
           std::string normalizedRasterFileName = outputIntermediatePath + "/" + normalizedPrefix + ".tif";
@@ -361,37 +385,36 @@ void te::urban::qt::ReclassifyWidget::execute()
         }
       }
 
-      std::auto_ptr<boost::thread> threadIndexes;
+      //we create a thread to process the prepare raster step
+      PrepareRasterParams* prepareRasterParams = new PrepareRasterParams();
+      prepareRasterParams->m_inputRaster = inputRaster.get();
+      prepareRasterParams->m_inputClassesMap = inputClassesMap;
+      prepareRasterParams->m_radius = radius;
+      prepareRasterParams->m_outputPath = outputIntermediatePath;
+      prepareRasterParams->m_outputPrefix = currentOutputPrefix;
 
+      boost::thread* prepareRasterThread = new boost::thread(&prepareRaster, prepareRasterParams);
+      threadGroup.add_thread(prepareRasterThread);
+
+      vecPreparedRasters.push_back(prepareRasterParams);
+
+      //then we create a thread to calculate the indexes
       std::auto_ptr<CalculateUrbanIndexesParams> urbanIndexesParams;
       if (calculateIndexes)
       {
-        urbanIndexesParams.reset(new CalculateUrbanIndexesParams());
+        CalculateUrbanIndexesParams* urbanIndexesParams = new CalculateUrbanIndexesParams();
+        urbanIndexesParams->m_inputFileName = inputFileName;
         urbanIndexesParams->m_inputRaster = inputRaster.get();
         urbanIndexesParams->m_inputClassesMap = inputClassesMap;
         urbanIndexesParams->m_radius = radius;
-        urbanIndexesParams->m_spatialLimits = spatialLimitsFileName;
+        urbanIndexesParams->m_spatialLimits = geometryLimit.get();
 
-        threadIndexes.reset(new boost::thread(&calculateUrbanIndexes, urbanIndexesParams.get()));
+        threadGroup.add_thread(new boost::thread(&calculateUrbanIndexes, urbanIndexesParams));
+
+        vecCalculatedIndexes.push_back(urbanIndexesParams);
       }
 
-      urbanRaster_t_n0 = urbanRaster_t_n1;
-      urbanRaster_t_n1 = prepareRaster(inputRaster.get(), inputClassesMap, radius, outputIntermediatePath, currentOutputPrefix);
-
-      if (threadIndexes.get() != 0)
-      {
-        threadIndexes->join();
-        urbanSummary[inputFileName] = urbanIndexesParams->m_urbanIndexes;
-      }
-
-      if (i > 0)
-      {
-        std::auto_ptr<te::rst::Raster> newDevelopmentRaster = compareRasterPeriods(urbanRaster_t_n0, urbanRaster_t_n1, outputIntermediatePath, currentOutputPrefix);
-
-        std::string newDevelopmentPrefix = currentOutputPrefix + "_newDevelopment";
-        std::string newDevelopmentRasterFileName = outputPath + "/" + newDevelopmentPrefix + ".tif";
-        saveRaster(newDevelopmentRasterFileName, newDevelopmentRaster.get());
-      }
+      vecInputRasters.push_back(inputRaster.release());
     }
   }
   catch (const std::exception& e)
@@ -413,6 +436,57 @@ void te::urban::qt::ReclassifyWidget::execute()
     QMessageBox::information(this, tr("Urban Analysis"),  message);
     return;
   }
+
+  threadGroup.join_all();
+
+  UrbanSummary urbanSummary;
+  for (std::size_t i = 0; i < vecCalculatedIndexes.size(); ++i)
+  {
+    urbanSummary[vecCalculatedIndexes[i]->m_inputFileName] = vecCalculatedIndexes[i]->m_urbanIndexes;
+  }
+
+  te::common::FreeContents(vecInputRasters);
+  te::common::FreeContents(vecCalculatedIndexes);
+
+  //we we compare the time periods
+  try
+  {
+    for (std::size_t i = 1; i < vecPreparedRasters.size(); ++i)
+    {
+      std::string inputFileName = m_ui->m_imgFilesListWidget->item((int)i)->text().toStdString();
+      std::string currentOutputPrefix = outputPrefix + "_t" + boost::lexical_cast<std::string>(i - 1) + "_t" + boost::lexical_cast<std::string>(i);
+
+      const UrbanRasters& urbanRaster_t0 = vecPreparedRasters[i - 1]->m_result;
+      const UrbanRasters& urbanRaster_t1 = vecPreparedRasters[i]->m_result;
+
+      std::auto_ptr<te::rst::Raster> newDevelopmentRaster = compareRasterPeriods(urbanRaster_t0, urbanRaster_t1, outputIntermediatePath, currentOutputPrefix);
+
+      std::string newDevelopmentPrefix = currentOutputPrefix + "_newDevelopment";
+      std::string newDevelopmentRasterFileName = outputPath + "/" + newDevelopmentPrefix + ".tif";
+      saveRaster(newDevelopmentRasterFileName, newDevelopmentRaster.get());
+    }
+  }
+  catch (const std::exception& e)
+  {
+    te::common::ProgressManager::getInstance().removeViewer(dlgViewerId);
+    delete dlgViewer;
+
+    QString message = tr("Error in the execution.");
+    if (e.what() != 0)
+    {
+      message += QString("\n");
+      message += QString(e.what());
+    }
+
+    logError(message.toStdString());
+    logInfo("Process finished with Error in " + boost::lexical_cast<std::string>(timer.getElapsedTimeMinutes()) + " minutes");
+    removeAllLoggers();
+
+    QMessageBox::information(this, tr("Urban Analysis"), message);
+    return;
+  }
+
+  te::common::FreeContents(vecPreparedRasters);
 
   logInfo("Process finished with success in " + boost::lexical_cast<std::string>(timer.getElapsedTimeMinutes()) + " minutes");
   removeAllLoggers();

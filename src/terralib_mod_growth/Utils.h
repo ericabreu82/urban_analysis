@@ -28,7 +28,9 @@ TerraLib Team at <terralib-team@terralib.org>.
 
 #include "Config.h"
 
+#include <terralib/dataaccess/dataset/DataSet.h>
 #include <terralib/dataaccess/datasource/DataSource.h>
+#include <terralib/geometry/Geometry.h>
 #include <terralib/raster/Raster.h>
 
 #include <boost/numeric/ublas/matrix.hpp>
@@ -50,7 +52,6 @@ namespace te
   namespace gm
   {
     struct Coord2D;
-    class Geometry;
   }
 
   namespace mem
@@ -125,6 +126,10 @@ namespace te
     TEGROWTHEXPORT void removeAllLoggers();
 
     TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> openRaster(const std::string& fileName);
+
+    TEGROWTHEXPORT std::auto_ptr<te::da::DataSet> openVector(const std::string& fileName);
+
+    TEGROWTHEXPORT std::auto_ptr<te::gm::Geometry> dissolveDataSet(te::da::DataSet* dataSet);
 
     TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> cloneRasterIntoMem(te::rst::Raster* raster, bool copyData);
 

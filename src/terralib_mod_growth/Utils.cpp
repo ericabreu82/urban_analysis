@@ -30,6 +30,7 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include <terralib/core/logger/Logger.h>
 #include <terralib/core/utils/Platform.h>
 #include <terralib/dataaccess/datasource/DataSourceFactory.h>
+#include <terralib/dataaccess/utils/Utils.h>
 #include <terralib/geometry/Coord2D.h>
 #include <terralib/geometry/Geometry.h>
 #include <terralib/geometry/GeometryCollection.h>
@@ -164,6 +165,60 @@ std::auto_ptr<te::rst::Raster> te::urban::openRaster(const std::string& fileName
 
   std::auto_ptr<te::rst::Raster> memRaster = cloneRasterIntoMem(rasterPointer.get(), true);
   return memRaster;
+}
+
+std::auto_ptr<te::da::DataSet> te::urban::openVector(const std::string& fileName)
+{
+  std::map<std::string, std::string> srcInfo;
+  srcInfo["URI"] = fileName;
+  srcInfo["DRIVER"] = "ESRI Shapefile";
+
+  te::da::DataSourcePtr srcDs(te::da::DataSourceFactory::make("OGR"));
+  srcDs->setConnectionInfo(srcInfo);
+  srcDs->open();
+
+  std::vector<std::string> vecDataSetNames = srcDs->getDataSetNames();
+  if (vecDataSetNames.empty())
+  {
+    std::auto_ptr<te::da::DataSet> dataSet;
+    return dataSet;
+  }
+
+  std::auto_ptr<te::da::DataSet> dataSet = srcDs->getDataSet(vecDataSetNames[0]);
+  std::auto_ptr<te::da::DataSetType> inDsetType = srcDs->getDataSetType(vecDataSetNames[0]);
+
+  //check the projection of the dataSet
+  /*if (rasterPointer->getSRID() <= 0)
+  {
+    throw te::common::Exception("The SRID of the openned raster is invalid. Error in function: openRaster");
+  }*/
+
+  return dataSet;
+}
+
+std::auto_ptr<te::gm::Geometry> te::urban::dissolveDataSet(te::da::DataSet* dataSet)
+{
+  assert(dataSet);
+
+  std::size_t geometryIndex = GetFirstSpatialPropertyPos(dataSet);
+
+  if (geometryIndex == std::string::npos)
+  {
+    std::auto_ptr<te::gm::Geometry> result;
+    return result;
+  }
+
+  std::vector<te::gm::Geometry*> vecGeometries;
+
+  dataSet->moveBeforeFirst();
+  while (dataSet->moveNext())
+  {
+    std::auto_ptr<te::gm::Geometry> geometryPtr = dataSet->getGeometry(geometryIndex);
+    vecGeometries.push_back(geometryPtr.release());
+  }
+
+  std::auto_ptr<te::gm::Geometry> result = te::vp::GetGeometryUnion(vecGeometries);
+  return result;
 }
 
 std::auto_ptr<te::rst::Raster> te::urban::createRaster(const std::string& fileName, te::rst::Raster* raster)
