@@ -185,13 +185,15 @@ std::auto_ptr<te::da::DataSet> te::urban::openVector(const std::string& fileName
   }
 
   std::auto_ptr<te::da::DataSet> dataSet = srcDs->getDataSet(vecDataSetNames[0]);
-  std::auto_ptr<te::da::DataSetType> inDsetType = srcDs->getDataSetType(vecDataSetNames[0]);
+  std::auto_ptr<te::da::DataSetType> dataSetType = srcDs->getDataSetType(vecDataSetNames[0]);
 
   //check the projection of the dataSet
-  /*if (rasterPointer->getSRID() <= 0)
+  te::gm::GeometryProperty* gp = te::da::GetFirstGeomProperty(dataSetType.get());
+
+  if (!gp || gp->getSRID() == TE_UNKNOWN_SRS)
   {
-    throw te::common::Exception("The SRID of the openned raster is invalid. Error in function: openRaster");
-  }*/
+    throw te::common::Exception("The SRID of the openned vector file is invalid. Error in function: openVector");
+  }
 
   return dataSet;
 }
@@ -217,7 +219,24 @@ std::auto_ptr<te::gm::Geometry> te::urban::dissolveDataSet(te::da::DataSet* data
     vecGeometries.push_back(geometryPtr.release());
   }
 
+  if (vecGeometries.empty())
+  {
+    throw te::common::Exception("The input geometry list for the dissolve operation is empty. Error in function: dissolveDataSet");
+  }
+
   std::auto_ptr<te::gm::Geometry> result = te::vp::GetGeometryUnion(vecGeometries);
+  if (result->isValid() == false)
+  {
+    throw te::common::Exception("The resulting geometry from the dissolve operation is invalid. Error in function: dissolveDataSet");
+  }
+
+  if (result->getGeomTypeId() != te::gm::PolygonType)
+  {
+    throw te::common::Exception("The resulting geometry from the dissolve operation is invalid. Error in function: dissolveDataSet");
+  }
+
+  result->setSRID(vecGeometries[0]->getSRID());
+
   return result;
 }
 
