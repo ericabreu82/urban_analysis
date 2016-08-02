@@ -318,17 +318,38 @@ void te::urban::qt::ReclassifyWidget::execute()
     }
   }
 
-  //execute operation
-  std::vector<te::rst::Raster*> vecInputRasters;
-  std::vector<PrepareRasterParams*> vecPreparedRasters;
-  std::vector<CalculateUrbanIndexesParams*> vecCalculatedIndexes;
-  
-
   InputClassesMap inputClassesMap;
   inputClassesMap[INPUT_NODATA] = INPUT_NODATA;
   inputClassesMap[INPUT_WATER] = INPUT_WATER;
   inputClassesMap[INPUT_URBAN] = INPUT_URBAN;
   inputClassesMap[INPUT_OTHER] = INPUT_OTHER;
+
+  //in the preprocessing step, we need to read the given ShapeFile that represents the limits of the analysed regeion.
+  //then dissolve all the polygons from the ShapeFile
+  std::auto_ptr<te::gm::Geometry> geometryLimit;
+  if (spatialLimitsFileName.empty() == false)
+  {
+    try
+    {
+      std::auto_ptr<te::da::DataSet> dataSet = openVector(spatialLimitsFileName);
+      geometryLimit = dissolveDataSet(dataSet.get());
+    }
+    catch (const std::exception& e)
+    {
+      QString message = tr("Error in the execution.");
+      if (e.what() != 0)
+      {
+        message += QString("\n");
+        message += QString(e.what());
+      }
+      return;
+    }
+  }
+
+  //execute operation
+  std::vector<te::rst::Raster*> vecInputRasters;
+  std::vector<PrepareRasterParams*> vecPreparedRasters;
+  std::vector<CalculateUrbanIndexesParams*> vecCalculatedIndexes;
 
   std::string logFileName = outputPath + "\\log\\UrbanAnalysis_" + outputPrefix + ".log";
   initLogger(logFileName);
@@ -341,16 +362,6 @@ void te::urban::qt::ReclassifyWidget::execute()
 
   //just a reference to be used in the raster normalization optional step
   te::rst::Raster* referenceRaster = 0;
-
-  //in the preprocessing step, we need to read the given ShapeFile that represents the limits of the analysed regeion.
-  //then dissolve all the polygons from the ShapeFile
-  std::auto_ptr<te::gm::Geometry> geometryLimit;
-  if (spatialLimitsFileName.empty() == false)
-  {
-    //temporarily disabled
-    //std::auto_ptr<te::da::DataSet> dataSet = openVector(spatialLimitsFileName);
-    //geometryLimit = dissolveDataSet(dataSet.get());
-  }
 
   //we first prepared all the rasters
   try
@@ -372,6 +383,11 @@ void te::urban::qt::ReclassifyWidget::execute()
       if (i == 0)
       {
         referenceRaster = inputRaster.get();
+        
+        if (geometryLimit.get() != 0 && geometryLimit->getSRID() != inputRaster->getSRID())
+        {
+          geometryLimit->transform(inputRaster->getSRID());
+        }
       }
       else
       {
