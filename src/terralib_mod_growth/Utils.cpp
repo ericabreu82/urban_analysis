@@ -121,7 +121,8 @@ std::auto_ptr<te::rst::Raster> te::urban::cloneRasterIntoMem(te::rst::Raster* ra
   {
     te::rst::Band* band = raster->getBand(t);
 
-    te::rst::BandProperty* bp = new te::rst::BandProperty(t, band->getProperty()->getType());
+		//to reduce memory use, we restrict the band type to 1 byte.
+    te::rst::BandProperty* bp = new te::rst::BandProperty(t, te::dt::UCHAR_TYPE);
 
     bp->m_noDataValue = band->getProperty()->m_noDataValue;
 
