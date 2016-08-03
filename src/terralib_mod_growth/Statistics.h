@@ -50,7 +50,7 @@ namespace te
     TEGROWTHEXPORT void CalculateStatistics(te::rst::Raster* raster, te::da::DataSource* ds, const std::string& dataSetName, 
                                             const bool& calculateArea, const bool& calculateCount, const std::string& outPath, const std::string& outDataSetName);
 
-    TEGROWTHEXPORT std::auto_ptr<te::da::DataSetType> createStatisticsDataSetType(std::string dataSetName, te::da::DataSetType* inputDsType, 
+    TEGROWTHEXPORT std::auto_ptr<te::da::DataSetType> createStatisticsDataSetType(te::rst::Raster* raster, std::string dataSetName, te::da::DataSetType* inputDsType,
                                                                                   const bool& calculateArea, const bool& calculateCount);
 
     /*! Function used to create the output data */
@@ -61,10 +61,7 @@ namespace te
     TEGROWTHEXPORT void saveStatisticsDataSet(te::mem::DataSet* dataSet, te::da::DataSetType* dsType, te::da::DataSource* ds, std::string dataSetName);
 
     /*! Function used to calculate statistics */
-    TEGROWTHEXPORT void calculateStatisticsDataSet(te::rst::Raster* raster, te::gm::Geometry* geom,
-                                                   int& if_count, int& lf_count, int& ext_count,
-                                                   double& if_area, double& lf_area, double& ext_area,
-                                                   const bool& calculateArea, const bool& calculateCount);
+    TEGROWTHEXPORT std::map<int, std::size_t> computeStatistics(te::rst::Raster* raster, te::gm::Geometry* geom);
 
   }
 }

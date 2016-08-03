@@ -26,6 +26,7 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include "Statistics.h"
 #include "Utils.h"
 
+#include <terralib/common/StringUtils.h>
 #include <terralib/dataaccess/dataset/DataSetType.h>
 #include <terralib/dataaccess/utils/Utils.h>
 #include <terralib/geometry/GeometryProperty.h>
@@ -61,12 +62,12 @@ void te::urban::CalculateStatistics(te::rst::Raster* raster, te::da::DataSource*
     throw te::common::Exception("Invalid geometric property or SRID from data set. Error in function: CalculateStatistics");
   }
 
-  //create dataset type
-  std::auto_ptr<te::da::DataSetType> outDsType = createStatisticsDataSetType(outDataSetName, dsType.get(), calculateArea, calculateCount);
-
-  //fill dataset
   std::auto_ptr<te::da::DataSet> inDataSet = ds->getDataSet(dataSetName);
 
+  //create dataset type
+  std::auto_ptr<te::da::DataSetType> outDsType = createStatisticsDataSetType(raster, outDataSetName, dsType.get(), calculateArea, calculateCount);
+
+  //fill dataset
   std::auto_ptr<te::mem::DataSet> outDataSet = createStatisticsDataSet(raster, outDsType.get(), inDataSet.get(), calculateArea, calculateCount);
 
   //save dataset
@@ -75,10 +76,12 @@ void te::urban::CalculateStatistics(te::rst::Raster* raster, te::da::DataSource*
   saveStatisticsDataSet(outDataSet.get(), outDsType.get(), outDs.get(), outDataSetName);
 }
 
-std::auto_ptr<te::da::DataSetType> te::urban::createStatisticsDataSetType(std::string dataSetName, te::da::DataSetType* inputDsType, 
+std::auto_ptr<te::da::DataSetType> te::urban::createStatisticsDataSetType(te::rst::Raster* raster, std::string dataSetName, te::da::DataSetType* inputDsType,
                                                                           const bool& calculateArea, const bool& calculateCount)
 {
   assert(inputDsType);
+
+  std::map<double, unsigned int> values = raster->getBand(0)->getHistogramR();
 
   std::auto_ptr<te::da::DataSetType> dsType(new te::da::DataSetType(dataSetName));
 
@@ -93,28 +96,22 @@ std::auto_ptr<te::da::DataSetType> te::urban::createStatisticsDataSetType(std::s
     dsType->add(p);
   }
 
-  if (calculateArea)
+  std::map<double, unsigned int>::iterator it;
+  for (it = values.begin(); it != values.end(); ++it)
   {
-    te::dt::SimpleProperty* infillProperty = new te::dt::SimpleProperty("if_area", te::dt::DOUBLE_TYPE);
-    dsType->add(infillProperty);
+    if (calculateCount)
+    {
+      std::string propName = "count_c" + te::common::Convert2String((int)it->first);
+      te::dt::SimpleProperty* property = new te::dt::SimpleProperty("if_count", te::dt::INT32_TYPE);
+      dsType->add(property);
+    }
 
-    te::dt::SimpleProperty* leapfrogProperty = new te::dt::SimpleProperty("lf_area", te::dt::DOUBLE_TYPE);
-    dsType->add(leapfrogProperty);
-
-    te::dt::SimpleProperty* extensionProperty = new te::dt::SimpleProperty("ext_area", te::dt::DOUBLE_TYPE);
-    dsType->add(extensionProperty);
-  }
-
-  if (calculateCount)
-  {
-    te::dt::SimpleProperty* infillProperty = new te::dt::SimpleProperty("if_count", te::dt::INT32_TYPE);
-    dsType->add(infillProperty);
-
-    te::dt::SimpleProperty* leapfrogProperty = new te::dt::SimpleProperty("lf_count", te::dt::INT32_TYPE);
-    dsType->add(leapfrogProperty);
-
-    te::dt::SimpleProperty* extensionProperty = new te::dt::SimpleProperty("ext_count", te::dt::INT32_TYPE);
-    dsType->add(extensionProperty);
+    if (calculateArea)
+    {
+      std::string propName = "area_c" + te::common::Convert2String((int)it->first);
+      te::dt::SimpleProperty* property = new te::dt::SimpleProperty(propName, te::dt::DOUBLE_TYPE);
+      dsType->add(property);
+    }
   }
 
   return dsType;
@@ -124,6 +121,8 @@ std::auto_ptr<te::mem::DataSet> te::urban::createStatisticsDataSet(te::rst::Rast
                                                                    const bool& calculateArea, const bool& calculateCount)
 {
   int rasterSRID = raster->getSRID();
+  double rasterPixelArea = raster->getResolutionX() * raster->getResolutionY();
+
   std::auto_ptr<te::mem::DataSet> ds(new te::mem::DataSet(dsType));
 
   inputDs->moveBeforeFirst();
@@ -152,28 +151,22 @@ std::auto_ptr<te::mem::DataSet> te::urban::createStatisticsDataSet(te::rst::Rast
     if (!geom.get())
       continue;
 
-    //reproject geometry if its necessary
-    if (geom->getSRID() != rasterSRID)
-      geom->transform(rasterSRID);
+    std::map<int, std::size_t> pixelCountMap = computeStatistics(raster, geom.get());
+    std::map<int, std::size_t>::iterator it;
 
-    int if_count, lf_count, ext_count;
-    double if_area, lf_area, ext_area;
-
-    //calculate
-    calculateStatisticsDataSet(raster, geom.get(), if_count, lf_count, ext_count, if_area, lf_area, ext_area, calculateArea, calculateCount);
-
-    if (calculateArea)
+    for (it = pixelCountMap.begin(); it != pixelCountMap.end(); ++it)
     {
-      item->setDouble("if_area", if_area);
-      item->setDouble("lf_area", lf_area);
-      item->setDouble("ext_area", ext_area);
-    }
+      if (calculateCount)
+      {
+        std::string propName = "count_c" + te::common::Convert2String(it->first);
+        item->setInt32(propName, (int)it->second);
+      }
 
-    if (calculateCount)
-    {
-      item->setInt32("if_count", if_count);
-      item->setInt32("lf_count", lf_count);
-      item->setInt32("ext_count", ext_count);
+      if (calculateArea)
+      {
+        std::string propName = "area_c" + te::common::Convert2String(it->first);
+        item->setDouble(propName, rasterPixelArea * (int)it->second);
+      }
     }
 
     ds->add(item);
@@ -194,28 +187,19 @@ void te::urban::saveStatisticsDataSet(te::mem::DataSet* dataSet, te::da::DataSet
   ds->add(dataSetName, dataSet, options);
 }
 
-void te::urban::calculateStatisticsDataSet(te::rst::Raster* raster, te::gm::Geometry* geom,
-                                           int& if_count, int& lf_count, int& ext_count,
-                                           double& if_area, double& lf_area, double& ext_area,
-                                           const bool& calculateArea, const bool& calculateCount)
+std::map<int, std::size_t> te::urban::computeStatistics(te::rst::Raster* raster, te::gm::Geometry* geom)
 {
-  //infill       outputValue = 1;
-  if_count = 0;
-  if_area = 0.;
+  std::map<int, std::size_t> pixelCountMap;
+  std::map<int, std::size_t>::iterator pixelCountMapIt;
 
-  //extensio     outputValue = 2;
-  ext_count = 0;
-  ext_area = 0.;
+  int rasterSRID = raster->getSRID();
 
-  //leapfrog     outputValue = 3;
-  lf_count = 0;
-  lf_area = 0.;
-
-  //raster pixel area
-  double pixelArea = raster->getResolutionX() * raster->getResolutionY();
+  //reproject geometry if its necessary
+  if (geom->getSRID() != rasterSRID)
+    geom->transform(rasterSRID);
 
   std::vector<te::gm::Geometry*> geomVec;
-  
+
   te::gm::Multi2Single(geom, geomVec);
 
   for (std::size_t g = 0; g < geomVec.size(); ++g)
@@ -234,18 +218,16 @@ void te::urban::calculateStatisticsDataSet(te::rst::Raster* raster, te::gm::Geom
 
       raster->getValue(it.getColumn(), it.getRow(), value, 0);
 
-      if (value == 1)
-        if_count++;
-      else if (value == 2)
-        ext_count++;
-      else if (value == 3)
-        lf_count++;
+      pixelCountMapIt = pixelCountMap.find((int)value);
+
+      if (pixelCountMapIt == pixelCountMap.end())
+        pixelCountMap[(int)value] = 1;
+      else
+        pixelCountMap[(int)value] += 1;
 
       ++it;
     }
   }
 
-  if_area  = if_count  * pixelArea;
-  ext_area = ext_count * pixelArea;
-  lf_area  = lf_count  * pixelArea;
+  return pixelCountMap;
 }
