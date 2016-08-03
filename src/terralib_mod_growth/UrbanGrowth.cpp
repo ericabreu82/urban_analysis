@@ -496,13 +496,13 @@ std::auto_ptr<te::rst::Raster> te::urban::compareRasterPeriods(const UrbanRaster
   std::string otherNewDevGroupedRasterFileName = outputPath + "/" + otherNewDevGroupedPrefix + ".tif";
 
   //1 - we first generate the infill raster and the other dev raster
-  generateInfillOtherDevRasters(t1.m_urbanFootprintRaster.get(), t2.m_urbanFootprintRaster.get(), infillRasterFileName, otherNewDevRasterFileName);
+  generateInfillOtherDevRasters(t1.m_urbanizedAreaRaster.get(), t2.m_urbanizedAreaRaster.get(), infillRasterFileName, otherNewDevRasterFileName);
 
   std::auto_ptr<te::rst::Raster> infillRaster = openRaster(infillRasterFileName);
   std::auto_ptr<te::rst::Raster> otherDevRaster = openRaster(otherNewDevRasterFileName);
 
   //2 - then we create distinct groups for each region of the other dev raster
-  std::auto_ptr<te::rst::Raster> otherDevGroupedRaster = createDistinctGroups(otherDevRaster.get());
+  std::auto_ptr<te::rst::Raster> otherDevGroupedRaster = createDistinctGroups(otherDevRaster.get(), outputPath, outputPrefix);
   saveRaster(otherNewDevGroupedRasterFileName, otherDevGroupedRaster.get());
 
   //3 - determine edge area groups

@@ -41,6 +41,7 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include <terralib/memory/DataSet.h>
 #include <terralib/memory/DataSetItem.h>
 #include <terralib/plugin.h>
+#include <terralib/raster/PositionIterator.h>
 #include <terralib/raster/Raster.h>
 #include <terralib/raster/RasterFactory.h>
 #include <terralib/raster/RasterSummary.h>
@@ -491,13 +492,13 @@ std::vector<short> te::urban::getAdjacentPixels(te::rst::Raster* raster, size_t 
   te::gm::Point referencePoint(referenceCoord.getX(), referenceCoord.getY());
 
   std::vector<short> vecPixels;
-  vecPixels.reserve(maskSizeInPixels * maskSizeInPixels);
+  vecPixels.reserve(range * range);
 
   for (size_t localRow = 0; localRow < range; ++localRow, ++rasterRow)
   {
     for (size_t localColumn = 0; localColumn < range; ++localColumn, ++rasterColumn)
     {
-      if (localRow == referenceRow && localColumn == referenceColumn)
+      if (rasterRow == referenceRow && rasterColumn == referenceColumn)
       {
         continue;
       }
@@ -824,28 +825,59 @@ std::vector<te::gm::Geometry*> te::urban::getGaps(const std::vector<te::gm::Geom
   return vecOutput;
 }
 
-std::auto_ptr<te::rst::Raster> te::urban::createDistinctGroups(te::rst::Raster* inputRaster)
+std::auto_ptr<te::rst::Raster> te::urban::createDistinctGroups(te::rst::Raster* inputRaster, const std::string& outputPath, const std::string& outputPrefix)
 {
   assert(inputRaster);
 
-  std::auto_ptr<te::rst::Raster> outputRaster = cloneRasterIntoMem(inputRaster, true);
+  std::auto_ptr<te::rst::Raster> outputRaster = cloneRasterIntoMem(inputRaster, false);
 
   //we first vectorize the raster
   std::vector<te::gm::Geometry*> vecGeometries;
-  outputRaster->vectorize(vecGeometries, 0);
+  inputRaster->vectorize(vecGeometries, 0);
 
-  //then we define one class for each group
-  std::vector<double> vecClasses;
-  vecClasses.reserve(vecGeometries.size());
-  for (std::size_t i = 0; i < vecGeometries.size(); ++i)
+  std::vector<te::gm::Geometry*> vecFixedGeometries = te::urban::fixGeometries(vecGeometries);
+
+  std::string vectorizedCandidatesFileName = outputPrefix + "_vectorized_distinct_groups";
+  std::string vectorizedCandidatesFilePath = outputPath + "/" + outputPrefix + "_vectorized_distinct_groups.shp";
+  saveVector(vectorizedCandidatesFileName, vectorizedCandidatesFilePath, vecFixedGeometries, inputRaster->getSRID());
+
+  //now, for each polygon, we one different color in the output raster. We use the index of the FOR as the color
+  for (std::size_t i = 0; i < vecFixedGeometries.size(); ++i)
   {
-    vecClasses[i] = (double)i;
+    te::gm::Geometry* geometry = vecFixedGeometries[i];
+    if (geometry->isValid() == false)
+    {
+      throw te::common::Exception("Invalid geometry detected after vectorization and fix. Error in function: createDistinctGroups");
+    }
+
+    if (geometry->getGeomTypeId() != te::gm::PolygonType)
+    {
+      throw te::common::Exception("Vectorization generated at least on geometry that is not a polygon. Error in function: createDistinctGroups");
+    }
+
+    te::gm::Polygon* polygon = (te::gm::Polygon*) geometry;
+    
+    te::rst::PolygonIterator<double> it = te::rst::PolygonIterator<double>::begin(inputRaster, polygon);
+    te::rst::PolygonIterator<double> itend = te::rst::PolygonIterator<double>::end(inputRaster, polygon);
+
+    while (it != itend)
+    {
+      unsigned int currentRow = it.getRow();
+      unsigned int currentColumn = it.getColumn();
+
+      te::gm::Coord2D coord = outputRaster->getGrid()->gridToGeo(currentColumn, currentRow);
+      te::gm::Point point(coord.getX(), coord.getY(), polygon->getSRID());
+
+      if (point.intersects(polygon))
+      {
+        outputRaster->setValue(currentColumn, currentRow, (double)i + 1);
+      }
+      ++it;
+    }
   }
-
-  //finally we rasterize the geometries
-  outputRaster->rasterize(vecGeometries, vecClasses);
-
+  
   te::common::FreeContents(vecGeometries);
+  te::common::FreeContents(vecFixedGeometries);
 
   return outputRaster;
 }

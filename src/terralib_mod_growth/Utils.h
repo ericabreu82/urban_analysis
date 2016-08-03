@@ -173,7 +173,7 @@ namespace te
     TEGROWTHEXPORT std::vector<te::gm::Geometry*> getGaps(const std::vector<te::gm::Geometry*>& vecCandidateGaps, double area = 0.);
 
     //!< For each region, creates a new group using sequential values
-    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> createDistinctGroups(te::rst::Raster* inputRaster);
+    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> createDistinctGroups(te::rst::Raster* inputRaster, const std::string& outputPath, const std::string& outputPrefix);
 
     //!< DETERMINE EDGE OPEN AREA (100 meter buffer around built-up)
     TEGROWTHEXPORT std::set<double> detectEdgeOpenAreaGroups(te::rst::Raster* otherNewDevRaster, te::rst::Raster* otherNewDevGroupedRaster, te::rst::Raster* footprintRaster);
