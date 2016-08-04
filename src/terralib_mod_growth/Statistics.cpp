@@ -102,7 +102,7 @@ std::auto_ptr<te::da::DataSetType> te::urban::createStatisticsDataSetType(te::rs
     if (calculateCount)
     {
       std::string propName = "count_c" + te::common::Convert2String((int)it->first);
-      te::dt::SimpleProperty* property = new te::dt::SimpleProperty("if_count", te::dt::INT32_TYPE);
+      te::dt::SimpleProperty* property = new te::dt::SimpleProperty(propName, te::dt::INT32_TYPE);
       dsType->add(property);
     }
 
@@ -223,7 +223,7 @@ std::map<int, std::size_t> te::urban::computeStatistics(te::rst::Raster* raster,
       if (pixelCountMapIt == pixelCountMap.end())
         pixelCountMap[(int)value] = 1;
       else
-        pixelCountMap[(int)value] += 1;
+        pixelCountMapIt->second += 1;
 
       ++it;
     }

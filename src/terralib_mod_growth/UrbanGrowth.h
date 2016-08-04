@@ -84,6 +84,17 @@ namespace te
       UrbanRasters m_result;
     };
 
+    struct CompareTimePeriodsParams
+    {
+      CompareTimePeriodsParams() {}
+      UrbanRasters m_t1;
+      UrbanRasters m_t2;
+      std::string m_outputPath;
+      std::string m_outputPrefix;
+
+      std::auto_ptr<te::rst::Raster> m_outputRaster;
+    };
+
     //step 1 - this reclassification analyses the entire raster. Classify the urbanized area
     TEGROWTHEXPORT void classifyUrbanizedArea(ClassifyParams* params);
 
@@ -108,7 +119,7 @@ namespace te
     TEGROWTHEXPORT void prepareRaster(PrepareRasterParams* params);
 
     //step 9 - analyze new development
-    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> compareRasterPeriods(const UrbanRasters& t1, const UrbanRasters& t2, const std::string& outputPath, const std::string& outputPrefix);
+    TEGROWTHEXPORT void compareRasterPeriods(CompareTimePeriodsParams* params);
   }
 }
 

@@ -82,8 +82,8 @@ namespace te
 
       }
 
-      std::auto_ptr<te::rst::Raster> m_urbanizedAreaRaster;
-      std::auto_ptr<te::rst::Raster> m_urbanFootprintRaster;
+      std::shared_ptr<te::rst::Raster> m_urbanizedAreaRaster;
+      std::shared_ptr<te::rst::Raster> m_urbanFootprintRaster;
     };
 
     struct Timer

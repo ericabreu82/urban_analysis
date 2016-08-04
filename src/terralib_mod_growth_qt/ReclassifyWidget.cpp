@@ -299,6 +299,7 @@ void te::urban::qt::ReclassifyWidget::execute()
   //add task viewer
   te::qt::widgets::ProgressViewerDialog* dlgViewer = new te::qt::widgets::ProgressViewerDialog(this);
   int dlgViewerId = te::common::ProgressManager::getInstance().addViewer(dlgViewer);
+  
 
   int defaultValue = 0;
   std::map<int, int> mapValues;
@@ -467,20 +468,40 @@ void te::urban::qt::ReclassifyWidget::execute()
   //we we compare the time periods
   try
   {
+    boost::thread_group compareItmePeriodsThreadGroup;
+    std::vector<CompareTimePeriodsParams*> vecCompareTimePeriodsParams;
+
     for (std::size_t i = 1; i < vecPreparedRasters.size(); ++i)
     {
       std::string inputFileName = m_ui->m_imgFilesListWidget->item((int)i)->text().toStdString();
       std::string currentOutputPrefix = outputPrefix + "_t" + boost::lexical_cast<std::string>(i - 1) + "_t" + boost::lexical_cast<std::string>(i);
 
-      const UrbanRasters& urbanRaster_t0 = vecPreparedRasters[i - 1]->m_result;
-      const UrbanRasters& urbanRaster_t1 = vecPreparedRasters[i]->m_result;
+      CompareTimePeriodsParams* params = new CompareTimePeriodsParams();
+      params->m_t1 = vecPreparedRasters[i - 1]->m_result;
+      params->m_t2 = vecPreparedRasters[i]->m_result;
+      params->m_outputPath = outputIntermediatePath;
+      params->m_outputPrefix = currentOutputPrefix;
 
-      std::auto_ptr<te::rst::Raster> newDevelopmentRaster = compareRasterPeriods(urbanRaster_t0, urbanRaster_t1, outputIntermediatePath, currentOutputPrefix);
+      compareItmePeriodsThreadGroup.add_thread(new boost::thread(&compareRasterPeriods, params));
+
+      vecCompareTimePeriodsParams.push_back(params);
+    }
+
+    compareItmePeriodsThreadGroup.join_all();
+
+    for (std::size_t i = 0; i < vecCompareTimePeriodsParams.size(); ++i)
+    {
+      CompareTimePeriodsParams* params = vecCompareTimePeriodsParams[i];
+
+      const std::string& currentOutputPrefix = params->m_outputPrefix;
 
       std::string newDevelopmentPrefix = currentOutputPrefix + "_newDevelopment";
       std::string newDevelopmentRasterFileName = outputPath + "/" + newDevelopmentPrefix + ".tif";
-      saveRaster(newDevelopmentRasterFileName, newDevelopmentRaster.get());
+      saveRaster(newDevelopmentRasterFileName, params->m_outputRaster.get());
     }
+
+    te::common::FreeContents(vecPreparedRasters);
+    te::common::FreeContents(vecCompareTimePeriodsParams);
   }
   catch (const std::exception& e)
   {
@@ -501,8 +522,6 @@ void te::urban::qt::ReclassifyWidget::execute()
     QMessageBox::information(this, tr("Urban Analysis"), message);
     return;
   }
-
-  te::common::FreeContents(vecPreparedRasters);
 
   logInfo("Process finished with success in " + boost::lexical_cast<std::string>(timer.getElapsedTimeMinutes()) + " minutes");
   removeAllLoggers();

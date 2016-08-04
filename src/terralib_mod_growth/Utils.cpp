@@ -842,6 +842,12 @@ std::auto_ptr<te::rst::Raster> te::urban::createDistinctGroups(te::rst::Raster* 
   saveVector(vectorizedCandidatesFileName, vectorizedCandidatesFilePath, vecFixedGeometries, inputRaster->getSRID());
 
   //now, for each polygon, we one different color in the output raster. We use the index of the FOR as the color
+  //all the regions that touch another region must be given the same value
+
+  te::sam::rtree::Index<size_t, 8> spatialIndex;
+  std::vector<std::size_t> vecClasses;
+
+  std::size_t originalSize = vecFixedGeometries.size();
   for (std::size_t i = 0; i < vecFixedGeometries.size(); ++i)
   {
     te::gm::Geometry* geometry = vecFixedGeometries[i];
@@ -854,6 +860,39 @@ std::auto_ptr<te::rst::Raster> te::urban::createDistinctGroups(te::rst::Raster* 
     {
       throw te::common::Exception("Vectorization generated at least on geometry that is not a polygon. Error in function: createDistinctGroups");
     }
+
+    std::size_t classValue = i + 1;
+    //if the current rgion intercepts other processed region, we must use the same class value
+    std::vector<std::size_t> vecCandidates;
+    spatialIndex.search(*geometry->getMBR(), vecCandidates);
+
+    bool reuseClassValue = false;
+    for (std::size_t j = 0; j < vecCandidates.size(); ++j)
+    {
+      std::size_t indexCandidate = vecCandidates[j];
+      te::gm::Geometry* candidate = vecFixedGeometries[indexCandidate];
+      if (geometry->intersects(candidate))
+      {
+        //we check if we need to reprocess any polygon in order to have the same class value for ALL the polygons that intercepts themselves
+        //we do this check if there are at least two polygons intercepting the current analysed polygon AND if they have different class values
+        if (reuseClassValue && classValue != vecClasses[indexCandidate])
+        {
+          //in this case, we reprocess the candidate
+          vecClasses[indexCandidate] = classValue;
+          vecFixedGeometries.push_back((te::gm::Geometry*)candidate->clone());
+        }
+
+        reuseClassValue = true;
+        classValue = vecClasses[indexCandidate];
+      }
+    }
+
+    if (i < originalSize)
+    {
+      spatialIndex.insert(*geometry->getMBR(), i);
+      vecClasses.push_back(classValue);
+    }
+
 
     te::gm::Polygon* polygon = (te::gm::Polygon*) geometry;
     
@@ -870,7 +909,7 @@ std::auto_ptr<te::rst::Raster> te::urban::createDistinctGroups(te::rst::Raster* 
 
       if (point.intersects(polygon))
       {
-        outputRaster->setValue(currentColumn, currentRow, (double)i + 1);
+        outputRaster->setValue(currentColumn, currentRow, (double)classValue);
       }
       ++it;
     }

@@ -449,6 +449,9 @@ void te::urban::prepareRaster(PrepareRasterParams* params)
   urbanizedParams.m_radius = radius;
   classifyUrbanizedArea(&urbanizedParams);
 
+  params->m_result.m_urbanizedAreaRaster.reset (urbanizedParams.m_outputRaster.release());
+  saveRaster(urbanizedAreaFileName, params->m_result.m_urbanizedAreaRaster.get());
+
   //step 2 - classify the urban footprints
   ClassifyParams footprintParams;
   footprintParams.m_inputRaster = inputRaster;
@@ -456,15 +459,12 @@ void te::urban::prepareRaster(PrepareRasterParams* params)
   footprintParams.m_radius = radius;
   classifyUrbanFootprint(&footprintParams);
 
-  params->m_result.m_urbanFootprintRaster = footprintParams.m_outputRaster;
+  params->m_result.m_urbanFootprintRaster.reset(footprintParams.m_outputRaster.release());
   saveRaster(urbanFootprintsFileName, params->m_result.m_urbanFootprintRaster.get());
   
   //step 3 - classify fringe open areas
   classifyUrbanOpenArea(params->m_result.m_urbanFootprintRaster.get(), 100);
   saveRaster(urbanFootprintsOpenAreaFileName, params->m_result.m_urbanFootprintRaster.get());
-
-  params->m_result.m_urbanizedAreaRaster = urbanizedParams.m_outputRaster;
-  saveRaster(urbanizedAreaFileName, params->m_result.m_urbanizedAreaRaster.get());
 
   //step 4 and 5- identify isolated patches and classify them into the given raster
   boost::thread isolatedThread1(&classifyIsolatedOpenPatches, params->m_result.m_urbanizedAreaRaster.get(), outputPath, urbanizedPrefix);
@@ -480,8 +480,16 @@ void te::urban::prepareRaster(PrepareRasterParams* params)
   saveRaster(urbanFootprintsIsolatedOpenPatchesFileName, params->m_result.m_urbanFootprintRaster.get());
 }
 
-std::auto_ptr<te::rst::Raster> te::urban::compareRasterPeriods(const UrbanRasters& t1, const UrbanRasters& t2, const std::string& outputPath, const std::string& outputPrefix)
+void te::urban::compareRasterPeriods(CompareTimePeriodsParams* params)
 {
+  assert(params);
+
+  const UrbanRasters& t1 = params->m_t1;
+  const UrbanRasters& t2 = params->m_t2;
+  const std::string& outputPath = params->m_outputPath;
+  const std::string& outputPrefix = params->m_outputPrefix;
+
+
   Timer timer;
 
   assert(t1.m_urbanizedAreaRaster.get());
@@ -509,9 +517,7 @@ std::auto_ptr<te::rst::Raster> te::urban::compareRasterPeriods(const UrbanRaster
   std::set<double> setEdgeOpenAreaGroups = detectEdgeOpenAreaGroups(otherDevRaster.get(), otherDevGroupedRaster.get(), t1.m_urbanFootprintRaster.get());
 
   //4 - then we calculate the new development classification
-  std::auto_ptr<te::rst::Raster> newDevelopmentRaster = classifyNewDevelopment(infillRaster.get(), otherDevGroupedRaster.get(), setEdgeOpenAreaGroups);
+  params->m_outputRaster = classifyNewDevelopment(infillRaster.get(), otherDevGroupedRaster.get(), setEdgeOpenAreaGroups);
 
-  logInfo("compareRasterPeriods for  " + newDevelopmentRaster->getInfo()["URI"] + " executed in " + boost::lexical_cast<std::string>(timer.getElapsedTimeMinutes()) + " minutes");
-
-  return newDevelopmentRaster;
+  logInfo("compareRasterPeriods for  " + params->m_outputRaster.get()->getInfo()["URI"] + " executed in " + boost::lexical_cast<std::string>(timer.getElapsedTimeMinutes()) + " minutes");
 }
