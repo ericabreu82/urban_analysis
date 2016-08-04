@@ -113,7 +113,7 @@ void te::urban::removeAllLoggers()
   te::core::Logger::instance().removeAllLoggers();
 }
 
-std::auto_ptr<te::rst::Raster> te::urban::cloneRasterIntoMem(te::rst::Raster* raster, bool copyData)
+std::auto_ptr<te::rst::Raster> te::urban::cloneRasterIntoMem(te::rst::Raster* raster, bool copyData, int dataType)
 {
   //load to mem
   std::vector<te::rst::BandProperty*> bprops;
@@ -122,8 +122,8 @@ std::auto_ptr<te::rst::Raster> te::urban::cloneRasterIntoMem(te::rst::Raster* ra
   {
     te::rst::Band* band = raster->getBand(t);
 
-		//to reduce memory use, we restrict the band type to 1 byte.
-    te::rst::BandProperty* bp = new te::rst::BandProperty(t, te::dt::UCHAR_TYPE);
+    //to reduce memory use, the default dataType of the band is 1 byte. But optionally it can be changed
+    te::rst::BandProperty* bp = new te::rst::BandProperty(t, dataType);
 
     bp->m_noDataValue = band->getProperty()->m_noDataValue;
 
@@ -829,13 +829,36 @@ std::auto_ptr<te::rst::Raster> te::urban::createDistinctGroups(te::rst::Raster* 
 {
   assert(inputRaster);
 
-  std::auto_ptr<te::rst::Raster> outputRaster = cloneRasterIntoMem(inputRaster, false);
-
   //we first vectorize the raster
   std::vector<te::gm::Geometry*> vecGeometries;
   inputRaster->vectorize(vecGeometries, 0);
 
+  if (vecGeometries.empty())
+  {
+    std::auto_ptr<te::rst::Raster> outputRaster = cloneRasterIntoMem(inputRaster, false);
+    return outputRaster;
+  }
+
   std::vector<te::gm::Geometry*> vecFixedGeometries = te::urban::fixGeometries(vecGeometries);
+
+  if (vecFixedGeometries.empty())
+  {
+    std::auto_ptr<te::rst::Raster> outputRaster = cloneRasterIntoMem(inputRaster, false);
+    return outputRaster;
+  }
+
+  //here we defined the dataType of the raster. We must not consider the dummy value
+  int dataType = te::dt::UCHAR_TYPE;
+  if (vecFixedGeometries.size() >= 255)
+  {
+    dataType = te::dt::INT16_TYPE;
+    if (vecFixedGeometries.size() >= 65536)
+    {
+      dataType = te::dt::INT32_TYPE;
+    }
+  }
+
+  std::auto_ptr<te::rst::Raster> outputRaster = cloneRasterIntoMem(inputRaster, false, dataType);
 
   std::string vectorizedCandidatesFileName = outputPrefix + "_vectorized_distinct_groups";
   std::string vectorizedCandidatesFilePath = outputPath + "/" + outputPrefix + "_vectorized_distinct_groups.shp";
@@ -844,13 +867,15 @@ std::auto_ptr<te::rst::Raster> te::urban::createDistinctGroups(te::rst::Raster* 
   //now, for each polygon, we one different color in the output raster. We use the index of the FOR as the color
   //all the regions that touch another region must be given the same value
 
-  te::sam::rtree::Index<size_t, 8> spatialIndex;
-  std::vector<std::size_t> vecClasses;
+  //we first index all the geometries
+  std::vector<bool> vecProcessed(vecFixedGeometries.size(), false);
+  std::set<std::size_t> setNextToBeProcessed;
 
-  std::size_t originalSize = vecFixedGeometries.size();
+  te::sam::rtree::Index<size_t, 8> spatialIndex;
   for (std::size_t i = 0; i < vecFixedGeometries.size(); ++i)
   {
     te::gm::Geometry* geometry = vecFixedGeometries[i];
+
     if (geometry->isValid() == false)
     {
       throw te::common::Exception("Invalid geometry detected after vectorization and fix. Error in function: createDistinctGroups");
@@ -861,60 +886,85 @@ std::auto_ptr<te::rst::Raster> te::urban::createDistinctGroups(te::rst::Raster* 
       throw te::common::Exception("Vectorization generated at least on geometry that is not a polygon. Error in function: createDistinctGroups");
     }
 
-    std::size_t classValue = i + 1;
-    //if the current rgion intercepts other processed region, we must use the same class value
-    std::vector<std::size_t> vecCandidates;
-    spatialIndex.search(*geometry->getMBR(), vecCandidates);
+    spatialIndex.insert(*geometry->getMBR(), i);
+    setNextToBeProcessed.insert(i);
+  }
 
-    bool reuseClassValue = false;
-    for (std::size_t j = 0; j < vecCandidates.size(); ++j)
+  //then we start the process
+  size_t nextClassValue = 1;
+  while (setNextToBeProcessed.empty() == false)
+  {
+    std::size_t nextToBeProcessed = *setNextToBeProcessed.begin();
+    setNextToBeProcessed.erase(nextToBeProcessed);
+
+    if (vecProcessed[nextToBeProcessed] == true)
     {
-      std::size_t indexCandidate = vecCandidates[j];
-      te::gm::Geometry* candidate = vecFixedGeometries[indexCandidate];
-      if (geometry->intersects(candidate))
+      continue;
+    }
+
+    std::vector < te::gm::Geometry*> queueGometriesToProcess;
+
+    //if the geometry has not been processed yet, we add it to the processing queue
+    vecProcessed[nextToBeProcessed] = true;
+    queueGometriesToProcess.push_back(vecFixedGeometries[nextToBeProcessed]);
+
+    std::size_t currentClasseValue = nextClassValue;
+    ++nextClassValue;
+
+    //here we simulate recursivity
+    //in this loop, all the polygons MUST have the same class
+    while (queueGometriesToProcess.empty() == false)
+    {
+      te::gm::Geometry* currentGeometry = *queueGometriesToProcess.begin();
+      queueGometriesToProcess.erase(queueGometriesToProcess.begin());
+
+      //all the polygons that intercept the current one must have the same class
+      //we queue the analyse of all the candidates that intercept the current polygon in order to make a "recursive" analysis
+      std::vector<std::size_t> vecCandidates;
+      spatialIndex.search(*currentGeometry->getMBR(), vecCandidates);
+
+      for (std::size_t j = 0; j < vecCandidates.size(); ++j)
       {
-        //we check if we need to reprocess any polygon in order to have the same class value for ALL the polygons that intercepts themselves
-        //we do this check if there are at least two polygons intercepting the current analysed polygon AND if they have different class values
-        if (reuseClassValue && classValue != vecClasses[indexCandidate])
+        std::size_t indexCandidate = vecCandidates[j];
+
+        //we do the analysis of the candidate IF it has not been processed yet
+        if (vecProcessed[indexCandidate] == true)
         {
-          //in this case, we reprocess the candidate
-          vecClasses[indexCandidate] = classValue;
-          vecFixedGeometries.push_back((te::gm::Geometry*)candidate->clone());
+          continue;
         }
 
-        reuseClassValue = true;
-        classValue = vecClasses[indexCandidate];
+        te::gm::Geometry* candidateGeometry = vecFixedGeometries[indexCandidate];
+        if (currentGeometry->intersects(candidateGeometry))
+        {
+          //if the candidate intercept the current polygon, we added it the the queue so it will be rasterized using the same class value of the current polygon
+          vecProcessed[indexCandidate] = true;
+          queueGometriesToProcess.push_back(candidateGeometry);
+        }
       }
-    }
 
-    if (i < originalSize)
-    {
-      spatialIndex.insert(*geometry->getMBR(), i);
-      vecClasses.push_back(classValue);
-    }
+      //now we rasterize the polygon using the current class value
+      te::gm::Polygon* polygon = (te::gm::Polygon*) currentGeometry;
 
+      te::rst::PolygonIterator<double> it = te::rst::PolygonIterator<double>::begin(inputRaster, polygon);
+      te::rst::PolygonIterator<double> itend = te::rst::PolygonIterator<double>::end(inputRaster, polygon);
 
-    te::gm::Polygon* polygon = (te::gm::Polygon*) geometry;
-    
-    te::rst::PolygonIterator<double> it = te::rst::PolygonIterator<double>::begin(inputRaster, polygon);
-    te::rst::PolygonIterator<double> itend = te::rst::PolygonIterator<double>::end(inputRaster, polygon);
-
-    while (it != itend)
-    {
-      unsigned int currentRow = it.getRow();
-      unsigned int currentColumn = it.getColumn();
-
-      te::gm::Coord2D coord = outputRaster->getGrid()->gridToGeo(currentColumn, currentRow);
-      te::gm::Point point(coord.getX(), coord.getY(), polygon->getSRID());
-
-      if (point.intersects(polygon))
+      while (it != itend)
       {
-        outputRaster->setValue(currentColumn, currentRow, (double)classValue);
+        unsigned int currentRow = it.getRow();
+        unsigned int currentColumn = it.getColumn();
+
+        te::gm::Coord2D coord = outputRaster->getGrid()->gridToGeo(currentColumn, currentRow);
+        te::gm::Point point(coord.getX(), coord.getY(), polygon->getSRID());
+
+        if (point.intersects(polygon))
+        {
+          outputRaster->setValue(currentColumn, currentRow, (double)currentClasseValue);
+        }
+        ++it;
       }
-      ++it;
     }
   }
-  
+
   te::common::FreeContents(vecGeometries);
   te::common::FreeContents(vecFixedGeometries);
 

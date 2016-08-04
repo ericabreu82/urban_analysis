@@ -193,6 +193,7 @@ std::map<int, std::size_t> te::urban::computeStatistics(te::rst::Raster* raster,
   std::map<int, std::size_t>::iterator pixelCountMapIt;
 
   int rasterSRID = raster->getSRID();
+  double dummyValue = raster->getBand(0)->getProperty()->m_noDataValue;
 
   //reproject geometry if its necessary
   if (geom->getSRID() != rasterSRID)
@@ -217,6 +218,12 @@ std::map<int, std::size_t> te::urban::computeStatistics(te::rst::Raster* raster,
       double value = 0.;
 
       raster->getValue(it.getColumn(), it.getRow(), value, 0);
+
+      if (value == dummyValue)
+      {
+        ++it;
+        continue;
+      }
 
       pixelCountMapIt = pixelCountMap.find((int)value);
 
