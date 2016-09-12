@@ -88,6 +88,7 @@ include_directories(${terralib_DIR}
  add_subdirectory(terralib_mod_growth)
  add_subdirectory(terralib_mod_growth_qt)
  add_subdirectory(urbanAnalysis_app)
+ add_subdirectory(urbanAnalysis_plugin)
 
 # Track dependencies
 #MACRO ( TeGetPlugins _plugins )
