@@ -80,3 +80,12 @@ install(FILES ${TERRAVIEWPLUGIN_HDR_FILES}
         DESTINATION ${URBANANALYSIS_DESTINATION_HEADERS}/urbanAnalysis_plugin COMPONENT devel)
 
 export(TARGETS urbanAnalysis_plugin APPEND FILE ${CMAKE_BINARY_DIR}/urbanAnalysis-exports.cmake)
+
+add_custom_command(
+      TARGET urbanAnalysis_plugin
+      POST_BUILD
+	  COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_BINARY_DIR}/bin/Debug/urbanAnalysis_plugind.dll" "${terralib_DIR}/debug"
+      
+      COMMENT "Copying plugin files..."
+      VERBATIM
+    )

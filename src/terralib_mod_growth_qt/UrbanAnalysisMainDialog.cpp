@@ -52,12 +52,12 @@ te::urban::qt::UrbanAnalysisMainDialog::UrbanAnalysisMainDialog(QWidget* parent,
   //add buttons and widgets for each urban analysis operations
   buildDialog();
 
-  te::urban::init();
+  //te::urban::init();
 }
 
 te::urban::qt::UrbanAnalysisMainDialog::~UrbanAnalysisMainDialog()
 {
-  te::urban::finalize();
+  //te::urban::finalize();
 
   if (m_currentWidget)
     delete m_currentWidget;

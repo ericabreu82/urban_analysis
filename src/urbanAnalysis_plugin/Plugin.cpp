@@ -24,6 +24,7 @@
 */
 
 #include "Plugin.h"
+#include "UrbanAnalysisAction.h"
 
 // TerraLib
 #include <terralib/core/translator/Translator.h>
@@ -38,11 +39,13 @@ te::urban::Plugin::Plugin(const te::plugin::PluginInfo& pluginInfo)
   : QObject()
   , te::plugin::Plugin(pluginInfo)
   , m_menu(0)
+  , m_urbanAnalysisAction(0)
 {
 }
 
 te::urban::Plugin::~Plugin()
 {
+
 }
 
 void te::urban::Plugin::startup()
@@ -79,6 +82,7 @@ void te::urban::Plugin::shutdown()
 
 // remove menu
   delete m_menu;
+  m_menu = 0;
 
 // unregister actions
   unRegisterActions();
@@ -90,6 +94,9 @@ void te::urban::Plugin::shutdown()
 
 void te::urban::Plugin::registerActions()
 {
+  m_urbanAnalysisAction = new te::urban::UrbanAnalysisAction(m_menu);
+  connect(m_urbanAnalysisAction, SIGNAL(triggered(te::qt::af::evt::Event*)), SIGNAL(triggered(te::qt::af::evt::Event*)));
+
   /*
 #ifdef FIOCRUZ_HAVE_FLOWCLASSIFY
   m_flowClassify = new te::qt::plugins::fiocruz::FlowClassifyAction(m_flowMenu);
@@ -122,6 +129,8 @@ void te::urban::Plugin::registerActions()
 
 void  te::urban::Plugin::unRegisterActions()
 {
+  delete m_urbanAnalysisAction;
+  m_urbanAnalysisAction = 0;
   /*
 #ifdef FIOCRUZ_HAVE_FLOWCLASSIFY
     delete m_flowClassify;

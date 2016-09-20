@@ -48,6 +48,8 @@ namespace te
   }
   namespace urban
   {
+    class UrbanAnalysisAction;
+
     class Plugin : public QObject,  public te::plugin::Plugin
     {
       Q_OBJECT
@@ -83,8 +85,7 @@ namespace te
       protected:
 
         QMenu* m_menu;                                                      //!< fiocruz Main Menu registered.
-        QMenu* m_flowMenu;                                                  //!< Flow Main Menu registered.
-        QMenu* m_regMenu;                                                   //!< Regionalization Main Menu registered.
+        UrbanAnalysisAction* m_urbanAnalysisAction;
     };
   } // end namespace urban
 } // end namespace te
