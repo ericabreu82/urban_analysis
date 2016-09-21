@@ -109,6 +109,7 @@ TeInstallQt5Plugins()
 #TeGetPlugins (_teplugins)
 
 if(WIN32)
+  get_filename_component(_uaShare ${URBANANALYSIS_ABSOLUTE_ROOT_DIR}/share/terralib DIRECTORY)
   get_filename_component(_teShare ${terralib_INCLUDE_DIRS}/../share/terralib DIRECTORY) 
   get_filename_component(_qtPlugins ${terralib_INCLUDE_DIRS}/../qtplugins/platforms DIRECTORY) 
 
@@ -119,19 +120,21 @@ if(WIN32)
   )  
   
   install(
-    DIRECTORY ${_teShare}
+    DIRECTORY ${_uaShare}
     DESTINATION .
     COMPONENT runtime
   )
   
-    
-  #install(
-  #  DIRECTORY ${_qtPlugins}
-  #  DESTINATION .
-  #  COMPONENT runtime
-  #)
+  install(
+    DIRECTORY ${_teShare}
+    DESTINATION .
+    COMPONENT runtime
+  )
+   
+  file(GLOB dll_list ${terralib_DIR}/../../../bin/*.dll)
+  file(GLOB exe_list ${terralib_DIR}/../../../bin/*.exe)
   
-  file(GLOB _teBins ${terralib_DIR}/../../../bin/*.dll)
+  set(_teBins ${dll_list} ${exe_list})
   
   install(
     FILES ${_teBins}
@@ -142,18 +145,6 @@ endif()
 
 
 include(InstallRequiredSystemLibraries)
-
-#configure_file(${CMAKE_SOURCE_DIR}/urban_analysis-fix-bundle.cmake.in
-#               ${CMAKE_BINARY_DIR}/FixBundleUrban_analysis.cmake @ONLY)
-
-#install(SCRIPT ${CMAKE_BINARY_DIR}/FixBundleUrban_analysis.cmake
- #       COMPONENT runtime)
-		
-#set(GDAL_DATA_DIR ${TE_3RDPARTY}/data)
-
-#install(DIRECTORY ${GDAL_DATA_DIR}
-       #DESTINATION share
-       #COMPONENT runtime) 
 
 # CPack
 set(CPACK_GENERATOR NSIS)
@@ -170,11 +161,17 @@ SET(CPACK_NSIS_MODIFY_PATH OFF)
 #for the sortcuts
 set(shortCutName "urban_analysis_${CPACK_PACKAGE_VERSION_MAJOR}_${CPACK_PACKAGE_VERSION_MINOR}_${CPACK_PACKAGE_VERSION_PATCH}${bitName}")
 
-set(CPACK_PACKAGE_EXECUTABLES "urbanAnalysisApp;${shortCutName}")
+set(shortCutNameTerraview "terraview_5_2_0")
+
+set(CPACK_PACKAGE_EXECUTABLES "urbanAnalysisApp;${shortCutName}" "urbanAnalysisApp;${shortCutNameTerraview}")
   
 set(CPACK_NSIS_CREATE_ICONS_EXTRA "SetOutPath \\\"$INSTDIR\\\\bin\\\";CreateShortCut \\\"$SMPROGRAMS\\\\$STARTMENU_FOLDER/${shortCutName}.lnk\\\" \\\"$INSTDIRb\\\\bin\\\\urbanAnalysisApp.exe\\\" \\\"\\\" \\\"$INSTDIR\\\\share\\\\terralib\\\\images\\\\ico\\\\terralib-globe.ico\\\";CreateShortCut \\\"$DESKTOP\\\\${shortCutName}.lnk\\\" \\\"$INSTDIR\\\\bin\\\\urbanAnalysisApp.exe\\\" \\\"\\\" \\\"$INSTDIR\\\\share\\\\terralib\\\\images\\\\ico\\\\terralib-globe.ico\\\"")
 
-list (APPEND CPACK_NSIS_DELETE_ICONS_EXTRA "Delete \\\"$SMPROGRAMS\\\\$MUI_TEMP\\\\${shortCutName}.lnk\\\";Delete \\\"$DESKTOP\\\\${shortCutName}.lnk\\\"")
+#set(CPACK_NSIS_CREATE_ICONS_EXTRA "SetOutPath \\\"$INSTDIR\\\\bin\\\";CreateShortCut \\\"$SMPROGRAMS\\\\$STARTMENU_FOLDER/${shortCutNameTerraview}.lnk\\\" \\\"$INSTDIRb\\\\bin\\\\terraview.exe\\\" \\\"\\\" \\\"$INSTDIR\\\\share\\\\terralib\\\\images\\\\ico\\\\terralib-globe.ico\\\";CreateShortCut \\\"$DESKTOP\\\\${shortCutNameTerraview}.lnk\\\" \\\"$INSTDIR\\\\bin\\\\terraview.exe\\\" \\\"\\\" \\\"$INSTDIR\\\\share\\\\terralib\\\\images\\\\ico\\\\terralib-globe.ico\\\"")
+
+list (APPEND CPACK_NSIS_DELETE_ICONS_EXTRA "Delete \\\"$SMPROGRAMS\\\\$START_MENU\\\\${shortCutName}.lnk\\\";Delete \\\"$DESKTOP\\\\${shortCutName}.lnk\\\"")
+
+#list (APPEND CPACK_NSIS_DELETE_ICONS_EXTRA "Delete \\\"$SMPROGRAMS\\\\$START_MENU\\\\${shortCutNameTerraview}.lnk\\\";Delete \\\"$DESKTOP\\\\${shortCutNameTerraview}.lnk\\\"")
 
 INCLUDE(CPack)
 
