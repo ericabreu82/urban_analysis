@@ -42,7 +42,7 @@ int main(int argc, char** argv)
   int waitVal = EXIT_FAILURE;
 
   //start main dlg
-  te::urban::qt::UrbanAnalysisMainDialog mainDlg;
+  te::urban::qt::UrbanAnalysisMainDialog mainDlg(false);
 
   if (mainDlg.exec() == QDialog::Accepted)
   {

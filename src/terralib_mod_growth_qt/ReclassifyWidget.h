@@ -48,7 +48,7 @@ namespace te
 
         public:
 
-          ReclassifyWidget(QWidget* parent = 0, Qt::WindowFlags f = 0);
+          ReclassifyWidget(bool startAsPlugin, QWidget* parent = 0, Qt::WindowFlags f = 0);
 
           ~ReclassifyWidget();
 
@@ -71,6 +71,8 @@ namespace te
         private:
 
           std::auto_ptr<Ui::ReclassifyWidgetForm> m_ui;
+
+          bool m_startAsPlugin;
       };
     }
   }

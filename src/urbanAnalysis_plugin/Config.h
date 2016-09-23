@@ -26,13 +26,6 @@
 #ifndef __URBANANALYSIS_INTERNAL_URBAN_ANALYSIS_PLUGIN_CONFIG_H
 #define __URBANANALYSIS_INTERNAL_URBAN_ANALYSIS_PLUGIN_CONFIG_H
 
-/*!
-  \def URBANANALYSISPLUGINEXPORT
-
-  \brief You can use this macro in order to export/import classes and functions from all plug-ins files.
-
-  \note To compile plug-ins in Windows, remember to insert URBANANALYSISPLUGINEXPORT into the project's list of defines.
- */
 #ifdef WIN32
   #ifdef URBANANALYSISPLUGIN
     #define URBANANALYSISPLUGINEXPORT  __declspec(dllexport)   // export DLL information

@@ -46,20 +46,32 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include <QMessageBox>
 #include <QValidator>
 
-te::urban::qt::ReclassifyWidget::ReclassifyWidget(QWidget* parent, Qt::WindowFlags f)
+te::urban::qt::ReclassifyWidget::ReclassifyWidget(bool startAsPlugin, QWidget* parent, Qt::WindowFlags f)
   : QWidget(parent, f),
-  m_ui(new Ui::ReclassifyWidgetForm)
+  m_ui(new Ui::ReclassifyWidgetForm),
+  m_startAsPlugin(startAsPlugin)
 {
   // add controls
   m_ui->setupUi(this);
 
   m_ui->m_reclassRadiusLineEdit->setValidator(new QDoubleValidator(this));
 
-  m_ui->m_reclassAddImageToolButton->setIcon(QIcon(":/images/list-add.svg"));
-  m_ui->m_reclassRemoveImageToolButton->setIcon(QIcon(":/images/list-remove.svg"));
-  m_ui->m_reclassAddVecToolButton->setIcon(QIcon(":/images/folder.svg"));
-  m_ui->m_reclassOutputRepoToolButton->setIcon(QIcon(":/images/folder.svg"));
-  m_ui->m_exportIndexInfoToolButton->setIcon(QIcon(":/images/document-save.svg"));
+  if (m_startAsPlugin)
+  {
+    m_ui->m_reclassAddImageToolButton->setIcon(QIcon::fromTheme("list-add"));
+    m_ui->m_reclassRemoveImageToolButton->setIcon(QIcon::fromTheme("list-remove"));
+    m_ui->m_reclassAddVecToolButton->setIcon(QIcon::fromTheme("folder"));
+    m_ui->m_reclassOutputRepoToolButton->setIcon(QIcon::fromTheme("folder"));
+    m_ui->m_exportIndexInfoToolButton->setIcon(QIcon::fromTheme("document-save"));
+  }
+  else
+  {
+    m_ui->m_reclassAddImageToolButton->setIcon(QIcon(":/images/list-add.svg"));
+    m_ui->m_reclassRemoveImageToolButton->setIcon(QIcon(":/images/list-remove.svg"));
+    m_ui->m_reclassAddVecToolButton->setIcon(QIcon(":/images/folder.svg"));
+    m_ui->m_reclassOutputRepoToolButton->setIcon(QIcon(":/images/folder.svg"));
+    m_ui->m_exportIndexInfoToolButton->setIcon(QIcon(":/images/document-save.svg"));
+  }
 
   //connects
   connect(m_ui->m_reclassAddImageToolButton, SIGNAL(clicked()), this, SLOT(onReclassAddImageToolButtonClicked()));

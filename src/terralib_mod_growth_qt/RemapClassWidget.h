@@ -48,7 +48,7 @@ namespace te
 
         public:
 
-          RemapClassWidget(QWidget* parent = 0, Qt::WindowFlags f = 0);
+          RemapClassWidget(bool startAsPlugin, QWidget* parent = 0, Qt::WindowFlags f = 0);
 
           ~RemapClassWidget();
 
@@ -69,6 +69,8 @@ namespace te
         private:
 
           std::auto_ptr<Ui::RemapClassWidgetForm> m_ui;
+
+          bool m_startAsPlugin;
       };
     }
   }

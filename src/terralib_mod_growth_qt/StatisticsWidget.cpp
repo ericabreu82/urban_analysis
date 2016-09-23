@@ -44,16 +44,26 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include <QMessageBox>
 
 
-te::urban::qt::StatisticsWidget::StatisticsWidget(QWidget* parent, Qt::WindowFlags f)
+te::urban::qt::StatisticsWidget::StatisticsWidget(bool startAsPlugin, QWidget* parent, Qt::WindowFlags f)
   : QWidget(parent, f),
-  m_ui(new Ui::StatisticsWidgetForm)
+  m_ui(new Ui::StatisticsWidgetForm),
+  m_startAsPlugin(startAsPlugin)
 {
   // add controls
   m_ui->setupUi(this);
 
-  m_ui->m_addImageToolButton->setIcon(QIcon(":/images/folder.svg"));
-  m_ui->m_addVectorToolButton->setIcon(QIcon(":/images/folder.svg"));
-  m_ui->m_outputRepoToolButton->setIcon(QIcon(":/images/folder.svg"));
+  if (m_startAsPlugin)
+  {
+    m_ui->m_addImageToolButton->setIcon(QIcon::fromTheme("folder"));
+    m_ui->m_addVectorToolButton->setIcon(QIcon::fromTheme("folder"));
+    m_ui->m_outputRepoToolButton->setIcon(QIcon::fromTheme("folder"));
+  }
+  else
+  {
+    m_ui->m_addImageToolButton->setIcon(QIcon(":/images/folder.svg"));
+    m_ui->m_addVectorToolButton->setIcon(QIcon(":/images/folder.svg"));
+    m_ui->m_outputRepoToolButton->setIcon(QIcon(":/images/folder.svg"));
+  }
 
   //connects
   connect(m_ui->m_addImageToolButton, SIGNAL(clicked()), this, SLOT(onAddImageToolButtonClicked()));

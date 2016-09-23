@@ -43,28 +43,17 @@ te::urban::UrbanAnalysisAction::~UrbanAnalysisAction()
 
 void te::urban::UrbanAnalysisAction::onActionActivated(bool checked)
 {
-  te::urban::qt::UrbanAnalysisMainDialog mainDlg;
+  te::urban::qt::UrbanAnalysisMainDialog mainDlg(true);
   if (mainDlg.exec() == QDialog::Accepted)
   {
-    
+    std::list<te::map::AbstractLayerPtr> layers = mainDlg.getLayers();
+    std::list<te::map::AbstractLayerPtr>::iterator  it;
+
+    for (it = layers.begin(); it != layers.end(); ++it)
+    {
+      te::map::AbstractLayerPtr layer = *it;
+
+      addNewLayer(layer);
+    }
   }
-
-  /*
-  //get input layers
-  std::list<te::map::AbstractLayerPtr> list = getLayers();
-
-  //get display extent
-  te::qt::af::BaseApplication* ba = dynamic_cast<te::qt::af::BaseApplication*>(te::qt::af::AppCtrlSingleton::getInstance().getMainWindow());
-
-  //show interface
-  te::qt::plugins::fiocruz::FlowClassifyDialog dlg(te::qt::af::AppCtrlSingleton::getInstance().getMainWindow());
-
-  dlg.setLayerList(list);
-
-  if(dlg.exec() == QDialog::Accepted)
-  {
-    //add new layer
-    //addNewLayer(dlg.getOutputLayer());
-  }
-  */
 }

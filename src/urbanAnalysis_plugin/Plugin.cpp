@@ -60,15 +60,7 @@ void te::urban::Plugin::startup()
 // add plugin menu
   m_menu = te::qt::af::AppCtrlSingleton::getInstance().getMenu("UrbanAnalysis");
   m_menu->setTitle(TE_TR("UrbanAnalysis"));
-  /*
-  m_flowMenu = new QMenu(m_menu);
-  m_flowMenu->setTitle(TE_TR("Flow"));
-  m_menu->addMenu(m_flowMenu);
 
-  m_regMenu = new QMenu(m_menu);
-  m_regMenu->setTitle(TE_TR("Regionalization"));
-  m_menu->addMenu(m_regMenu);
-  */
 // register actions
   registerActions();
 
@@ -96,64 +88,12 @@ void te::urban::Plugin::registerActions()
 {
   m_urbanAnalysisAction = new te::urban::UrbanAnalysisAction(m_menu);
   connect(m_urbanAnalysisAction, SIGNAL(triggered(te::qt::af::evt::Event*)), SIGNAL(triggered(te::qt::af::evt::Event*)));
-
-  /*
-#ifdef FIOCRUZ_HAVE_FLOWCLASSIFY
-  m_flowClassify = new te::qt::plugins::fiocruz::FlowClassifyAction(m_flowMenu);
-  connect(m_flowClassify, SIGNAL(triggered(te::qt::af::evt::Event*)), SIGNAL(triggered(te::qt::af::evt::Event*)));
-#endif
-
-#ifdef FIOCRUZ_HAVE_FLOWDIAGRAM
-  m_flowDiagram = new te::qt::plugins::fiocruz::FlowDiagramAction(m_flowMenu);
-  connect(m_flowDiagram, SIGNAL(triggered(te::qt::af::evt::Event*)), SIGNAL(triggered(te::qt::af::evt::Event*)));
-
-  te::qt::plugins::fiocruz::FlowNetworkRendererFactory::initialize();
-#endif
-
-#ifdef FIOCRUZ_HAVE_FLOWNETWORK
-  m_flowNetwork = new te::qt::plugins::fiocruz::FlowNetworkAction(m_flowMenu);
-  connect(m_flowNetwork, SIGNAL(triggered(te::qt::af::evt::Event*)), SIGNAL(triggered(te::qt::af::evt::Event*)));
-#endif
-
-#ifdef FIOCRUZ_HAVE_REGIONALIZATIONRASTER
-  m_regRaster = new te::qt::plugins::fiocruz::RegionalizationRasterAction(m_regMenu);
-  connect(m_regRaster, SIGNAL(triggered(te::qt::af::evt::Event*)), SIGNAL(triggered(te::qt::af::evt::Event*)));
-#endif
-
-#ifdef FIOCRUZ_HAVE_REGIONALIZATIONVECTOR
-  m_regVector = new te::qt::plugins::fiocruz::RegionalizationVectorAction(m_regMenu);
-  connect(m_regVector, SIGNAL(triggered(te::qt::af::evt::Event*)), SIGNAL(triggered(te::qt::af::evt::Event*)));
-#endif
-  */
 }
 
 void  te::urban::Plugin::unRegisterActions()
 {
   delete m_urbanAnalysisAction;
   m_urbanAnalysisAction = 0;
-  /*
-#ifdef FIOCRUZ_HAVE_FLOWCLASSIFY
-    delete m_flowClassify;
-#endif
-
-#ifdef FIOCRUZ_HAVE_FLOWDIAGRAM
-    delete m_flowDiagram;
-
-    te::qt::plugins::fiocruz::FlowNetworkRendererFactory::finalize();
-#endif
-
-#ifdef FIOCRUZ_HAVE_FLOWNETWORK
-    delete m_flowNetwork;
-#endif
-
-#ifdef FIOCRUZ_HAVE_REGIONALIZATIONRASTER
-    delete m_regRaster;
-#endif
-
-#ifdef FIOCRUZ_HAVE_REGIONALIZATIONVECTOR
-    delete m_regVector;
-#endif
-    */
 }
 
 PLUGIN_CALL_BACK_IMPL(te::urban::Plugin)

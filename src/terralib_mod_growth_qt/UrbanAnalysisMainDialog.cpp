@@ -35,11 +35,12 @@ TerraLib Team at <terralib-team@terralib.org>.
 //Qt
 #include <QSpacerItem>
 
-te::urban::qt::UrbanAnalysisMainDialog::UrbanAnalysisMainDialog(QWidget* parent, Qt::WindowFlags f)
+te::urban::qt::UrbanAnalysisMainDialog::UrbanAnalysisMainDialog(bool startAsPlugin, QWidget* parent, Qt::WindowFlags f)
   : QDialog(parent, f),
   m_ui(new Ui::UrbanAnalysisMainDialogForm),
   m_currentWidget(0),
-  m_opButtonPos(0)
+  m_opButtonPos(0),
+  m_startAsPlugin(startAsPlugin)
 {
   // add controls
   m_ui->setupUi(this);
@@ -61,6 +62,11 @@ te::urban::qt::UrbanAnalysisMainDialog::~UrbanAnalysisMainDialog()
 
   if (m_currentWidget)
     delete m_currentWidget;
+}
+
+std::list<te::map::AbstractLayerPtr> te::urban::qt::UrbanAnalysisMainDialog::getLayers()
+{
+  return m_layers;
 }
 
 void te::urban::qt::UrbanAnalysisMainDialog::buildDialog()
@@ -119,7 +125,7 @@ void te::urban::qt::UrbanAnalysisMainDialog::onReclassifyToolButtonClicked()
   if (m_currentWidget)
     delete m_currentWidget;
 
-  te::urban::qt::ReclassifyWidget* widget = new te::urban::qt::ReclassifyWidget(m_ui->m_widget);
+  te::urban::qt::ReclassifyWidget* widget = new te::urban::qt::ReclassifyWidget(m_startAsPlugin, m_ui->m_widget);
 
   m_layout->addWidget(widget);
 
@@ -153,7 +159,7 @@ void te::urban::qt::UrbanAnalysisMainDialog::onRemapClassToolButtonClicked()
   if (m_currentWidget)
     delete m_currentWidget;
 
-  te::urban::qt::RemapClassWidget* widget = new te::urban::qt::RemapClassWidget(m_ui->m_widget);
+  te::urban::qt::RemapClassWidget* widget = new te::urban::qt::RemapClassWidget(m_startAsPlugin, m_ui->m_widget);
 
   m_layout->addWidget(widget);
 
@@ -174,7 +180,7 @@ void te::urban::qt::UrbanAnalysisMainDialog::onStatisticsToolButtonClicked()
   if (m_currentWidget)
     delete m_currentWidget;
 
-  te::urban::qt::StatisticsWidget* widget = new te::urban::qt::StatisticsWidget(m_ui->m_widget);
+  te::urban::qt::StatisticsWidget* widget = new te::urban::qt::StatisticsWidget(m_startAsPlugin, m_ui->m_widget);
 
   m_layout->addWidget(widget);
 

@@ -48,7 +48,7 @@ namespace te
 
         public:
 
-          StatisticsWidget(QWidget* parent = 0, Qt::WindowFlags f = 0);
+          StatisticsWidget(bool startAsPlugin, QWidget* parent = 0, Qt::WindowFlags f = 0);
 
           ~StatisticsWidget();
 
@@ -65,6 +65,8 @@ namespace te
         private:
 
           std::auto_ptr<Ui::StatisticsWidgetForm> m_ui;
+
+          bool m_startAsPlugin;
       };
     }
   }

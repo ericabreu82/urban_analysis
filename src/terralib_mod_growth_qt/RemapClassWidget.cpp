@@ -45,16 +45,26 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include <QMessageBox>
 #include <QValidator>
 
-te::urban::qt::RemapClassWidget::RemapClassWidget(QWidget* parent, Qt::WindowFlags f)
+te::urban::qt::RemapClassWidget::RemapClassWidget(bool startAsPlugin, QWidget* parent, Qt::WindowFlags f)
   : QWidget(parent, f),
-  m_ui(new Ui::RemapClassWidgetForm)
+  m_ui(new Ui::RemapClassWidgetForm),
+  m_startAsPlugin(startAsPlugin)
 {
   // add controls
   m_ui->setupUi(this);
 
-  m_ui->m_reclassAddImageToolButton->setIcon(QIcon(":/images/list-add.svg"));
-  m_ui->m_reclassRemoveImageToolButton->setIcon(QIcon(":/images/list-remove.svg"));
-  m_ui->m_reclassOutputRepoToolButton->setIcon(QIcon(":/images/folder.svg"));
+  if (m_startAsPlugin)
+  {
+    m_ui->m_reclassAddImageToolButton->setIcon(QIcon::fromTheme("list-add"));
+    m_ui->m_reclassRemoveImageToolButton->setIcon(QIcon::fromTheme("list-remove"));
+    m_ui->m_reclassOutputRepoToolButton->setIcon(QIcon::fromTheme("folder"));
+  }
+  else
+  {
+    m_ui->m_reclassAddImageToolButton->setIcon(QIcon(":/images/list-add.svg"));
+    m_ui->m_reclassRemoveImageToolButton->setIcon(QIcon(":/images/list-remove.svg"));
+    m_ui->m_reclassOutputRepoToolButton->setIcon(QIcon(":/images/folder.svg"));
+  }
 
   //connects
   connect(m_ui->m_reclassAddImageToolButton, SIGNAL(clicked()), this, SLOT(onReclassAddImageToolButtonClicked()));

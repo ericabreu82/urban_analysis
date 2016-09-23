@@ -28,6 +28,9 @@ TerraLib Team at <terralib-team@terralib.org>.
 
 #include "Config.h"
 
+// Terralib
+#include <terralib/maptools/AbstractLayer.h>
+
 // STL
 #include <memory>
 
@@ -50,9 +53,13 @@ namespace te
 
         public:
 
-          UrbanAnalysisMainDialog(QWidget* parent = 0, Qt::WindowFlags f = 0);
+          UrbanAnalysisMainDialog(bool startAsPlugin, QWidget* parent = 0, Qt::WindowFlags f = 0);
 
           ~UrbanAnalysisMainDialog();
+
+        public:
+
+          std::list<te::map::AbstractLayerPtr> getLayers();
 
         protected:
 
@@ -81,6 +88,10 @@ namespace te
           QGridLayout* m_layout;
 
           int m_opButtonPos;
+
+          bool m_startAsPlugin;
+
+          std::list<te::map::AbstractLayerPtr> m_layers;
       };
     }
   }
