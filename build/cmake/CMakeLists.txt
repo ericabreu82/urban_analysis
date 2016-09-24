@@ -155,23 +155,24 @@ set(CPACK_PACKAGE_VERSION "1.1.2")
 set(CPACK_PACKAGE_VERSION_MAJOR "1")
 set(CPACK_PACKAGE_VERSION_MINOR "1")
 set(CPACK_PACKAGE_VERSION_PATCH "2")
-set(CPACK_PACKAGE_INSTALL_DIRECTORY "UrbanAnalysisApp")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY "Urban Analysis")
 SET(CPACK_NSIS_MODIFY_PATH OFF)
 
 #for the sortcuts
-set(shortCutName "urban_analysis_${CPACK_PACKAGE_VERSION_MAJOR}_${CPACK_PACKAGE_VERSION_MINOR}_${CPACK_PACKAGE_VERSION_PATCH}${bitName}")
+set(shortCutName "Urban Analysis ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}${bitName}") 
+set(shortCutNameTerraview "TerraView 5.2.0")
 
-set(shortCutNameTerraview "terraview_5_2_0")
+set(shortcutUA_startmenu "CreateShortCut \\\"$SMPROGRAMS\\\\$STARTMENU_FOLDER/${shortCutName}.lnk\\\" \\\"$INSTDIRb\\\\bin\\\\urbanAnalysisApp.exe\\\" \\\"\\\" \\\"$INSTDIR\\\\share\\\\terralib\\\\images\\\\ico\\\\terralib-globe.ico\\\"")
+set(shortcutUA_desktop "CreateShortCut \\\"$DESKTOP\\\\${shortCutName}.lnk\\\" \\\"$INSTDIR\\\\bin\\\\urbanAnalysisApp.exe\\\" \\\"\\\" \\\"$INSTDIR\\\\share\\\\terralib\\\\images\\\\ico\\\\terralib-globe.ico\\\"")
+set(shortcutTV_startmenu "CreateShortCut \\\"$SMPROGRAMS\\\\$STARTMENU_FOLDER/${shortCutNameTerraview}.lnk\\\" \\\"$INSTDIRb\\\\bin\\\\terraview.exe\\\" \\\"\\\" \\\"$INSTDIR\\\\share\\\\terralib\\\\images\\\\ico\\\\terralib-globe.ico\\\"")
+set(shortcutTV_desktop "CreateShortCut \\\"$DESKTOP\\\\${shortCutNameTerraview}.lnk\\\" \\\"$INSTDIR\\\\bin\\\\terraview.exe\\\" \\\"\\\" \\\"$INSTDIR\\\\share\\\\terralib\\\\images\\\\ico\\\\terralib-globe.ico\\\"")
+set(full_shortcut_list "${shortcutUA_startmenu};${shortcutUA_desktop};${shortcutTV_startmenu};${shortcutTV_desktop}")
 
-set(CPACK_PACKAGE_EXECUTABLES "urbanAnalysisApp;${shortCutName}" "urbanAnalysisApp;${shortCutNameTerraview}")
-  
-set(CPACK_NSIS_CREATE_ICONS_EXTRA "SetOutPath \\\"$INSTDIR\\\\bin\\\";CreateShortCut \\\"$SMPROGRAMS\\\\$STARTMENU_FOLDER/${shortCutName}.lnk\\\" \\\"$INSTDIRb\\\\bin\\\\urbanAnalysisApp.exe\\\" \\\"\\\" \\\"$INSTDIR\\\\share\\\\terralib\\\\images\\\\ico\\\\terralib-globe.ico\\\";CreateShortCut \\\"$DESKTOP\\\\${shortCutName}.lnk\\\" \\\"$INSTDIR\\\\bin\\\\urbanAnalysisApp.exe\\\" \\\"\\\" \\\"$INSTDIR\\\\share\\\\terralib\\\\images\\\\ico\\\\terralib-globe.ico\\\"")
-
-#set(CPACK_NSIS_CREATE_ICONS_EXTRA "SetOutPath \\\"$INSTDIR\\\\bin\\\";CreateShortCut \\\"$SMPROGRAMS\\\\$STARTMENU_FOLDER/${shortCutNameTerraview}.lnk\\\" \\\"$INSTDIRb\\\\bin\\\\terraview.exe\\\" \\\"\\\" \\\"$INSTDIR\\\\share\\\\terralib\\\\images\\\\ico\\\\terralib-globe.ico\\\";CreateShortCut \\\"$DESKTOP\\\\${shortCutNameTerraview}.lnk\\\" \\\"$INSTDIR\\\\bin\\\\terraview.exe\\\" \\\"\\\" \\\"$INSTDIR\\\\share\\\\terralib\\\\images\\\\ico\\\\terralib-globe.ico\\\"")
+set(CPACK_PACKAGE_EXECUTABLES "urbanAnalysisApp;${shortCutName}" "terraview;${shortCutNameTerraview}")
+set(CPACK_NSIS_CREATE_ICONS_EXTRA "SetOutPath \\\"$INSTDIR\\\\bin\\\";${full_shortcut_list}")
 
 list (APPEND CPACK_NSIS_DELETE_ICONS_EXTRA "Delete \\\"$SMPROGRAMS\\\\$START_MENU\\\\${shortCutName}.lnk\\\";Delete \\\"$DESKTOP\\\\${shortCutName}.lnk\\\"")
-
-#list (APPEND CPACK_NSIS_DELETE_ICONS_EXTRA "Delete \\\"$SMPROGRAMS\\\\$START_MENU\\\\${shortCutNameTerraview}.lnk\\\";Delete \\\"$DESKTOP\\\\${shortCutNameTerraview}.lnk\\\"")
+list (APPEND CPACK_NSIS_DELETE_ICONS_EXTRA ";Delete \\\"$SMPROGRAMS\\\\$START_MENU\\\\${shortCutNameTerraview}.lnk\\\";Delete \\\"$DESKTOP\\\\${shortCutNameTerraview}.lnk\\\"")
 
 INCLUDE(CPack)
 
