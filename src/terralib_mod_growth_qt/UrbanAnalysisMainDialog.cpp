@@ -52,8 +52,6 @@ te::urban::qt::UrbanAnalysisMainDialog::UrbanAnalysisMainDialog(bool startAsPlug
 
   //add buttons and widgets for each urban analysis operations
   buildDialog();
-
-  //te::urban::init();
 }
 
 te::urban::qt::UrbanAnalysisMainDialog::~UrbanAnalysisMainDialog()

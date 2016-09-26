@@ -28,6 +28,7 @@ TerraLib Team at <terralib-team@terralib.org>.
 
 // UrbanAnalysis
 #include "../terralib_mod_growth_qt/UrbanAnalysisMainDialog.h"
+#include "../terralib_mod_growth/Utils.h"
 
 // Qt
 #include <QApplication>
@@ -41,6 +42,8 @@ int main(int argc, char** argv)
 
   int waitVal = EXIT_FAILURE;
 
+  te::urban::init();
+
   //start main dlg
   te::urban::qt::UrbanAnalysisMainDialog mainDlg(false);
 
@@ -48,6 +51,8 @@ int main(int argc, char** argv)
   {
     waitVal = EXIT_SUCCESS;
   }
+
+  te::urban::finalize();
 
   return waitVal;
 }

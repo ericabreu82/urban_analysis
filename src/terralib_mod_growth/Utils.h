@@ -167,7 +167,7 @@ namespace te
     TEGROWTHEXPORT bool calculateEdge(te::rst::Raster* raster, const InputClassesMap& inputClassesMap, std::size_t column, std::size_t line);
 
     //this reclassification analyses the entire raster, where the output will be 1 if the pixel is urban and no_data if the pixel is not urban
-    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> filterUrbanPixels(te::rst::Raster* raster, bool invertFilter);
+    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> filterPixels(te::rst::Raster* raster, const std::vector<short>& vecPixels, bool invertFilter);
 
     //!< Search for all the gaps (holes) that [optionally] have area smaller then the given reference area
     TEGROWTHEXPORT std::vector<te::gm::Geometry*> getGaps(const std::vector<te::gm::Geometry*>& vecCandidateGaps, double area = 0.);

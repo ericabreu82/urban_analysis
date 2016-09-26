@@ -751,7 +751,7 @@ bool te::urban::calculateEdge(te::rst::Raster* raster, const InputClassesMap& in
   return false;
 }
 
-std::auto_ptr<te::rst::Raster> te::urban::filterUrbanPixels(te::rst::Raster* raster, bool invertFilter)
+std::auto_ptr<te::rst::Raster> te::urban::filterPixels(te::rst::Raster* raster, const std::vector<short>& vecPixels, bool invertFilter)
 {
   te::rst::Raster* inputRaster = raster;
 
@@ -784,9 +784,12 @@ std::auto_ptr<te::rst::Raster> te::urban::filterUrbanPixels(te::rst::Raster* ras
       inputRaster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, centerPixel);
 
       double value = NoDataValue;
-      if (centerPixel == 1 || centerPixel == 2 || centerPixel == 4)
+      for (std::size_t i = 0; i < vecPixels.size(); ++i)
       {
-        value = UrbanValue;
+        if (centerPixel == vecPixels[i])
+        {
+          value = UrbanValue;
+        }
       }
 
       //gets the pixels surrounding pixels that intersects the given radiouss
