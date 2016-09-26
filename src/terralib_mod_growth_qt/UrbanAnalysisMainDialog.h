@@ -79,6 +79,8 @@ namespace te
 
           void onStatisticsToolButtonClicked();
 
+          void onLayerCreated(te::map::AbstractLayerPtr layer);
+
         private:
 
           std::auto_ptr<Ui::UrbanAnalysisMainDialogForm> m_ui;

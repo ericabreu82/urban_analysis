@@ -18,26 +18,22 @@ TerraLib Team at <terralib-team@terralib.org>.
 */
 
 /*!
-\file urban_analysis/src/growth/qt/StatisticsWidget.h
+\file urban_analysis/src/growth/qt/Utils.h
 
-\brief This class represents the Statistics Widget class.
+\brief This class represents the Urban Analysis utils functions. 
 */
 
-#ifndef __URBANANALYSIS_INTERNAL_URBANALYSIS_STATISTICS_QT_WIDGET_H
-#define __URBANANALYSIS_INTERNAL_URBANALYSIS_STATISTICS_QT_WIDGET_H
+#ifndef __URBANANALYSIS_INTERNAL_URBANALYSIS_UTILS_H
+#define __URBANANALYSIS_INTERNAL_URBANALYSIS_UTILS_H
 
 #include "Config.h"
 
 // Terralib
+#include <terralib/dataaccess/datasource/DataSource.h>
 #include <terralib/maptools/AbstractLayer.h>
 
 // STL
 #include <memory>
-
-// Qt
-#include <QWidget>
-
-namespace Ui { class StatisticsWidgetForm; }
 
 namespace te
 {
@@ -45,38 +41,13 @@ namespace te
   {
     namespace qt
     {
-      class TEGROWTHQTEXPORT StatisticsWidget : public QWidget
-      {
-        Q_OBJECT
+      TEGROWTHQTEXPORT te::map::AbstractLayerPtr CreateLayer(const std::string& path, const std::string& type);
 
-        public:
+      TEGROWTHQTEXPORT te::da::DataSourcePtr RegisterDataSource(const std::string& path, const std::string& type);
 
-          StatisticsWidget(bool startAsPlugin, QWidget* parent = 0, Qt::WindowFlags f = 0);
-
-          ~StatisticsWidget();
-
-        public slots:
-
-          void onAddImageToolButtonClicked();
-
-          void onAddVectorToolButtonClicked();
-
-          void onOutputRepoToolButtonClicked();
-
-          void execute();
-
-        signals:
-
-          void layerCreated(te::map::AbstractLayerPtr layer);
-
-        private:
-
-          std::auto_ptr<Ui::StatisticsWidgetForm> m_ui;
-
-          bool m_startAsPlugin;
-      };
+      TEGROWTHQTEXPORT std::string GenerateRandomId();
     }
   }
 }
 
-#endif //__URBANANALYSIS_INTERNAL_URBANALYSIS_STATISTICS_QT_WIDGET_H
+#endif //__URBANANALYSIS_INTERNAL_URBANALYSIS_UTILS_H
