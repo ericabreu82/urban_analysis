@@ -28,6 +28,9 @@ TerraLib Team at <terralib-team@terralib.org>.
 
 #include "Config.h"
 
+// Terralib
+#include <terralib/maptools/AbstractLayer.h>
+
 // STL
 #include <memory>
 
@@ -67,6 +70,10 @@ namespace te
           void onExportIndexInfoToolButton();
 
           void execute();
+
+        signals:
+
+          void layerCreated(te::map::AbstractLayerPtr layer);
 
         private:
 

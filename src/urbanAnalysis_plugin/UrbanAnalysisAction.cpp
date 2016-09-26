@@ -44,16 +44,15 @@ te::urban::UrbanAnalysisAction::~UrbanAnalysisAction()
 void te::urban::UrbanAnalysisAction::onActionActivated(bool checked)
 {
   te::urban::qt::UrbanAnalysisMainDialog mainDlg(true);
-  if (mainDlg.exec() == QDialog::Accepted)
+  mainDlg.exec();
+  
+  std::list<te::map::AbstractLayerPtr> layers = mainDlg.getLayers();
+  std::list<te::map::AbstractLayerPtr>::iterator  it;
+
+  for (it = layers.begin(); it != layers.end(); ++it)
   {
-    std::list<te::map::AbstractLayerPtr> layers = mainDlg.getLayers();
-    std::list<te::map::AbstractLayerPtr>::iterator  it;
+    te::map::AbstractLayerPtr layer = *it;
 
-    for (it = layers.begin(); it != layers.end(); ++it)
-    {
-      te::map::AbstractLayerPtr layer = *it;
-
-      addNewLayer(layer);
-    }
+    addNewLayer(layer);
   }
 }

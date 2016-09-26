@@ -26,6 +26,7 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include "../terralib_mod_growth/Statistics.h"
 #include "../terralib_mod_growth/Utils.h"
 #include "StatisticsWidget.h"
+#include "Utils.h"
 #include "ui_StatisticsWidgetForm.h"
 
 //Terralib
@@ -185,6 +186,13 @@ void te::urban::qt::StatisticsWidget::execute()
 
     QMessageBox::information(this, tr("Urban Analysis"), message);
     return;
+  }
+
+  if (m_startAsPlugin)
+  {
+    te::map::AbstractLayerPtr layer = te::urban::qt::CreateLayer(outPath, "OGR");
+
+    emit layerCreated(layer);
   }
 
   te::common::ProgressManager::getInstance().removeViewer(dlgViewerId);

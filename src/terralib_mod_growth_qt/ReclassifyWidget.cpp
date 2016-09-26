@@ -24,6 +24,7 @@ TerraLib Team at <terralib-team@terralib.org>.
 */
 
 #include "ReclassifyWidget.h"
+#include "Utils.h"
 #include "ui_ReclassifyWidgetForm.h"
 
 #include "../terralib_mod_growth/UrbanGrowth.h"
@@ -510,6 +511,13 @@ void te::urban::qt::ReclassifyWidget::execute()
       std::string newDevelopmentPrefix = currentOutputPrefix + "_newDevelopment";
       std::string newDevelopmentRasterFileName = outputPath + "/" + newDevelopmentPrefix + ".tif";
       saveRaster(newDevelopmentRasterFileName, params->m_outputRaster.get());
+
+      if (m_startAsPlugin)
+      {
+        te::map::AbstractLayerPtr layer = te::urban::qt::CreateLayer(newDevelopmentRasterFileName, "GDAL");
+
+        emit layerCreated(layer);
+      }
     }
 
     te::common::FreeContents(vecPreparedRasters);

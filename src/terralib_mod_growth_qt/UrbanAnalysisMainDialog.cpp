@@ -133,6 +133,9 @@ void te::urban::qt::UrbanAnalysisMainDialog::onReclassifyToolButtonClicked()
 
   connect(m_ui->m_okPushButton, SIGNAL(clicked()), widget, SLOT(execute()));
 
+  if (m_startAsPlugin)
+    connect(widget, SIGNAL(layerCreated(te::map::AbstractLayerPtr)), this, SLOT(onLayerCreated(te::map::AbstractLayerPtr)));
+
   m_currentWidget = widget;
 }
 
@@ -167,6 +170,9 @@ void te::urban::qt::UrbanAnalysisMainDialog::onRemapClassToolButtonClicked()
 
   connect(m_ui->m_okPushButton, SIGNAL(clicked()), widget, SLOT(execute()));
 
+  if (m_startAsPlugin)
+    connect(widget, SIGNAL(layerCreated(te::map::AbstractLayerPtr)), this, SLOT(onLayerCreated(te::map::AbstractLayerPtr)));
+
   m_currentWidget = widget;
 }
 
@@ -188,5 +194,14 @@ void te::urban::qt::UrbanAnalysisMainDialog::onStatisticsToolButtonClicked()
 
   connect(m_ui->m_okPushButton, SIGNAL(clicked()), widget, SLOT(execute()));
 
+  if (m_startAsPlugin)
+    connect(widget, SIGNAL(layerCreated(te::map::AbstractLayerPtr)), this, SLOT(onLayerCreated(te::map::AbstractLayerPtr)));
+
   m_currentWidget = widget;
+}
+
+void te::urban::qt::UrbanAnalysisMainDialog::onLayerCreated(te::map::AbstractLayerPtr layer)
+{
+  if (layer.get())
+    m_layers.push_back(layer);
 }
