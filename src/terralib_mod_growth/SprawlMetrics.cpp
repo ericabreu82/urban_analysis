@@ -26,12 +26,14 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include "SprawlMetrics.h"
 
 #include "Utils.h"
+#include "Statistics.h"
 
 #include <terralib/common.h>
 #include <terralib/common/TerraLib.h>
 #include <terralib/geometry/Coord2D.h>
 #include <terralib/geometry/Point.h>
 #include <terralib/geometry/Polygon.h>
+#include <terralib/geometry/Utils.h>
 #include <terralib/memory/CachedRaster.h>
 #include <terralib/plugin.h>
 #include <terralib/raster/Raster.h>
@@ -114,4 +116,41 @@ void te::urban::calculateCohesionIndex(te::rst::Raster* raster, double& averageD
 
   averageDistance = sumDistance / totalSamples;
   averageDistanceSquare = sumDistanceSquare / totalSamples;
+}
+
+void te::urban::calculateDepthIndex(te::rst::Raster* raster, double radius, double& depthIndex, double& girthIndex)
+{
+  //filter the urban pixels and set them to 1. Non-Urban pixels will be set to noDataValue
+  std::vector<short> vecValues;
+  vecValues.push_back(OUTPUT_URBAN); 
+  vecValues.push_back(OUTPUT_SUB_URBAN);
+  vecValues.push_back(OUTPUT_URBANIZED_OS);
+  std::auto_ptr<te::rst::Raster> nonUrbanRaster = filterPixels(raster, vecValues, false);
+
+  //calculates the euclidean distance between the noDataValues and the valid pixels
+  std::auto_ptr<te::rst::Raster> distanceRaster = calculateEuclideanDistance(raster);
+
+  //clip the region
+
+  //we filter all the values that are different from 0
+  std::vector<short> vecDistanceValues;
+  vecDistanceValues.push_back(0);
+  distanceRaster = filterPixels(distanceRaster.get(), vecValues, true);
+
+  //calculates the statistics of the image (mean and maximum values)
+  const te::rst::RasterSummary* rsMean = te::rst::RasterSummaryManager::getInstance().get(raster, te::rst::SUMMARY_MEAN);
+  const te::rst::RasterSummary* rsMax = te::rst::RasterSummaryManager::getInstance().get(raster, te::rst::SUMMARY_MAX);
+  const std::complex<double>* cmean = rsMean->at(0).m_meanVal;
+  const std::complex<double>* cmax = rsMax->at(0).m_maxVal;
+  double mean = cmean->real();
+  double max = cmax->real();
+
+  //depth for equal area circle
+  double circleDepth = radius / 3.;
+
+  //calculate depth index(shape / circle)
+  depthIndex = mean / circleDepth;
+
+  //calculate girth index(shape / circle)
+  girthIndex = max / radius; //girth of a circle is its radius
 }

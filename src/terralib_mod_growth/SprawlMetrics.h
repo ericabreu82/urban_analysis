@@ -45,6 +45,9 @@ namespace te
 
     //calculates the cohesion index
     TEGROWTHEXPORT void calculateCohesionIndex(te::rst::Raster* raster, double& averageDistance, double& averageDistanceSquare);
+
+    //calculates the depth and the girth indexes
+    TEGROWTHEXPORT void calculateDepthIndex(te::rst::Raster* raster, double radius, double& depthIndex, double& girthIndex);
   }
 }
 

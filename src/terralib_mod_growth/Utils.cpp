@@ -1379,6 +1379,16 @@ std::auto_ptr<te::rst::Raster> te::urban::calculateEuclideanDistance(te::rst::Ra
     double lastCandidateFoundDistance = lastCandidateFoundDistance;
     for (std::size_t currentColumn = 0; currentColumn < numColumns; ++currentColumn)
     {
+      //gets the value of the current center pixel
+      double value = 0.;
+      inputRaster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, value);
+
+      //if the value is valid, we do not need to calculate as the distance has already been set to zero
+      if (value != noDataValue)
+      {
+        continue;
+      }
+
       te::gm::Coord2D currentCoord = outputRaster->getGrid()->gridToGeo(currentColumn, currentRow);
       double adjust = lastCandidateFoundDistance + resolution;
 
