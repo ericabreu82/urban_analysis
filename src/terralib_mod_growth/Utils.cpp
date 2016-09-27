@@ -47,6 +47,7 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include <terralib/raster/RasterSummary.h>
 #include <terralib/raster/RasterSummaryManager.h>
 #include <terralib/raster/Utils.h>
+#include <terralib/sam/kdtree.h>
 #include <terralib/vp/Utils.h>
 
 #include <cstdlib>
@@ -113,7 +114,7 @@ void te::urban::removeAllLoggers()
   te::core::Logger::instance().removeAllLoggers();
 }
 
-std::auto_ptr<te::rst::Raster> te::urban::cloneRasterIntoMem(te::rst::Raster* raster, bool copyData, int dataType)
+std::auto_ptr<te::rst::Raster> te::urban::cloneRasterIntoMem(te::rst::Raster* raster, bool copyData, int dataType, double noDataValue)
 {
   //load to mem
   std::vector<te::rst::BandProperty*> bprops;
@@ -127,9 +128,15 @@ std::auto_ptr<te::rst::Raster> te::urban::cloneRasterIntoMem(te::rst::Raster* ra
 
     bp->m_noDataValue = band->getProperty()->m_noDataValue;
 
+    //if the noDataValue has not been set in the reference raster, we set it in the cloned one...or
+    //if the noDataValue is given to this function, we set it too
     if (bp->m_noDataValue == std::numeric_limits<double>::max())
     {
-      bp->m_noDataValue = 0;
+      bp->m_noDataValue = noDataValue;
+    }
+    else if (noDataValue != 0.)
+    {
+      bp->m_noDataValue = noDataValue;
     }
     
     bprops.push_back(bp);
@@ -145,7 +152,7 @@ std::auto_ptr<te::rst::Raster> te::urban::cloneRasterIntoMem(te::rst::Raster* ra
   }
   else
   {
-    te::rst::FillRaster(rasterMem, 0.);
+    te::rst::FillRaster(rasterMem, noDataValue);
   }
 
   //create output auto_ptr
@@ -751,7 +758,7 @@ bool te::urban::calculateEdge(te::rst::Raster* raster, const InputClassesMap& in
   return false;
 }
 
-std::auto_ptr<te::rst::Raster> te::urban::filterUrbanPixels(te::rst::Raster* raster, bool invertFilter)
+std::auto_ptr<te::rst::Raster> te::urban::filterPixels(te::rst::Raster* raster, const std::vector<short>& vecPixels, bool invertFilter)
 {
   te::rst::Raster* inputRaster = raster;
 
@@ -784,9 +791,12 @@ std::auto_ptr<te::rst::Raster> te::urban::filterUrbanPixels(te::rst::Raster* ras
       inputRaster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, centerPixel);
 
       double value = NoDataValue;
-      if (centerPixel == 1 || centerPixel == 2 || centerPixel == 4)
+      for (std::size_t i = 0; i < vecPixels.size(); ++i)
       {
-        value = UrbanValue;
+        if (centerPixel == vecPixels[i])
+        {
+          value = UrbanValue;
+        }
       }
 
       //gets the pixels surrounding pixels that intersects the given radiouss
@@ -1307,4 +1317,92 @@ std::vector<te::gm::Geometry*> te::urban::fixGeometries(const std::vector<te::gm
   }
 
   return result;
+}
+
+std::auto_ptr<te::rst::Raster> te::urban::calculateEuclideanDistance(te::rst::Raster* inputRaster)
+{
+  assert(inputRaster);
+
+  std::auto_ptr<te::rst::Raster> outputRaster = cloneRasterIntoMem(inputRaster, false, te::dt::DOUBLE_TYPE, std::numeric_limits<double>::max());
+  double noDataValue = outputRaster->getBand(0)->getProperty()->m_noDataValue;
+
+  unsigned int numRows = outputRaster->getNumberOfRows();
+  unsigned int numColumns = outputRaster->getNumberOfColumns();
+
+  typedef te::sam::kdtree::Node<te::gm::Coord2D, std::size_t, std::size_t> KD_NODE;
+  typedef te::sam::kdtree::Index<KD_NODE> KD_INDEX;
+
+  te::gm::Envelope e;
+  KD_INDEX index(e);
+
+  //first we need to set 0 to the pixels that have values different from noDataValue
+  //we also add to the kdtree index the center of the pixels with valid values
+  for (std::size_t currentRow = 0; currentRow < numRows; ++currentRow)
+  {
+    for (std::size_t currentColumn = 0; currentColumn < numColumns; ++currentColumn)
+    {
+      //gets the value of the current center pixel
+      double value = 0.;
+      inputRaster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, value);
+
+      //if the value is valid, we set the Euclidean Distance to 0
+      if (value != noDataValue)
+      {
+        outputRaster->setValue(currentColumn, currentRow, 0.);
+
+        te::gm::Coord2D coord = outputRaster->getGrid()->gridToGeo(currentColumn, currentRow);
+        index.insert(coord, 0);
+      }
+    }
+  }
+
+  double resolution = outputRaster->getResolutionX();
+  double firstColumnLastDistance = outputRaster->getExtent()->getWidth();
+
+  for (std::size_t currentRow = 0; currentRow < numRows; ++currentRow)
+  {
+    double lineLastDistance = firstColumnLastDistance;
+
+    double lastMinDistance;
+    for (std::size_t currentColumn = 0; currentColumn < numColumns; ++currentColumn)
+    {
+      te::gm::Coord2D currentCoord = outputRaster->getGrid()->gridToGeo(currentColumn, currentRow);
+      double adjust = lastMinDistance + resolution;
+
+      //we search the candidates in the kdtree and find the nearest one
+      te::gm::Envelope currentEnvelope(currentCoord.x - adjust, currentCoord.y - adjust, currentCoord.x + adjust, currentCoord.y + adjust);
+
+      std::vector<KD_NODE*> vecCandidates;
+      index.search(currentEnvelope, vecCandidates);
+
+      if (vecCandidates.empty())
+      {
+        throw te::common::Exception("No candidates found. Error in function: calculateEuclideanDistance");
+      }
+
+      double minDistance = 0;
+      for (std::size_t c = 0; c < vecCandidates.size(); ++c)
+      {
+        const te::gm::Coord2D& candidateCoord = vecCandidates[c]->getKey();
+        double candidateDistance = TeDistance(currentCoord, candidateCoord);
+        if (c == 0)
+        {
+          minDistance = candidateDistance;
+        }
+        else if (candidateDistance < minDistance)
+        {
+          minDistance = candidateDistance;
+        }
+      }
+
+      outputRaster->setValue(currentColumn, currentRow, minDistance);
+      lastMinDistance = minDistance;
+      if (currentColumn == 0)
+      {
+        firstColumnLastDistance = lastMinDistance;
+      }
+    }
+  }
+
+  return outputRaster;
 }

@@ -222,8 +222,13 @@ std::auto_ptr<te::rst::Raster> te::urban::identifyIsolatedOpenPatches(te::rst::R
 {
   Timer timer;
 
-  //we first need to create a binary image containing only the urban pixels
-  std::auto_ptr<te::rst::Raster> binaryNonUrbanRaster = filterUrbanPixels(raster, true);
+  //we first need to create a binary image containing only the non urban pixels
+  std::vector<short> vecPixels;
+  vecPixels.push_back(OUTPUT_URBAN);
+  vecPixels.push_back(OUTPUT_SUB_URBAN);
+  vecPixels.push_back(OUTPUT_URBANIZED_OS);
+
+  std::auto_ptr<te::rst::Raster> binaryNonUrbanRaster = filterPixels(raster, vecPixels, true);
   std::string binaryInvertedFilePath = outputPath + "/" + outputPrefix + "_binary_inverted.tif";
   saveRaster(binaryInvertedFilePath, binaryNonUrbanRaster.get());
 
