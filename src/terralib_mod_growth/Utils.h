@@ -71,6 +71,11 @@ namespace te
       OUTPUT_NO_DATA = 0, OUTPUT_URBAN = 1, OUTPUT_SUB_URBAN = 2, OUTPUT_RURAL = 3, OUTPUT_URBANIZED_OS = 4, OUTPUT_SUBURBAN_ZONE_OPEN_AREA = 5, OUTPUT_RURAL_OS = 6, OUTPUT_WATER = 7
     };
 
+    enum NewDevelopmentClasses
+    {
+      NEWDEV_NO_DATA = 0, NEWDEV_INFILL = 1, NEWDEV_EXTENSION = 2, NEWDEV_LEAPFROG = 3
+    };
+
     typedef std::map<InputUrbanClasses, short> InputClassesMap;
 
     struct UrbanRasters
@@ -131,7 +136,7 @@ namespace te
 
     TEGROWTHEXPORT std::auto_ptr<te::gm::Geometry> dissolveDataSet(te::da::DataSet* dataSet);
 
-    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> cloneRasterIntoMem(te::rst::Raster* raster, bool copyData, int dataType = te::dt::UCHAR_TYPE);
+    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> cloneRasterIntoMem(te::rst::Raster* raster, bool copyData, int dataType = te::dt::UCHAR_TYPE, double noDataValue = 0.);
 
     TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> createRaster(const std::string& fileName, te::rst::Raster* raster);
     
@@ -167,7 +172,7 @@ namespace te
     TEGROWTHEXPORT bool calculateEdge(te::rst::Raster* raster, const InputClassesMap& inputClassesMap, std::size_t column, std::size_t line);
 
     //this reclassification analyses the entire raster, where the output will be 1 if the pixel is urban and no_data if the pixel is not urban
-    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> filterUrbanPixels(te::rst::Raster* raster, bool invertFilter);
+    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> filterPixels(te::rst::Raster* raster, const std::vector<short>& vecPixels, bool invertFilter);
 
     //!< Search for all the gaps (holes) that [optionally] have area smaller then the given reference area
     TEGROWTHEXPORT std::vector<te::gm::Geometry*> getGaps(const std::vector<te::gm::Geometry*>& vecCandidateGaps, double area = 0.);
@@ -184,7 +189,7 @@ namespace te
     TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> classifyNewDevelopment(te::rst::Raster* infillRaster, te::rst::Raster* otherDevGroupedRaster, const std::set<double>& setEdgesOpenAreaGroups);
 
     // Mega faster distance method
-    TEGROWTHEXPORT double TeDistance(const te::gm::Coord2D& c1, const te::gm::Coord2D& c2);
+    TEGROWTHEXPORT inline double TeDistance(const te::gm::Coord2D& c1, const te::gm::Coord2D& c2);
 
     //Gets a vector containing all the coordinates of urban pixels (classes = 1, 2, 4 and 5)
     TEGROWTHEXPORT void getUrbanCoordinates(te::rst::Raster* raster, std::vector<te::gm::Coord2D>& vecUrbanCoords);
@@ -206,6 +211,9 @@ namespace te
     TEGROWTHEXPORT std::vector<te::gm::Geometry*> fixGeometries(const std::vector<te::gm::Geometry*>& vecGeometries);
 
     TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> CalculateSlope(te::rst::Raster const* inputRst, std::string rasterDsType, std::map<std::string, std::string> rasterInfo);
+
+    TEGROWTHEXPORT  std::auto_ptr<te::rst::Raster> calculateEuclideanDistance(te::rst::Raster* inputRaster);
+
 
   }
 }
