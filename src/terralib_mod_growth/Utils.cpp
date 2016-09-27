@@ -1337,6 +1337,9 @@ std::auto_ptr<te::rst::Raster> te::urban::calculateEuclideanDistance(te::rst::Ra
 
   //first we need to set 0 to the pixels that have values different from noDataValue
   //we also add to the kdtree index the center of the pixels with valid values
+  std::size_t closestNonDummyRow = numRows;
+  std::size_t closestNonDummyColumn = numColumns;
+
   for (std::size_t currentRow = 0; currentRow < numRows; ++currentRow)
   {
     for (std::size_t currentColumn = 0; currentColumn < numColumns; ++currentColumn)
@@ -1352,22 +1355,32 @@ std::auto_ptr<te::rst::Raster> te::urban::calculateEuclideanDistance(te::rst::Ra
 
         te::gm::Coord2D coord = outputRaster->getGrid()->gridToGeo(currentColumn, currentRow);
         index.insert(coord, 0);
+
+        if (currentRow < closestNonDummyRow)
+        {
+          closestNonDummyRow = currentRow;
+        }
+        if (currentColumn < closestNonDummyColumn)
+        {
+          closestNonDummyColumn = currentColumn;
+        }
       }
     }
   }
 
+  te::gm::Coord2D firstPixelCoord = outputRaster->getGrid()->gridToGeo(0, 0);
+  te::gm::Coord2D closesetNonDummyCoord = outputRaster->getGrid()->gridToGeo(closestNonDummyColumn, closestNonDummyRow);
+
   double resolution = outputRaster->getResolutionX();
-  double firstColumnLastDistance = outputRaster->getExtent()->getWidth();
+  double lastCandidateFoundDistanceForRowStart = TeDistance(firstPixelCoord, closesetNonDummyCoord);
 
   for (std::size_t currentRow = 0; currentRow < numRows; ++currentRow)
   {
-    double lineLastDistance = firstColumnLastDistance;
-
-    double lastMinDistance;
+    double lastCandidateFoundDistance = lastCandidateFoundDistance;
     for (std::size_t currentColumn = 0; currentColumn < numColumns; ++currentColumn)
     {
       te::gm::Coord2D currentCoord = outputRaster->getGrid()->gridToGeo(currentColumn, currentRow);
-      double adjust = lastMinDistance + resolution;
+      double adjust = lastCandidateFoundDistance + resolution;
 
       //we search the candidates in the kdtree and find the nearest one
       te::gm::Envelope currentEnvelope(currentCoord.x - adjust, currentCoord.y - adjust, currentCoord.x + adjust, currentCoord.y + adjust);
@@ -1380,6 +1393,7 @@ std::auto_ptr<te::rst::Raster> te::urban::calculateEuclideanDistance(te::rst::Ra
         throw te::common::Exception("No candidates found. Error in function: calculateEuclideanDistance");
       }
 
+      //then we analyse the candidates the find the closest one
       double minDistance = 0;
       for (std::size_t c = 0; c < vecCandidates.size(); ++c)
       {
@@ -1395,11 +1409,14 @@ std::auto_ptr<te::rst::Raster> te::urban::calculateEuclideanDistance(te::rst::Ra
         }
       }
 
+      //we set the min distance in the output raster
       outputRaster->setValue(currentColumn, currentRow, minDistance);
-      lastMinDistance = minDistance;
+
+      //we prepare the otimization variables to be used in the next iteration
+      lastCandidateFoundDistance = minDistance;
       if (currentColumn == 0)
       {
-        firstColumnLastDistance = lastMinDistance;
+        lastCandidateFoundDistanceForRowStart = lastCandidateFoundDistance;
       }
     }
   }
