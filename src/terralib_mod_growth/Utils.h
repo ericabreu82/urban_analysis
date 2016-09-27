@@ -205,6 +205,8 @@ namespace te
 
     TEGROWTHEXPORT std::vector<te::gm::Geometry*> fixGeometries(const std::vector<te::gm::Geometry*>& vecGeometries);
 
+    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> CalculateSlope(te::rst::Raster const* inputRst, std::string rasterDsType, std::map<std::string, std::string> rasterInfo);
+
   }
 }
 

@@ -1,4 +1,4 @@
-/*  Copyright (C) 2011-2012 National Institute For Space Research (INPE) - Brazil.
+﻿/*  Copyright (C) 2011-2012 National Institute For Space Research (INPE) - Brazil.
 
 This file is part of the TerraLib - a Framework for building GIS enabled applications.
 
@@ -47,9 +47,15 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include <terralib/raster/RasterSummary.h>
 #include <terralib/raster/RasterSummaryManager.h>
 #include <terralib/raster/Utils.h>
+#include <terralib/srs/Datum.h>
+#include <terralib/srs/Ellipsoid.h>
+#include <terralib/srs/GeographicCoordinateSystem.h>
+#include <terralib/srs/SpatialReferenceSystemManager.h>
 #include <terralib/vp/Utils.h>
 
 #include <cstdlib>
+
+#define M_PI       3.14159265358979323846
 
 void te::urban::init()
 {
@@ -1307,4 +1313,149 @@ std::vector<te::gm::Geometry*> te::urban::fixGeometries(const std::vector<te::gm
   }
 
   return result;
+}
+
+std::auto_ptr<te::rst::Raster> te::urban::CalculateSlope(te::rst::Raster const* inputRst, std::string rasterDsType, std::map<std::string, std::string> rasterInfo)
+{
+  //create slope raster
+  std::vector< te::rst::BandProperty* > bandsProperties;
+  te::rst::BandProperty* bandProp = new te::rst::BandProperty(0, te::dt::DOUBLE_TYPE);
+  bandProp->m_noDataValue = -9999;
+  bandsProperties.push_back(bandProp);
+
+  te::rst::Grid* grid = new te::rst::Grid(*(inputRst->getGrid()));
+
+  te::rst::Raster* outRaster = te::rst::RasterFactory::make(rasterDsType, grid, bandsProperties, rasterInfo);
+
+  //initialize
+  for (unsigned int i = 0; i < outRaster->getNumberOfRows(); ++i)
+  {
+    for (unsigned int j = 0; j < outRaster->getNumberOfColumns(); ++j)
+    {
+      outRaster->setValue(j, i, -9999, 0);
+    }
+  }
+
+  unsigned int nlines = outRaster->getNumberOfRows();
+  unsigned int ncolumns = outRaster->getNumberOfColumns();
+  double rasterDummy = inputRst->getBand(0)->getProperty()->m_noDataValue;
+
+  double resx = outRaster->getGrid()->getResolutionX(); //Gd
+  double resy = outRaster->getGrid()->getResolutionY(); //Ge
+  double A, F, E2, DY, DX;
+
+  std::string authName = "EPSG"; // Now: So far it is the only one supported by TerraLib 5. Future: Review this line!
+  bool isGeographic = te::srs::SpatialReferenceSystemManager::getInstance().isGeographic(outRaster->getGrid()->getSRID(), authName);
+
+  if (isGeographic)
+  {
+    te::srs::SpatialReferenceSystem* srs = te::srs::SpatialReferenceSystemManager::getInstance().getSpatialReferenceSystem(outRaster->getGrid()->getSRID()).release();
+
+    te::srs::GeographicCoordinateSystem* gcs = dynamic_cast<te::srs::GeographicCoordinateSystem*>(srs);
+
+    if (gcs)
+    {
+      A = gcs->getDatum()->getEllipsoid()->getRadium() / 1000.0;
+      F = gcs->getDatum()->getEllipsoid()->getInverseFlattening();
+      E2 = 2 * F - F * F; //!QUADRADO DA EXCENTRICIDADE
+      DY = (A * sin(resy * M_PI / 180)) * 1000;
+
+      resx = resx * 111133;
+      resy = resy * 111133;
+    }
+  }
+
+  // Execute the operation
+  te::common::TaskProgress task("Generating Slope");
+  task.setTotalSteps(inputRst->getNumberOfRows());
+
+  double rx, ry;
+
+  //calculate slope
+  for (unsigned int line = 1; line<nlines - 1; line++)
+  {
+    if (isGeographic)
+    {
+      rx = resx;
+      ry = resy;
+    }
+    else
+    {
+      rx = resx;
+      ry = resy;
+    }
+
+    for (unsigned int column = 1; column<ncolumns - 1; column++)
+    {
+      double value = rasterDummy;
+
+      inputRst->getValue(column, line, value, 0);
+
+      if (value != rasterDummy)
+      {
+        double z1 = 0, z2 = 0, z3 = 0, z4 = 0, z6 = 0, z7 = 0, z8 = 0, z9 = 0;
+
+        inputRst->getValue(column - 1, line - 1, value, 0);
+        if (value != rasterDummy)
+        {
+          z1 = value;
+        }
+
+        inputRst->getValue(column, line - 1, value, 0);
+        if (value != rasterDummy)
+        {
+          z2 = value;
+        }
+
+        inputRst->getValue(column + 1, line - 1, value, 0);
+        if (value != rasterDummy)
+        {
+          z3 = value;
+        }
+
+        inputRst->getValue(column - 1, line, value, 0);
+        if (value != rasterDummy)
+        {
+          z4 = value;
+        }
+
+        inputRst->getValue(column + 1, line, value, 0);
+        if (value != rasterDummy)
+        {
+          z6 = value;
+        }
+
+        inputRst->getValue(column - 1, line + 1, value, 0);
+        if (value != rasterDummy)
+        {
+          z7 = value;
+        }
+
+        inputRst->getValue(column, line + 1, value, 0);
+        if (value != rasterDummy)
+        {
+          z8 = value;
+        }
+
+        inputRst->getValue(column + 1, line + 1, value, 0);
+        if (value != rasterDummy)
+        {
+          z9 = value;
+        }
+
+        double d = (z3 + z6 + z9 - z1 - z4 - z7) / (6 * rx);
+
+        double e = (z1 + z2 + z3 - z7 - z8 - z9) / (6 * ry);
+
+        outRaster->setValue(column, line, (float)sqrt(d*d + e*e), 0);
+      }
+    }
+
+    task.pulse();
+  }
+
+  //set output raster into auto_ptr
+  std::auto_ptr<te::rst::Raster> outputRst(outRaster);
+
+  return outputRst;
 }
