@@ -1108,12 +1108,12 @@ std::auto_ptr<te::rst::Raster> te::urban::classifyNewDevelopment(te::rst::Raster
       double infillValue = 0.;
       infillRaster->getValue(column, row, infillValue);
 
-      double outputValue = 0.;
+      double outputValue = NEWDEV_NO_DATA;
 
       if (infillValue == 1)
       {
         //infill
-        outputValue = 1;
+        outputValue = NEWDEV_INFILL;
       }
       else if (infillValue == 2)
       {
@@ -1124,12 +1124,12 @@ std::auto_ptr<te::rst::Raster> te::urban::classifyNewDevelopment(te::rst::Raster
         if (it != setEdgesOpenAreaGroups.end())
         {
           //extension
-          outputValue = 2;
+          outputValue = NEWDEV_EXTENSION;
         }
         else
         {
           //leapfrog
-          outputValue = 3;
+          outputValue = NEWDEV_LEAPFROG;
         }
       }
 
@@ -1142,7 +1142,7 @@ std::auto_ptr<te::rst::Raster> te::urban::classifyNewDevelopment(te::rst::Raster
 
 double te::urban::TeDistance(const te::gm::Coord2D& c1, const te::gm::Coord2D& c2)
 {
-  return sqrt(((c2.getX() - c1.getX()) * (c2.getX() - c1.getX())) + ((c2.getY() - c1.getY()) * (c2.getY() - c1.getY())));
+  return sqrt(((c2.x - c1.x) * (c2.x - c1.x)) + ((c2.y - c1.y) * (c2.y - c1.y)));
 }
 
 void te::urban::getUrbanCoordinates(te::rst::Raster* raster, std::vector<te::gm::Coord2D>& vecUrbanCoords)

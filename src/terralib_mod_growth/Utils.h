@@ -71,6 +71,11 @@ namespace te
       OUTPUT_NO_DATA = 0, OUTPUT_URBAN = 1, OUTPUT_SUB_URBAN = 2, OUTPUT_RURAL = 3, OUTPUT_URBANIZED_OS = 4, OUTPUT_SUBURBAN_ZONE_OPEN_AREA = 5, OUTPUT_RURAL_OS = 6, OUTPUT_WATER = 7
     };
 
+    enum NewDevelopmentClasses
+    {
+      NEWDEV_NO_DATA = 0, NEWDEV_INFILL = 1, NEWDEV_EXTENSION = 2, NEWDEV_LEAPFROG = 3
+    };
+
     typedef std::map<InputUrbanClasses, short> InputClassesMap;
 
     struct UrbanRasters
@@ -184,7 +189,7 @@ namespace te
     TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> classifyNewDevelopment(te::rst::Raster* infillRaster, te::rst::Raster* otherDevGroupedRaster, const std::set<double>& setEdgesOpenAreaGroups);
 
     // Mega faster distance method
-    TEGROWTHEXPORT double TeDistance(const te::gm::Coord2D& c1, const te::gm::Coord2D& c2);
+    TEGROWTHEXPORT inline double TeDistance(const te::gm::Coord2D& c1, const te::gm::Coord2D& c2);
 
     //Gets a vector containing all the coordinates of urban pixels (classes = 1, 2, 4 and 5)
     TEGROWTHEXPORT void getUrbanCoordinates(te::rst::Raster* raster, std::vector<te::gm::Coord2D>& vecUrbanCoords);
