@@ -79,6 +79,8 @@ namespace te
 
           void onStatisticsToolButtonClicked();
 
+          void onSlopeToolButtonClicked();
+
           void onLayerCreated(te::map::AbstractLayerPtr layer);
 
         private:
