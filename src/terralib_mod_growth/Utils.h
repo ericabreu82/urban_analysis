@@ -131,7 +131,7 @@ namespace te
 
     TEGROWTHEXPORT std::auto_ptr<te::gm::Geometry> dissolveDataSet(te::da::DataSet* dataSet);
 
-    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> cloneRasterIntoMem(te::rst::Raster* raster, bool copyData, int dataType = te::dt::UCHAR_TYPE);
+    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> cloneRasterIntoMem(te::rst::Raster* raster, bool copyData, int dataType = te::dt::UCHAR_TYPE, double noDataValue = 0.);
 
     TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> createRaster(const std::string& fileName, te::rst::Raster* raster);
     
@@ -204,6 +204,8 @@ namespace te
     TEGROWTHEXPORT void saveDataSet(te::mem::DataSet* dataSet, te::da::DataSetType* dsType, te::da::DataSource* ds, std::string dataSetName);
 
     TEGROWTHEXPORT std::vector<te::gm::Geometry*> fixGeometries(const std::vector<te::gm::Geometry*>& vecGeometries);
+
+    TEGROWTHEXPORT  std::auto_ptr<te::rst::Raster> calculateEuclideanDistance(te::rst::Raster* inputRaster);
 
   }
 }
