@@ -56,8 +56,6 @@ TerraLib Team at <terralib-team@terralib.org>.
 
 #include <cstdlib>
 
-#define M_PI       3.14159265358979323846
-
 void te::urban::init()
 {
   
@@ -1368,7 +1366,7 @@ std::vector<te::gm::Geometry*> te::urban::fixGeometries(const std::vector<te::gm
       A = gcs->getDatum()->getEllipsoid()->getRadium() / 1000.0;
       F = gcs->getDatum()->getEllipsoid()->getInverseFlattening();
       E2 = 2 * F - F * F; //!QUADRADO DA EXCENTRICIDADE
-      DY = (A * sin(resy * M_PI / 180)) * 1000;
+      DY = (A * sin(resy * GetConstantPI() / 180)) * 1000;
 
       resx = resx * 111133;
       resy = resy * 111133;
@@ -1573,4 +1571,10 @@ std::auto_ptr<te::rst::Raster> te::urban::calculateEuclideanDistance(te::rst::Ra
   }
 
   return outputRaster;
+}
+
+double te::urban::GetConstantPI()
+{
+  double M_PI = 3.14159265358979323846;
+  return M_PI;
 }

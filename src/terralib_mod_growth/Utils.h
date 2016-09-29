@@ -212,9 +212,9 @@ namespace te
 
     TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> CalculateSlope(te::rst::Raster const* inputRst, std::string rasterDsType, std::map<std::string, std::string> rasterInfo);
 
-    TEGROWTHEXPORT  std::auto_ptr<te::rst::Raster> calculateEuclideanDistance(te::rst::Raster* inputRaster);
+    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> calculateEuclideanDistance(te::rst::Raster* inputRaster);
 
-
+    TEGROWTHEXPORT double GetConstantPI();
   }
 }
 

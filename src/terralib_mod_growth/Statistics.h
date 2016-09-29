@@ -28,20 +28,31 @@ TerraLib Team at <terralib-team@terralib.org>.
 
 #include "Config.h"
 
-#include <terralib/raster/Raster.h>
-#include <terralib/dataaccess/datasource/DataSource.h>
-
-
 #include <memory>
 #include <set>
 #include <string>
 #include <vector>
+#include <map>
 
 namespace te
 {
+  namespace da
+  {
+    class DataSet;
+    class DataSetType;
+    class DataSource;
+  }
+  namespace gm
+  {
+    class Geometry;
+  }
   namespace mem
   {
     class DataSet;
+  }
+  namespace rst
+  {
+    class Raster;
   }
 
   namespace urban
