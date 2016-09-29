@@ -43,6 +43,9 @@ namespace te
     //calculates the centroid of the urban pixels. it also calculates the total area of the urban pixels (classes = 1, 2, 4 and 5)
     TEGROWTHEXPORT void calculateUrbanCentroid(te::rst::Raster* raster, double& urbanArea, double& centroidX, double& centroidY);
 
+    //calculates the proximity index
+    //TEGROWTHEXPORT void calculateProximityIndex(te::rst::Raster* raster, te::rst::Raster* landCoverRaster, te::rst::Raster* slopeRaster, double xCBD, double yCBD, double xCentroid, double yCentroid, double radius, double& distance2Center, double& distance2CenterSqrt, double& in_EAC, double& in_nEAC);
+
     //calculates the cohesion index
     TEGROWTHEXPORT void calculateCohesionIndex(te::rst::Raster* raster, double& averageDistance, double& averageDistanceSquare);
 

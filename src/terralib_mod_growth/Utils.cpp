@@ -1352,7 +1352,7 @@ std::vector<te::gm::Geometry*> te::urban::fixGeometries(const std::vector<te::gm
 
   double resx = outRaster->getGrid()->getResolutionX(); //Gd
   double resy = outRaster->getGrid()->getResolutionY(); //Ge
-  double A, F, E2, DY, DX;
+  double A, F, E2, DY; //,DX
 
   std::string authName = "EPSG"; // Now: So far it is the only one supported by TerraLib 5. Future: Review this line!
   bool isGeographic = te::srs::SpatialReferenceSystemManager::getInstance().isGeographic(outRaster->getGrid()->getSRID(), authName);
@@ -1492,9 +1492,9 @@ std::auto_ptr<te::rst::Raster> te::urban::calculateEuclideanDistance(te::rst::Ra
       //if the value is valid, we set the Euclidean Distance to 0
       if (value != noDataValue)
       {
-        outputRaster->setValue(currentColumn, currentRow, 0.);
+        outputRaster->setValue((unsigned int)currentColumn, (unsigned int)currentRow, 0.);
 
-        te::gm::Coord2D coord = outputRaster->getGrid()->gridToGeo(currentColumn, currentRow);
+        te::gm::Coord2D coord = outputRaster->getGrid()->gridToGeo((unsigned int)currentColumn, (unsigned int)currentRow);
         index.insert(coord, 0);
 
         if (currentRow < closestNonDummyRow)
@@ -1510,14 +1510,14 @@ std::auto_ptr<te::rst::Raster> te::urban::calculateEuclideanDistance(te::rst::Ra
   }
 
   te::gm::Coord2D firstPixelCoord = outputRaster->getGrid()->gridToGeo(0, 0);
-  te::gm::Coord2D closesetNonDummyCoord = outputRaster->getGrid()->gridToGeo(closestNonDummyColumn, closestNonDummyRow);
+  te::gm::Coord2D closesetNonDummyCoord = outputRaster->getGrid()->gridToGeo((unsigned int)closestNonDummyColumn, (unsigned int)closestNonDummyRow);
 
   double resolution = outputRaster->getResolutionX();
   double lastCandidateFoundDistanceForRowStart = TeDistance(firstPixelCoord, closesetNonDummyCoord);
 
   for (std::size_t currentRow = 0; currentRow < numRows; ++currentRow)
   {
-    double lastCandidateFoundDistance = lastCandidateFoundDistance;
+    double lastCandidateFoundDistance = lastCandidateFoundDistanceForRowStart;
     for (std::size_t currentColumn = 0; currentColumn < numColumns; ++currentColumn)
     {
       //gets the value of the current center pixel
@@ -1530,7 +1530,7 @@ std::auto_ptr<te::rst::Raster> te::urban::calculateEuclideanDistance(te::rst::Ra
         continue;
       }
 
-      te::gm::Coord2D currentCoord = outputRaster->getGrid()->gridToGeo(currentColumn, currentRow);
+      te::gm::Coord2D currentCoord = outputRaster->getGrid()->gridToGeo((unsigned int)currentColumn, (unsigned int)currentRow);
       double adjust = lastCandidateFoundDistance + resolution;
 
       //we search the candidates in the kdtree and find the nearest one
@@ -1561,7 +1561,7 @@ std::auto_ptr<te::rst::Raster> te::urban::calculateEuclideanDistance(te::rst::Ra
       }
 
       //we set the min distance in the output raster
-      outputRaster->setValue(currentColumn, currentRow, minDistance);
+      outputRaster->setValue((unsigned int)currentColumn, (unsigned int)currentRow, minDistance);
 
       //we prepare the otimization variables to be used in the next iteration
       lastCandidateFoundDistance = minDistance;
