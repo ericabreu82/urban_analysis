@@ -27,6 +27,7 @@ TerraLib Team at <terralib-team@terralib.org>.
 
 #include <terralib/common.h>
 #include <terralib/common/TerraLib.h>
+#include <terralib/common/progress/TaskProgress.h>
 #include <terralib/core/logger/Logger.h>
 #include <terralib/core/utils/Platform.h>
 #include <terralib/dataaccess/datasource/DataSourceFactory.h>
