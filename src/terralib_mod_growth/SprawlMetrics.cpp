@@ -302,10 +302,19 @@ std::map<std::string, double> te::urban::calculateIndexes(const IndexesParams& p
   //here we calculate the cohesion index
   if (params.m_calculateCohesion)
   {
-    double averageRaster = 0.;
-    double averageRasterSquare = 0.;
     std::map<std::string, double> mapIndexes = calculateCohesionIndex(params.m_urbanRaster);
-    mapFullIndexes.insert(mapIndexes.begin(), mapIndexes.end());
+    
+    double averageRaster = mapIndexes["cohesion.AverageDistance"];
+    double averageRasterSquare = mapIndexes["cohesion.AverageDistanceSquare"];
+
+    double circleInterDistance = radius * 0.9054;
+    double cohesionIndex = circleInterDistance / averageRaster;
+
+    double circleInterDistanceSquare = radius * radius;
+    double cohesionSquareIndex = circleInterDistanceSquare / averageRasterSquare;
+    
+    mapFullIndexes["cohesion.cohesionIndex"] = cohesionIndex;
+    mapFullIndexes["cohesion.cohesionSquareIndex"] = cohesionSquareIndex;
   }
 
   //here we calculate the depth index
