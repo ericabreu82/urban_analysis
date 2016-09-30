@@ -71,15 +71,16 @@ void te::urban::calculateUrbanCentroid(te::rst::Raster* urbanRaster, double& urb
   urbanArea = size * onePixelArea;
 }
 
-std::map<std::string, double> te::urban::calculateProximityIndex(te::rst::Raster* urbanRaster, te::rst::Raster* landCoverRaster, te::rst::Raster* slopeRaster, const te::gm::Coord2D& centroidCBD, const te::gm::Coord2D& centroidUrban, double radius)
+std::map<std::string, double> te::urban::calculateProximityIndex(te::rst::Raster* urbanRaster, te::rst::Raster* landCoverRaster, te::rst::Raster* slopeRaster, const te::gm::Coord2D& centroidCBD, const te::gm::Coord2D& centroidUrban, double radius, double urbanAreaHA)
 {
-  double distanceToCenter = 0.;
-  double distanceToCenterSqrt = 0.;
   double in_EAC = 0.;
   double in_nEAC = 0.;
 
   unsigned int numRows = urbanRaster->getNumberOfRows();
   unsigned int numColumns = urbanRaster->getNumberOfColumns();
+  double resX = urbanRaster->getResolutionX();
+  double resY = urbanRaster->getResolutionY();
+  double onePixelArea = resX * resY;
 
   double sumDistance = 0.;
   double sumDistanceSquare = 0.;
@@ -102,7 +103,7 @@ std::map<std::string, double> te::urban::calculateProximityIndex(te::rst::Raster
       landCoverRaster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, landCoverValue);
 
       double slopeValue = 0.;
-
+      slopeRaster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, landCoverValue);
 
       if (urbanValue == OUTPUT_URBAN || urbanValue == OUTPUT_SUB_URBAN, urbanValue == OUTPUT_URBANIZED_OS || urbanValue == OUTPUT_SUBURBAN_ZONE_OPEN_AREA)
       {
@@ -113,10 +114,10 @@ std::map<std::string, double> te::urban::calculateProximityIndex(te::rst::Raster
 
         sumDistance += distanceToCBD;
         sumDistanceSquare += (distanceToCentroidUrban * distanceToCentroidUrban);
-        count += 1;
+        ++count;
 
         if (distanceToCBD <= radius)
-          in_EAC += 1;
+          ++in_EAC;
       }
       else if (landCoverValue == INPUT_WATER || landCoverValue == INPUT_OTHER)
       {
@@ -128,17 +129,68 @@ std::map<std::string, double> te::urban::calculateProximityIndex(te::rst::Raster
     }
   }
 
+  //finalizes the proximity calculation
+  double distanceToCenter = sumDistance / count;
+  double distanceToCenterSquare = sumDistanceSquare / count;
+
+  //net exchange index
+  std::set<double> fullDistanceListSorted;
+  fullDistanceListSorted.insert(urbanAreaDistanceVec.begin(), urbanAreaDistanceVec.end());
+  fullDistanceListSorted.insert(nonUrbanAreaDistanceVec.begin(), nonUrbanAreaDistanceVec.end());
+
+  int areaPix = 0;
+  double referenceDistance = 0.;
+  std::set<double>::iterator itFullList = fullDistanceListSorted.begin();
+  while (itFullList != fullDistanceListSorted.end())
+  {
+    referenceDistance = (*itFullList);
+
+    ++areaPix;
+    if (areaPix >= count)
+    {
+      break;
+    }
+
+    ++itFullList;
+  }
+
+  double nEAC_r = referenceDistance;
+
+  for (std::size_t i = 0; i < urbanAreaDistanceVec.size(); ++i)
+  {
+    double currentDistance = urbanAreaDistanceVec[i];
+    if (currentDistance <= nEAC_r)
+    {
+      ++in_nEAC;
+    }
+  }
+
+  // proximity index (circle / shape)...
+  double circleDistance = radius * (2.0 / 3.0); //avg distance to center for equal area circle...
+  double proximityIndex = circleDistance / distanceToCenter;
+
+  // Spin index(circle / shape)...
+  double circleMOI = .5 * (radius * radius); // moment of inertia for equal area circle...
+  double spinIndex = circleMOI / distanceToCenterSquare;
+
+  // Exchange index...
+  in_EAC *= (onePixelArea * onePixelArea) / 10000; // class area in hectares
+  double exchangeIndex = in_EAC / urbanAreaHA;
+
+  // Net Exchange index...
+  in_nEAC *= (onePixelArea * onePixelArea) / 10000.;
+  double nExchangeIndex = in_nEAC / urbanAreaHA;
 
   std::map<std::string, double> mapIndexes;
-  mapIndexes["proximity.DistanceToCenter"] = distanceToCenter;
-  mapIndexes["proximity.DistanceToCenterSquare"] = distanceToCenterSqrt;
-  mapIndexes["proximity.in_EAC"] = in_EAC;
-  mapIndexes["proximity.in_nEAC"] = in_nEAC;
+  mapIndexes["proximity.ProximityIndex"] = proximityIndex;
+  mapIndexes["proximity.SpinIndex"] = spinIndex;
+  mapIndexes["proximity.ExchangeIndex"] = exchangeIndex;
+  mapIndexes["proximity.NetExchangeIndex"] = nExchangeIndex;
 
   return mapIndexes;
 }
 
-std::map<std::string, double> te::urban::calculateCohesionIndex(te::rst::Raster* urbanRaster)
+std::map<std::string, double> te::urban::calculateCohesionIndex(te::rst::Raster* urbanRaster, double radius)
 {
   assert(urbanRaster);
 
@@ -180,9 +232,15 @@ std::map<std::string, double> te::urban::calculateCohesionIndex(te::rst::Raster*
   double averageDistance = sumDistance / totalSamples;
   double averageDistanceSquare = sumDistanceSquare / totalSamples;
 
+  double circleInterDistance = radius * 0.9054;
+  double cohesionIndex = circleInterDistance / averageDistance;
+
+  double circleInterDistanceSquare = radius * radius;
+  double cohesionSquareIndex = circleInterDistanceSquare / averageDistanceSquare;
+
   std::map<std::string, double> mapIndexes;
-  mapIndexes["cohesion.AverageDistance"] = averageDistance;
-  mapIndexes["cohesion.AverageDistanceSquare"] = averageDistanceSquare;
+  mapIndexes["cohesion.CohesionIndex"] = cohesionIndex;
+  mapIndexes["cohesion.CohesionIndexSquare"] = cohesionSquareIndex;
 
   return mapIndexes;
 }
@@ -234,9 +292,6 @@ std::map<std::string, double> te::urban::calculateIndexes(const IndexesParams& p
 {
   double urbanArea = 0.; //the total built-up area
   te::gm::Coord2D centroidUrban; //the centroid of the built-up area
-  double resX = params.m_urbanRaster->getResolutionX();
-  double resY = params.m_urbanRaster->getResolutionY();
-  double onePixelArea = resX * resY;
   std::map<std::string, double> mapFullIndexes;
 
   //we first calculate some information that will be used lately
@@ -270,58 +325,25 @@ std::map<std::string, double> te::urban::calculateIndexes(const IndexesParams& p
       te::rst::Raster* currentSlopeRaster = vecSlopeRasters[i];
       std::string currentThresholdText = vecSlopeThresholdTexts[i];
 
-      std::map<std::string, double> mapIndexes = calculateProximityIndex(params.m_urbanRaster, params.m_landCoverRaster, currentSlopeRaster, params.m_centroidCBD, centroidUrban, radius);
-      double distanceToCenter = mapIndexes["proximity.DistanceToCenter"];
-      double distanceToCenterSquare = mapIndexes["proximity.DistanceToCenterSquare"];
-      double in_EAC = mapIndexes["proximity.in_EAC"];
-      double in_nEAC = mapIndexes["proximity.in_nEAC"];
-      
-      // proximity index (circle / shape)...
-      double circleDistance = radius * (2.0 / 3.0); //avg distance to center for equal area circle...
-      double proximityIndex = circleDistance / distanceToCenter;
+      std::map<std::string, double> mapIndexes = calculateProximityIndex(params.m_urbanRaster, params.m_landCoverRaster, currentSlopeRaster, params.m_centroidCBD, centroidUrban, radius, urbanAreaHA);
 
-      // Spin index(circle / shape)...
-      double circleMOI = .5 * (radius * radius); // moment of inertia for equal area circle...
-      double spinIndex = circleMOI / distanceToCenterSquare;
-
-      // Exchange index...
-      in_EAC *= (onePixelArea * onePixelArea) / 10000; // class area in hectares
-      double exchangeIndex = in_EAC / urbanAreaHA;
-
-      // Net Exchange index...
-      in_nEAC *= (onePixelArea * onePixelArea) / 10000.;
-      double nExchangeIndex = in_nEAC / urbanAreaHA;
-
-      mapFullIndexes["proximity.ProximityIndex_" + currentThresholdText] = proximityIndex;
-      mapFullIndexes["proximity.SpinIndex_" + currentThresholdText] = spinIndex;
-      mapFullIndexes["proximity.ExchangeIndex_" + currentThresholdText] = exchangeIndex;
-      mapFullIndexes["proximity.NetExchangeIndex_" + currentThresholdText] = nExchangeIndex;
+      mapFullIndexes["proximity.ProximityIndex_" + currentThresholdText] = mapIndexes["proximity.ProximityIndex"];;
+      mapFullIndexes["proximity.SpinIndex_" + currentThresholdText] = mapIndexes["proximity.SpinIndex"];
+      mapFullIndexes["proximity.ExchangeIndex_" + currentThresholdText] = mapIndexes["proximity.ExchangeIndex"];
+      mapFullIndexes["proximity.NetExchangeIndex_" + currentThresholdText] = mapIndexes["proximity.NetExchangeIndex"];
     }
   }
 
   //here we calculate the cohesion index
   if (params.m_calculateCohesion)
   {
-    std::map<std::string, double> mapIndexes = calculateCohesionIndex(params.m_urbanRaster);
-    
-    double averageRaster = mapIndexes["cohesion.AverageDistance"];
-    double averageRasterSquare = mapIndexes["cohesion.AverageDistanceSquare"];
-
-    double circleInterDistance = radius * 0.9054;
-    double cohesionIndex = circleInterDistance / averageRaster;
-
-    double circleInterDistanceSquare = radius * radius;
-    double cohesionSquareIndex = circleInterDistanceSquare / averageRasterSquare;
-    
-    mapFullIndexes["cohesion.cohesionIndex"] = cohesionIndex;
-    mapFullIndexes["cohesion.cohesionSquareIndex"] = cohesionSquareIndex;
+    std::map<std::string, double> mapIndexes = calculateCohesionIndex(params.m_urbanRaster, radius);
+    mapFullIndexes.insert(mapIndexes.begin(), mapIndexes.end());
   }
 
   //here we calculate the depth index
   if (params.m_calculateDepth)
   {
-    double depthIndex = 0.;
-    double girthIndex = 0.;
     std::map<std::string, double> mapIndexes = calculateDepthIndex(params.m_urbanRaster, radius);
     mapFullIndexes.insert(mapIndexes.begin(), mapIndexes.end());
   }

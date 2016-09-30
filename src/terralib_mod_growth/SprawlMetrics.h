@@ -92,10 +92,10 @@ namespace te
     TEGROWTHEXPORT void calculateUrbanCentroid(te::rst::Raster* urbanRaster, double& urbanArea, te::gm::Coord2D& centroid);
 
     //calculates the proximity index
-    TEGROWTHEXPORT std::map<std::string, double> calculateProximityIndex(te::rst::Raster* urbanRaster, te::rst::Raster* landCoverRaster, te::rst::Raster* slopeRaster, const te::gm::Coord2D& centroidCBD, const te::gm::Coord2D& centroidUrban, double radius);
+    TEGROWTHEXPORT std::map<std::string, double> calculateProximityIndex(te::rst::Raster* urbanRaster, te::rst::Raster* landCoverRaster, te::rst::Raster* slopeRaster, const te::gm::Coord2D& centroidCBD, const te::gm::Coord2D& centroidUrban, double radius, double urbanAreaHA);
 
     //calculates the cohesion index
-    TEGROWTHEXPORT std::map<std::string, double> calculateCohesionIndex(te::rst::Raster* urbanRaster);
+    TEGROWTHEXPORT std::map<std::string, double> calculateCohesionIndex(te::rst::Raster* urbanRaster, double radius);
 
     //calculates the depth and the girth indexes
     TEGROWTHEXPORT std::map<std::string, double> calculateDepthIndex(te::rst::Raster* urbanRaster, double radius);
