@@ -247,22 +247,19 @@ std::map<std::string, double> te::urban::calculateCohesionIndex(te::rst::Raster*
 
 std::map<std::string, double> te::urban::calculateDepthIndex(te::rst::Raster* urbanRaster, double radius)
 {
-  //filter the urban pixels and set them to 1. Non-Urban pixels will be set to noDataValue
-  std::vector<short> vecValues;
-  vecValues.push_back(OUTPUT_URBAN); 
-  vecValues.push_back(OUTPUT_SUB_URBAN);
-  vecValues.push_back(OUTPUT_URBANIZED_OS);
-  std::auto_ptr<te::rst::Raster> nonUrbanRaster = filterPixels(urbanRaster, vecValues, false);
+  //1 - filter the nun-urban pixels and set them to 1. Urban pixels will be set to noDataValue
+  std::vector<ReclassifyInfo> vecRemapInfo;
+  vecRemapInfo.push_back(ReclassifyInfo(OUTPUT_RURAL, 1));
+  vecRemapInfo.push_back(ReclassifyInfo(OUTPUT_SUBURBAN_ZONE_OPEN_AREA, OUTPUT_WATER, 1));
+  std::auto_ptr<te::rst::Raster> binaryNonUrbanRaster = reclassify(urbanRaster, vecRemapInfo, SET_NEW_NODATA, 0);
 
-  //calculates the euclidean distance between the noDataValues and the valid pixels
-  std::auto_ptr<te::rst::Raster> distanceRaster = calculateEuclideanDistance(nonUrbanRaster.get());
+  //2 - calculates the euclidean distance between the noDataValues and the valid pixels
+  std::auto_ptr<te::rst::Raster> distanceRaster = calculateEuclideanDistance(binaryNonUrbanRaster.get());
 
-  //clip the region
+  //3 - clip the region
 
-  //we filter all the values that are different from 0
-  std::vector<short> vecDistanceValues;
-  vecDistanceValues.push_back(0);
-  distanceRaster = filterPixels(distanceRaster.get(), vecValues, true);
+  //4 - we filter all the values that are different from 0. To do this, we change the noDataValue and set it to 0
+  distanceRaster->getBand(0)->getProperty()->m_noDataValue = 0.;
 
   //calculates the statistics of the image (mean and maximum values)
   const te::rst::RasterSummary* rsMean = te::rst::RasterSummaryManager::getInstance().get(distanceRaster.get(), te::rst::SUMMARY_MEAN);
@@ -305,19 +302,25 @@ std::map<std::string, double> te::urban::calculateIndexes(const IndexesParams& p
   if (params.m_calculateProximity)
   {
     //we calculate the slopes with a threshold of 15% and 30%
-    //gp.Reclassify_sa("C:\\Temp\\slope.img", "VALUE", "0 15 0;15 99999 1", "slope15.img")
-    //gp.Reclassify_sa("C:\\Temp\\slope.img", "VALUE", "0 30 0;30 99999 1", "slope30.img")
+    double noDataValue = -1;
 
-    te::rst::Raster* slopeRaster15 = params.m_slopeRaster;
-    te::rst::Raster* slopeRaster30 = params.m_slopeRaster;
+    std::vector<ReclassifyInfo> vecReclassify15;
+    vecReclassify15.push_back(ReclassifyInfo(0, 15, 0));
+    vecReclassify15.push_back(ReclassifyInfo(15, std::numeric_limits<double>::max(), 1));
+    std::auto_ptr<te::rst::Raster> slopeRaster15 = reclassify(params.m_slopeRaster, vecReclassify15, SET_NEW_NODATA, 255);
+
+    std::vector<ReclassifyInfo> vecReclassify30;
+    vecReclassify15.push_back(ReclassifyInfo(0, 30, 0));
+    vecReclassify15.push_back(ReclassifyInfo(30, std::numeric_limits<double>::max(), 1));
+    std::auto_ptr<te::rst::Raster> slopeRaster30 = reclassify(params.m_slopeRaster, vecReclassify30, SET_NEW_NODATA, 255);
 
     std::vector<te::rst::Raster*> vecSlopeRasters;
     std::vector<std::string> vecSlopeThresholdTexts;
 
-    vecSlopeRasters.push_back(slopeRaster15);
+    vecSlopeRasters.push_back(slopeRaster15.get());
     vecSlopeThresholdTexts.push_back("15%");
 
-    vecSlopeRasters.push_back(slopeRaster30);
+    vecSlopeRasters.push_back(slopeRaster30.get());
     vecSlopeThresholdTexts.push_back("30%");
 
     for(std::size_t i = 0; i < vecSlopeRasters.size(); ++i)

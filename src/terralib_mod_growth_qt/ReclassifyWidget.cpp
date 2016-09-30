@@ -312,10 +312,8 @@ void te::urban::qt::ReclassifyWidget::execute()
   //add task viewer
   te::qt::widgets::ProgressViewerDialog* dlgViewer = new te::qt::widgets::ProgressViewerDialog(this);
   int dlgViewerId = te::common::ProgressManager::getInstance().addViewer(dlgViewer);
-  
 
-  int defaultValue = 0;
-  std::map<int, int> mapValues;
+  std::vector<ReclassifyInfo> vecReclassifyInfo;
 
   if (m_ui->m_remapCheckBox->isChecked())
   {
@@ -323,12 +321,12 @@ void te::urban::qt::ReclassifyWidget::execute()
 
     for (int i = 0; i < nRows; ++i)
     {
-      int pixelValue = m_ui->m_remapTableWidget->item(i, 0)->text().toInt();
+      int currentPixelValue = m_ui->m_remapTableWidget->item(i, 0)->text().toInt();
 
       QComboBox* cmbBox = dynamic_cast<QComboBox*>(m_ui->m_remapTableWidget->cellWidget(i, 2));
-      int inputClassValue = cmbBox->currentData().toInt();
+      int newPixelValue = cmbBox->currentData().toInt();
 
-      mapValues[pixelValue] = inputClassValue;
+      vecReclassifyInfo.push_back(ReclassifyInfo(currentPixelValue, newPixelValue));
     }
   }
 
@@ -390,7 +388,7 @@ void te::urban::qt::ReclassifyWidget::execute()
       //we reclassify the raster if necessary
       if (m_ui->m_remapCheckBox->isChecked())
       {
-        inputRaster = reclassify(inputRaster.get(), mapValues, defaultValue);
+        inputRaster = reclassify(inputRaster.get(), vecReclassifyInfo, SET_NEW_NODATA, 0);
       }
 
       //we normalize the raster if necessary

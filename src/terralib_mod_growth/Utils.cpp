@@ -763,55 +763,6 @@ bool te::urban::calculateEdge(te::rst::Raster* raster, const InputClassesMap& in
   return false;
 }
 
-std::auto_ptr<te::rst::Raster> te::urban::filterPixels(te::rst::Raster* raster, const std::vector<short>& vecPixels, bool invertFilter)
-{
-  te::rst::Raster* inputRaster = raster;
-
-  assert(inputRaster);
-
-  std::auto_ptr<te::rst::Raster> outputRaster = cloneRasterIntoMem(inputRaster, false);
-
-  assert(outputRaster.get());
-
-  unsigned int numRows = inputRaster->getNumberOfRows();
-  unsigned int numColumns = inputRaster->getNumberOfColumns();
-  double resX = inputRaster->getResolutionX();
-  double resY = inputRaster->getResolutionY();
-
-  double NoDataValue = 0.;
-  double UrbanValue = 1.;
-
-  if (invertFilter == true)
-  {
-    NoDataValue = 1.;
-    UrbanValue = 0.;
-  }
-
-  for (std::size_t currentRow = 0; currentRow < numRows; ++currentRow)
-  {
-    for (std::size_t currentColumn = 0; currentColumn < numColumns; ++currentColumn)
-    {
-      //gets the value of the current center pixel
-      double centerPixel = 0;
-      inputRaster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, centerPixel);
-
-      double value = NoDataValue;
-      for (std::size_t i = 0; i < vecPixels.size(); ++i)
-      {
-        if (centerPixel == vecPixels[i])
-        {
-          value = UrbanValue;
-        }
-      }
-
-      //gets the pixels surrounding pixels that intersects the given radiouss
-      outputRaster->setValue((unsigned int)currentColumn, (unsigned int)currentRow, value, 0);
-    }
-  }
-
-  return outputRaster;
-}
-
 std::vector<te::gm::Geometry*> te::urban::getGaps(const std::vector<te::gm::Geometry*>& vecCandidateGaps, double area)
 {
   std::vector<te::gm::Geometry*> vecOutput;
@@ -1210,6 +1161,7 @@ std::vector<te::gm::Coord2D> te::urban::getRandomCoordSubset(const std::vector<t
   return vecSubset;
 }
 
+/*
 std::auto_ptr<te::rst::Raster> te::urban::reclassify(te::rst::Raster* inputRaster, const std::map<int, int>& mapValues, int defaultValue)
 {
   assert(inputRaster);
@@ -1232,6 +1184,88 @@ std::auto_ptr<te::rst::Raster> te::urban::reclassify(te::rst::Raster* inputRaste
       if (it != mapValues.end())
       {
         newValue = (double)it->second;
+      }
+
+      outputRaster->setValue((unsigned int)currentColumn, (unsigned int)currentRow, newValue);
+    }
+  }
+
+  return outputRaster;
+}
+*/
+
+std::auto_ptr<te::rst::Raster> te::urban::reclassify(te::rst::Raster* inputRaster, const std::vector<ReclassifyInfo>& vecMap, ReclassifyMissingValuesPolicy missingValuesPolicy, double newValue)
+{
+  unsigned int numRows = inputRaster->getNumberOfRows();
+  unsigned int numColumns = inputRaster->getNumberOfColumns();
+  double sourceNoDataValue = inputRaster->getBand(0)->getProperty()->m_noDataValue;
+
+  double outputNoDataValue = sourceNoDataValue;
+  if (missingValuesPolicy == SET_NEW_NODATA)
+  {
+    outputNoDataValue = newValue;
+  }
+
+  std::auto_ptr<te::rst::Raster> outputRaster = cloneRasterIntoMem(inputRaster, false, inputRaster->getBandDataType(0), outputNoDataValue);
+
+  for (std::size_t currentRow = 0; currentRow < numRows; ++currentRow)
+  {
+    for (std::size_t currentColumn = 0; currentColumn < numColumns; ++currentColumn)
+    {
+      //gets the value of the current center pixel
+      double oldValue = 0;
+      double newValue = sourceNoDataValue;
+      inputRaster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, oldValue);
+
+      //if the value is no data, we do not need to remap
+      if (sourceNoDataValue == oldValue)
+      {
+        outputRaster->setValue((unsigned int)currentColumn, (unsigned int)currentRow, newValue);
+        continue;
+      }
+
+      bool isValueMissing = true;
+      //here we do the remap. 
+      //we try to find if the pixel from source is equal or inside an interval in any given remap info.
+      for (std::size_t v = 0; v < vecMap.size(); ++v)
+      {
+        const ReclassifyInfo& info = vecMap[v];
+        
+        if (info.m_singleValueRemap == true)
+        {
+          if (info.m_sourceInitialValue == oldValue)
+          {
+            newValue = info.m_outputValue;
+            isValueMissing = false;
+            break;
+          }
+        }
+        else
+        {
+          if (oldValue >= info.m_sourceInitialValue && oldValue <= info.m_sourceFinalValue)
+          {
+            newValue = info.m_outputValue;
+            isValueMissing = false;
+            break;
+          }
+        }
+      }
+
+      //if we were no able to remap the current value, we decide what to do based on the missing values policy
+      if (isValueMissing)
+      {
+        if (missingValuesPolicy == SET_SOURCE_DATA)
+        {
+          newValue = oldValue;
+        }
+        else if (missingValuesPolicy == SET_SOURCE_NODATA)
+        {
+          newValue = sourceNoDataValue;
+        }
+        else if (missingValuesPolicy == SET_NEW_DATA || missingValuesPolicy == SET_NEW_NODATA)
+        {
+          newValue = outputNoDataValue;
+        }
       }
 
       outputRaster->setValue((unsigned int)currentColumn, (unsigned int)currentRow, newValue);

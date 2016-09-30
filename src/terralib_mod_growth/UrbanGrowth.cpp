@@ -220,15 +220,22 @@ void te::urban::classifyUrbanOpenArea(te::rst::Raster* urbanFootprintRaster, dou
 
 std::auto_ptr<te::rst::Raster> te::urban::identifyIsolatedOpenPatches(te::rst::Raster* raster, const std::string& outputPath, const std::string& outputPrefix)
 {
+  //This function is used to get all the non-urban clusters that have area lesser than 200 hectare. 
+  //This will get all nun-urban clusters that are inside urban clusters
+  //It will execute the following steps: 
+  //1 - create a raster only with the non-urban pixels
+  //2 - vectorize
+  //3 - get the list of all polygons that have area lesser than 200 hectare
+  //4 - rasterize
+
   Timer timer;
 
   //we first need to create a binary image containing only the non urban pixels
-  std::vector<short> vecPixels;
-  vecPixels.push_back(OUTPUT_URBAN);
-  vecPixels.push_back(OUTPUT_SUB_URBAN);
-  vecPixels.push_back(OUTPUT_URBANIZED_OS);
+  std::vector<ReclassifyInfo> vecRemapInfo;
+  vecRemapInfo.push_back(ReclassifyInfo(OUTPUT_RURAL, 1));
+  vecRemapInfo.push_back(ReclassifyInfo(OUTPUT_SUBURBAN_ZONE_OPEN_AREA, OUTPUT_WATER, 1));
 
-  std::auto_ptr<te::rst::Raster> binaryNonUrbanRaster = filterPixels(raster, vecPixels, true);
+  std::auto_ptr<te::rst::Raster> binaryNonUrbanRaster = reclassify(raster, vecRemapInfo, SET_NEW_NODATA, 0);
   std::string binaryInvertedFilePath = outputPath + "/" + outputPrefix + "_binary_inverted.tif";
   saveRaster(binaryInvertedFilePath, binaryNonUrbanRaster.get());
 
