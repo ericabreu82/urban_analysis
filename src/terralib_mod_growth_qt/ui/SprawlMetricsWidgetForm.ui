@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>SprawlMetricsWidgetForm</class>
+ <widget class="QWidget" name="SprawlMetricsWidgetForm">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>568</width>
+    <height>697</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Sprawl Metrics</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout_13">
+   <item row="1" column="0">
+    <layout class="QGridLayout" name="gridLayout_12">
+     <item row="4" column="0">
+      <spacer name="verticalSpacer">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>40</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item row="0" column="0">
+      <widget class="QGroupBox" name="groupBox">
+       <property name="title">
+        <string>Slope Raster Data</string>
+       </property>
+       <property name="flat">
+        <bool>true</bool>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_2">
+        <item row="0" column="0">
+         <layout class="QGridLayout" name="gridLayout">
+          <item row="0" column="0">
+           <widget class="QLineEdit" name="m_slopeLineEdit">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QToolButton" name="m_slopeRasterToolButton">
+            <property name="text">
+             <string>...</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <widget class="QGroupBox" name="groupBox_6">
+       <property name="title">
+        <string>Metrics</string>
+       </property>
+       <property name="flat">
+        <bool>true</bool>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_11">
+        <item row="0" column="0">
+         <widget class="QCheckBox" name="m_proximityCheckBox">
+          <property name="text">
+           <string>Proximity</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QCheckBox" name="m_cohesionCheckBox">
+          <property name="text">
+           <string>Cohesion</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="2">
+         <widget class="QCheckBox" name="m_depthCheckBox">
+          <property name="text">
+           <string>Depth</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QGroupBox" name="groupBox_2">
+       <property name="title">
+        <string>CBD Vectorial Data</string>
+       </property>
+       <property name="flat">
+        <bool>true</bool>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_3">
+        <item row="0" column="0">
+         <layout class="QGridLayout" name="gridLayout_4">
+          <item row="0" column="0">
+           <widget class="QLineEdit" name="m_cbdVecLineEdit">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QToolButton" name="m_cbdVecToolButton">
+            <property name="text">
+             <string>...</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QGroupBox" name="groupBox_3">
+       <property name="title">
+        <string>Study Area Vectorial Data</string>
+       </property>
+       <property name="flat">
+        <bool>true</bool>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_5">
+        <item row="0" column="0">
+         <layout class="QGridLayout" name="gridLayout_6">
+          <item row="0" column="0">
+           <widget class="QLineEdit" name="m_studyAreaVecLineEdit">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QToolButton" name="m_studyAreaVecToolButton">
+            <property name="text">
+             <string>...</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="0" column="0">
+    <widget class="QGroupBox" name="groupBox_7">
+     <property name="title">
+      <string>Input Images</string>
+     </property>
+     <property name="flat">
+      <bool>true</bool>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_14">
+      <item row="0" column="0">
+       <layout class="QGridLayout" name="gridLayout_15">
+        <item row="0" column="0" rowspan="3">
+         <widget class="QListWidget" name="m_imgFilesListWidget">
+          <property name="dragDropMode">
+           <enum>QAbstractItemView::InternalMove</enum>
+          </property>
+          <property name="defaultDropAction">
+           <enum>Qt::TargetMoveAction</enum>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QToolButton" name="m_removeImageToolButton">
+          <property name="text">
+           <string>...</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <spacer name="verticalSpacer_3">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Minimum</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="0" column="1">
+         <widget class="QToolButton" name="m_addImageToolButton">
+          <property name="text">
+           <string>...</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_7">
+        <property name="text">
+         <string>The expected input land cover classes are the following: </string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_8">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>0 = no data, 1 = water, 2 = urban, 3 = other.</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>m_imgFilesListWidget</tabstop>
+  <tabstop>m_addImageToolButton</tabstop>
+  <tabstop>m_removeImageToolButton</tabstop>
+  <tabstop>m_slopeLineEdit</tabstop>
+  <tabstop>m_slopeRasterToolButton</tabstop>
+  <tabstop>m_cbdVecLineEdit</tabstop>
+  <tabstop>m_cbdVecToolButton</tabstop>
+  <tabstop>m_studyAreaVecLineEdit</tabstop>
+  <tabstop>m_studyAreaVecToolButton</tabstop>
+  <tabstop>m_proximityCheckBox</tabstop>
+  <tabstop>m_cohesionCheckBox</tabstop>
+  <tabstop>m_depthCheckBox</tabstop>
+ </tabstops>
+ <resources/>
+ <connections/>
+</ui>

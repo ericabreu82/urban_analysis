@@ -29,6 +29,7 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include "ReclassifyWidget.h"
 #include "RemapClassWidget.h"
 #include "SlopeWidget.h"
+#include "SprawlMetricsWidget.h"
 #include "StatisticsWidget.h"
 
 #include "terralib_mod_growth/Utils.h"
@@ -152,7 +153,18 @@ void te::urban::qt::UrbanAnalysisMainDialog::onSprawlMetricsToolButtonClicked()
   if (m_currentWidget)
     delete m_currentWidget;
 
-  m_currentWidget = 0;
+  te::urban::qt::SprawlMetricsWidget* widget = new te::urban::qt::SprawlMetricsWidget(m_startAsPlugin, m_ui->m_widget);
+
+  m_layout->addWidget(widget);
+
+  widget->show();
+
+  connect(m_ui->m_okPushButton, SIGNAL(clicked()), widget, SLOT(execute()));
+
+  if (m_startAsPlugin)
+    connect(widget, SIGNAL(layerCreated(te::map::AbstractLayerPtr)), this, SLOT(onLayerCreated(te::map::AbstractLayerPtr)));
+
+  m_currentWidget = widget;
 }
 
 void te::urban::qt::UrbanAnalysisMainDialog::onRemapClassToolButtonClicked()
