@@ -116,6 +116,35 @@ namespace te
       clock_t m_startTime;
     };
 
+    enum ReclassifyMissingValuesPolicy
+    {
+      SET_SOURCE_DATA, SET_SOURCE_NODATA, SET_NEW_DATA, SET_NEW_NODATA
+    };
+
+    struct ReclassifyInfo
+    {
+      double m_sourceInitialValue; //!< the source inital value. It is used in the single and in the interval remap
+      double m_sourceFinalValue; //!< the source final value. It is used in the interval remap
+      double m_outputValue; //!< the output value
+      bool m_singleValueRemap; //!< information about the type of the remap: single or interval
+
+      //!< a constructor for a single remap
+      ReclassifyInfo(double sourceValue, double outputValue)
+        : m_sourceInitialValue(sourceValue)
+        , m_sourceFinalValue(0.)
+        , m_outputValue(outputValue)
+        , m_singleValueRemap(true)
+      {}
+
+      //!< a constructor for a interval remap
+      ReclassifyInfo(double sourceInitialValue, double sourceFinalValue, double outputValue)
+        : m_sourceInitialValue(sourceInitialValue)
+        , m_sourceFinalValue(sourceFinalValue)
+        , m_outputValue(outputValue)
+        , m_singleValueRemap(false)
+      {}
+    };
+
     TEGROWTHEXPORT void init();
 
     TEGROWTHEXPORT void finalize();
@@ -171,9 +200,6 @@ namespace te
 
     TEGROWTHEXPORT bool calculateEdge(te::rst::Raster* raster, const InputClassesMap& inputClassesMap, std::size_t column, std::size_t line);
 
-    //this reclassification analyses the entire raster, where the output will be 1 if the pixel is urban and no_data if the pixel is not urban
-    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> filterPixels(te::rst::Raster* raster, const std::vector<short>& vecPixels, bool invertFilter);
-
     //!< Search for all the gaps (holes) that [optionally] have area smaller then the given reference area
     TEGROWTHEXPORT std::vector<te::gm::Geometry*> getGaps(const std::vector<te::gm::Geometry*>& vecCandidateGaps, double area = 0.);
 
@@ -197,7 +223,12 @@ namespace te
     //Gets a random subset of the given coordinate vector 
     TEGROWTHEXPORT std::vector<te::gm::Coord2D> getRandomCoordSubset(const std::vector<te::gm::Coord2D>& vecUrbanCoords, std::size_t subsetSize);
 
-    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> reclassify(te::rst::Raster* inputRaster, const std::map<int, int>& mapValues, int defaultValue);
+    //!> Reclassify the values from the source raster to the output raster using the given Map of Values
+    //TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> reclassify(te::rst::Raster* inputRaster, const std::map<int, int>& mapValues, int defaultValue);
+
+    //!> Reclassify the values from the source raster to the output raster using the given Map of Values. It can be made using a single value or an interval. If a remaped value cannot be found, it will use the ReclassifyMissingValuesPolicy to decide what to do
+
+    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> reclassify(te::rst::Raster* inputRaster, const std::vector<ReclassifyInfo>& vecMap, ReclassifyMissingValuesPolicy missingValuesPolicy, double noDataValue = 0.);
 
     /*! Function used to create the output dataset type */
     TEGROWTHEXPORT std::auto_ptr<te::da::DataSetType> createDataSetType(std::string dataSetName, int srid);
@@ -212,9 +243,9 @@ namespace te
 
     TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> CalculateSlope(te::rst::Raster const* inputRst, std::string rasterDsType, std::map<std::string, std::string> rasterInfo);
 
-    TEGROWTHEXPORT  std::auto_ptr<te::rst::Raster> calculateEuclideanDistance(te::rst::Raster* inputRaster);
+    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> calculateEuclideanDistance(te::rst::Raster* inputRaster);
 
-
+    TEGROWTHEXPORT double GetConstantPI();
   }
 }
 

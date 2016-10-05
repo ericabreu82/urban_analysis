@@ -138,40 +138,37 @@ void te::urban::qt::RemapClassWidget::execute()
   te::qt::widgets::ProgressViewerDialog* dlgViewer = new te::qt::widgets::ProgressViewerDialog(this);
   int dlgViewerId = te::common::ProgressManager::getInstance().addViewer(dlgViewer);
 
-  int defaultValue = 0;
-  std::map<int, int> mapValues;
-
+  std::vector<ReclassifyInfo> vecRemapInfo;
 
   //set map
   int nRows = m_ui->m_remapTableWidget->rowCount();
 
   for (int i = 0; i < nRows; ++i)
   {
-    int pixelValue = m_ui->m_remapTableWidget->item(i, 0)->text().toInt();
+    int currentPixelValue = m_ui->m_remapTableWidget->item(i, 0)->text().toInt();
 
     QComboBox* cmbBox = dynamic_cast<QComboBox*>(m_ui->m_remapTableWidget->cellWidget(i, 2));
     std::string inputClass = cmbBox->currentText().toStdString();
 
-    int inputClassValue = 0;
-
+    int newPixelValue = 0;
     if (inputClass == "NoData")
     {
-      inputClassValue = m_ui->m_noDataClassSpinBox->value();
+      newPixelValue = m_ui->m_noDataClassSpinBox->value();
     }
     else if (inputClass == "Water")
     {
-      inputClassValue = m_ui->m_waterClassSpinBox->value();
+      newPixelValue = m_ui->m_waterClassSpinBox->value();
     }
     else if (inputClass == "Urban")
     {
-      inputClassValue = m_ui->m_urbanClassSpinBox->value();
+      newPixelValue = m_ui->m_urbanClassSpinBox->value();
     }
     else if (inputClass == "Other")
     {
-      inputClassValue = m_ui->m_otherClassSpinBox->value();
+      newPixelValue = m_ui->m_otherClassSpinBox->value();
     }
 
-    mapValues[pixelValue] = inputClassValue;
+    vecRemapInfo.push_back(ReclassifyInfo(currentPixelValue, newPixelValue));
   }
 
   try
@@ -186,7 +183,7 @@ void te::urban::qt::RemapClassWidget::execute()
 
       std::auto_ptr<te::rst::Raster> inputRaster = openRaster(m_ui->m_imgFilesListWidget->item(i)->text().toStdString());
 
-      inputRaster = reclassify(inputRaster.get(), mapValues, defaultValue);
+      inputRaster = reclassify(inputRaster.get(), vecRemapInfo, SET_NEW_NODATA, 0);
 
       saveRaster(outputFilePath, inputRaster.get());
     }

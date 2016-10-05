@@ -27,6 +27,7 @@ TerraLib Team at <terralib-team@terralib.org>.
 
 #include <terralib/common.h>
 #include <terralib/common/TerraLib.h>
+#include <terralib/common/progress/TaskProgress.h>
 #include <terralib/core/logger/Logger.h>
 #include <terralib/core/utils/Platform.h>
 #include <terralib/dataaccess/datasource/DataSourceFactory.h>
@@ -55,8 +56,6 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include <terralib/vp/Utils.h>
 
 #include <cstdlib>
-
-#define M_PI       3.14159265358979323846
 
 void te::urban::init()
 {
@@ -764,55 +763,6 @@ bool te::urban::calculateEdge(te::rst::Raster* raster, const InputClassesMap& in
   return false;
 }
 
-std::auto_ptr<te::rst::Raster> te::urban::filterPixels(te::rst::Raster* raster, const std::vector<short>& vecPixels, bool invertFilter)
-{
-  te::rst::Raster* inputRaster = raster;
-
-  assert(inputRaster);
-
-  std::auto_ptr<te::rst::Raster> outputRaster = cloneRasterIntoMem(inputRaster, false);
-
-  assert(outputRaster.get());
-
-  unsigned int numRows = inputRaster->getNumberOfRows();
-  unsigned int numColumns = inputRaster->getNumberOfColumns();
-  double resX = inputRaster->getResolutionX();
-  double resY = inputRaster->getResolutionY();
-
-  double NoDataValue = 0.;
-  double UrbanValue = 1.;
-
-  if (invertFilter == true)
-  {
-    NoDataValue = 1.;
-    UrbanValue = 0.;
-  }
-
-  for (std::size_t currentRow = 0; currentRow < numRows; ++currentRow)
-  {
-    for (std::size_t currentColumn = 0; currentColumn < numColumns; ++currentColumn)
-    {
-      //gets the value of the current center pixel
-      double centerPixel = 0;
-      inputRaster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, centerPixel);
-
-      double value = NoDataValue;
-      for (std::size_t i = 0; i < vecPixels.size(); ++i)
-      {
-        if (centerPixel == vecPixels[i])
-        {
-          value = UrbanValue;
-        }
-      }
-
-      //gets the pixels surrounding pixels that intersects the given radiouss
-      outputRaster->setValue((unsigned int)currentColumn, (unsigned int)currentRow, value, 0);
-    }
-  }
-
-  return outputRaster;
-}
-
 std::vector<te::gm::Geometry*> te::urban::getGaps(const std::vector<te::gm::Geometry*>& vecCandidateGaps, double area)
 {
   std::vector<te::gm::Geometry*> vecOutput;
@@ -1211,6 +1161,7 @@ std::vector<te::gm::Coord2D> te::urban::getRandomCoordSubset(const std::vector<t
   return vecSubset;
 }
 
+/*
 std::auto_ptr<te::rst::Raster> te::urban::reclassify(te::rst::Raster* inputRaster, const std::map<int, int>& mapValues, int defaultValue)
 {
   assert(inputRaster);
@@ -1233,6 +1184,88 @@ std::auto_ptr<te::rst::Raster> te::urban::reclassify(te::rst::Raster* inputRaste
       if (it != mapValues.end())
       {
         newValue = (double)it->second;
+      }
+
+      outputRaster->setValue((unsigned int)currentColumn, (unsigned int)currentRow, newValue);
+    }
+  }
+
+  return outputRaster;
+}
+*/
+
+std::auto_ptr<te::rst::Raster> te::urban::reclassify(te::rst::Raster* inputRaster, const std::vector<ReclassifyInfo>& vecMap, ReclassifyMissingValuesPolicy missingValuesPolicy, double newValue)
+{
+  unsigned int numRows = inputRaster->getNumberOfRows();
+  unsigned int numColumns = inputRaster->getNumberOfColumns();
+  double sourceNoDataValue = inputRaster->getBand(0)->getProperty()->m_noDataValue;
+
+  double outputNoDataValue = sourceNoDataValue;
+  if (missingValuesPolicy == SET_NEW_NODATA)
+  {
+    outputNoDataValue = newValue;
+  }
+
+  std::auto_ptr<te::rst::Raster> outputRaster = cloneRasterIntoMem(inputRaster, false, inputRaster->getBandDataType(0), outputNoDataValue);
+
+  for (std::size_t currentRow = 0; currentRow < numRows; ++currentRow)
+  {
+    for (std::size_t currentColumn = 0; currentColumn < numColumns; ++currentColumn)
+    {
+      //gets the value of the current center pixel
+      double oldValue = 0;
+      double newValue = sourceNoDataValue;
+      inputRaster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, oldValue);
+
+      //if the value is no data, we do not need to remap
+      if (sourceNoDataValue == oldValue)
+      {
+        outputRaster->setValue((unsigned int)currentColumn, (unsigned int)currentRow, newValue);
+        continue;
+      }
+
+      bool isValueMissing = true;
+      //here we do the remap. 
+      //we try to find if the pixel from source is equal or inside an interval in any given remap info.
+      for (std::size_t v = 0; v < vecMap.size(); ++v)
+      {
+        const ReclassifyInfo& info = vecMap[v];
+        
+        if (info.m_singleValueRemap == true)
+        {
+          if (info.m_sourceInitialValue == oldValue)
+          {
+            newValue = info.m_outputValue;
+            isValueMissing = false;
+            break;
+          }
+        }
+        else
+        {
+          if (oldValue >= info.m_sourceInitialValue && oldValue <= info.m_sourceFinalValue)
+          {
+            newValue = info.m_outputValue;
+            isValueMissing = false;
+            break;
+          }
+        }
+      }
+
+      //if we were no able to remap the current value, we decide what to do based on the missing values policy
+      if (isValueMissing)
+      {
+        if (missingValuesPolicy == SET_SOURCE_DATA)
+        {
+          newValue = oldValue;
+        }
+        else if (missingValuesPolicy == SET_SOURCE_NODATA)
+        {
+          newValue = sourceNoDataValue;
+        }
+        else if (missingValuesPolicy == SET_NEW_DATA || missingValuesPolicy == SET_NEW_NODATA)
+        {
+          newValue = outputNoDataValue;
+        }
       }
 
       outputRaster->setValue((unsigned int)currentColumn, (unsigned int)currentRow, newValue);
@@ -1352,7 +1385,7 @@ std::vector<te::gm::Geometry*> te::urban::fixGeometries(const std::vector<te::gm
 
   double resx = outRaster->getGrid()->getResolutionX(); //Gd
   double resy = outRaster->getGrid()->getResolutionY(); //Ge
-  double A, F, E2, DY, DX;
+  double A, F, E2, DY; //,DX
 
   std::string authName = "EPSG"; // Now: So far it is the only one supported by TerraLib 5. Future: Review this line!
   bool isGeographic = te::srs::SpatialReferenceSystemManager::getInstance().isGeographic(outRaster->getGrid()->getSRID(), authName);
@@ -1368,7 +1401,7 @@ std::vector<te::gm::Geometry*> te::urban::fixGeometries(const std::vector<te::gm
       A = gcs->getDatum()->getEllipsoid()->getRadium() / 1000.0;
       F = gcs->getDatum()->getEllipsoid()->getInverseFlattening();
       E2 = 2 * F - F * F; //!QUADRADO DA EXCENTRICIDADE
-      DY = (A * sin(resy * M_PI / 180)) * 1000;
+      DY = (A * sin(resy * GetConstantPI() / 180)) * 1000;
 
       resx = resx * 111133;
       resy = resy * 111133;
@@ -1492,9 +1525,9 @@ std::auto_ptr<te::rst::Raster> te::urban::calculateEuclideanDistance(te::rst::Ra
       //if the value is valid, we set the Euclidean Distance to 0
       if (value != noDataValue)
       {
-        outputRaster->setValue(currentColumn, currentRow, 0.);
+        outputRaster->setValue((unsigned int)currentColumn, (unsigned int)currentRow, 0.);
 
-        te::gm::Coord2D coord = outputRaster->getGrid()->gridToGeo(currentColumn, currentRow);
+        te::gm::Coord2D coord = outputRaster->getGrid()->gridToGeo((unsigned int)currentColumn, (unsigned int)currentRow);
         index.insert(coord, 0);
 
         if (currentRow < closestNonDummyRow)
@@ -1510,17 +1543,27 @@ std::auto_ptr<te::rst::Raster> te::urban::calculateEuclideanDistance(te::rst::Ra
   }
 
   te::gm::Coord2D firstPixelCoord = outputRaster->getGrid()->gridToGeo(0, 0);
-  te::gm::Coord2D closesetNonDummyCoord = outputRaster->getGrid()->gridToGeo(closestNonDummyColumn, closestNonDummyRow);
+  te::gm::Coord2D closesetNonDummyCoord = outputRaster->getGrid()->gridToGeo((unsigned int)closestNonDummyColumn, (unsigned int)closestNonDummyRow);
 
   double resolution = outputRaster->getResolutionX();
   double lastCandidateFoundDistanceForRowStart = TeDistance(firstPixelCoord, closesetNonDummyCoord);
 
   for (std::size_t currentRow = 0; currentRow < numRows; ++currentRow)
   {
-    double lastCandidateFoundDistance = lastCandidateFoundDistance;
+    double lastCandidateFoundDistance = lastCandidateFoundDistanceForRowStart;
     for (std::size_t currentColumn = 0; currentColumn < numColumns; ++currentColumn)
     {
-      te::gm::Coord2D currentCoord = outputRaster->getGrid()->gridToGeo(currentColumn, currentRow);
+      //gets the value of the current center pixel
+      double value = 0.;
+      inputRaster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, value);
+
+      //if the value is valid, we do not need to calculate as the distance has already been set to zero
+      if (value != noDataValue)
+      {
+        continue;
+      }
+
+      te::gm::Coord2D currentCoord = outputRaster->getGrid()->gridToGeo((unsigned int)currentColumn, (unsigned int)currentRow);
       double adjust = lastCandidateFoundDistance + resolution;
 
       //we search the candidates in the kdtree and find the nearest one
@@ -1551,7 +1594,7 @@ std::auto_ptr<te::rst::Raster> te::urban::calculateEuclideanDistance(te::rst::Ra
       }
 
       //we set the min distance in the output raster
-      outputRaster->setValue(currentColumn, currentRow, minDistance);
+      outputRaster->setValue((unsigned int)currentColumn, (unsigned int)currentRow, minDistance);
 
       //we prepare the otimization variables to be used in the next iteration
       lastCandidateFoundDistance = minDistance;
@@ -1563,4 +1606,10 @@ std::auto_ptr<te::rst::Raster> te::urban::calculateEuclideanDistance(te::rst::Ra
   }
 
   return outputRaster;
+}
+
+double te::urban::GetConstantPI()
+{
+  double M_PI = 3.14159265358979323846;
+  return M_PI;
 }
