@@ -6,151 +6,398 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>568</width>
-    <height>697</height>
+    <width>683</width>
+    <height>636</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Sprawl Metrics</string>
   </property>
-  <layout class="QGridLayout" name="gridLayout_13">
-   <item row="1" column="0">
-    <layout class="QGridLayout" name="gridLayout_12">
-     <item row="4" column="0">
-      <spacer name="verticalSpacer">
-       <property name="orientation">
-        <enum>Qt::Vertical</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>20</width>
-         <height>40</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
+  <layout class="QGridLayout" name="gridLayout_21">
+   <item row="0" column="0">
+    <layout class="QGridLayout" name="gridLayout_20">
      <item row="0" column="0">
-      <widget class="QGroupBox" name="groupBox">
-       <property name="title">
-        <string>Slope Raster Data</string>
-       </property>
-       <property name="flat">
-        <bool>true</bool>
-       </property>
-       <layout class="QGridLayout" name="gridLayout_2">
-        <item row="0" column="0">
-         <layout class="QGridLayout" name="gridLayout">
+      <layout class="QGridLayout" name="gridLayout_19">
+       <item row="4" column="0">
+        <layout class="QGridLayout" name="gridLayout_18">
+         <item row="0" column="0">
+          <widget class="QGroupBox" name="groupBox_6">
+           <property name="title">
+            <string>Metrics</string>
+           </property>
+           <property name="flat">
+            <bool>true</bool>
+           </property>
+           <layout class="QGridLayout" name="gridLayout_11">
+            <item row="0" column="0">
+             <widget class="QCheckBox" name="m_proximityCheckBox">
+              <property name="text">
+               <string>Proximity</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QCheckBox" name="m_depthCheckBox">
+              <property name="text">
+               <string>Depth</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QCheckBox" name="m_cohesionCheckBox">
+              <property name="text">
+               <string>Cohesion</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <spacer name="verticalSpacer_5">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Minimum</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QGroupBox" name="groupBox_5">
+           <property name="title">
+            <string>Threshold</string>
+           </property>
+           <property name="flat">
+            <bool>true</bool>
+           </property>
+           <layout class="QGridLayout" name="gridLayout_13">
+            <item row="0" column="0">
+             <layout class="QGridLayout" name="gridLayout_10">
+              <item row="0" column="0">
+               <layout class="QGridLayout" name="gridLayout_7">
+                <item row="0" column="0">
+                 <layout class="QGridLayout" name="gridLayout_12">
+                  <item row="0" column="1" colspan="3">
+                   <widget class="QSpinBox" name="m_fromSpinBox"/>
+                  </item>
+                  <item row="2" column="3">
+                   <widget class="QToolButton" name="m_removeThresholdToolButton">
+                    <property name="text">
+                     <string>...</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="0" column="0">
+                   <widget class="QLabel" name="label">
+                    <property name="text">
+                     <string>From:</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="1" column="0">
+                   <widget class="QLabel" name="label_2">
+                    <property name="text">
+                     <string>To:</string>
+                    </property>
+                    <property name="alignment">
+                     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="1" column="1" colspan="3">
+                   <widget class="QSpinBox" name="m_toSpinBox"/>
+                  </item>
+                  <item row="2" column="2">
+                   <widget class="QToolButton" name="m_addThresholdToolButton">
+                    <property name="text">
+                     <string>...</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </item>
+                <item row="0" column="1">
+                 <widget class="QListWidget" name="m_thresholdListWidget">
+                  <property name="sizePolicy">
+                   <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                   </sizepolicy>
+                  </property>
+                  <property name="minimumSize">
+                   <size>
+                    <width>100</width>
+                    <height>75</height>
+                   </size>
+                  </property>
+                  <property name="maximumSize">
+                   <size>
+                    <width>100</width>
+                    <height>75</height>
+                   </size>
+                  </property>
+                  <property name="dragDropMode">
+                   <enum>QAbstractItemView::InternalMove</enum>
+                  </property>
+                  <property name="defaultDropAction">
+                   <enum>Qt::TargetMoveAction</enum>
+                  </property>
+                  <property name="alternatingRowColors">
+                   <bool>true</bool>
+                  </property>
+                  <property name="selectionMode">
+                   <enum>QAbstractItemView::MultiSelection</enum>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item row="1" column="0">
+               <spacer name="verticalSpacer">
+                <property name="orientation">
+                 <enum>Qt::Vertical</enum>
+                </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Minimum</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>20</width>
+                  <height>40</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item row="1" column="0">
+        <widget class="QGroupBox" name="groupBox">
+         <property name="title">
+          <string>Slope Raster Data</string>
+         </property>
+         <property name="flat">
+          <bool>true</bool>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_2">
           <item row="0" column="0">
-           <widget class="QLineEdit" name="m_slopeLineEdit">
-            <property name="enabled">
-             <bool>false</bool>
+           <layout class="QGridLayout" name="gridLayout">
+            <item row="0" column="0">
+             <widget class="QLineEdit" name="m_slopeLineEdit">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QToolButton" name="m_slopeRasterToolButton">
+              <property name="text">
+               <string>...</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="QGroupBox" name="groupBox_7">
+         <property name="title">
+          <string>Input Images</string>
+         </property>
+         <property name="flat">
+          <bool>true</bool>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_14">
+          <item row="0" column="0">
+           <layout class="QGridLayout" name="gridLayout_15">
+            <item row="0" column="0" rowspan="3">
+             <widget class="QListWidget" name="m_imgFilesListWidget">
+              <property name="dragDropMode">
+               <enum>QAbstractItemView::InternalMove</enum>
+              </property>
+              <property name="defaultDropAction">
+               <enum>Qt::TargetMoveAction</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QToolButton" name="m_removeImageToolButton">
+              <property name="text">
+               <string>...</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <spacer name="verticalSpacer_3">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Minimum</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item row="0" column="1">
+             <widget class="QToolButton" name="m_addImageToolButton">
+              <property name="text">
+               <string>...</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_7">
+            <property name="text">
+             <string>The expected input land cover classes are the following: </string>
             </property>
            </widget>
           </item>
-          <item row="0" column="1">
-           <widget class="QToolButton" name="m_slopeRasterToolButton">
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_8">
+            <property name="font">
+             <font>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
             <property name="text">
-             <string>...</string>
+             <string>0 = no data, 1 = water, 2 = urban, 3 = other.</string>
             </property>
            </widget>
           </item>
          </layout>
-        </item>
-       </layout>
-      </widget>
-     </item>
-     <item row="3" column="0">
-      <widget class="QGroupBox" name="groupBox_6">
-       <property name="title">
-        <string>Metrics</string>
-       </property>
-       <property name="flat">
-        <bool>true</bool>
-       </property>
-       <layout class="QGridLayout" name="gridLayout_11">
-        <item row="0" column="0">
-         <widget class="QCheckBox" name="m_proximityCheckBox">
-          <property name="text">
-           <string>Proximity</string>
-          </property>
-          <property name="checked">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="1">
-         <widget class="QCheckBox" name="m_cohesionCheckBox">
-          <property name="text">
-           <string>Cohesion</string>
-          </property>
-          <property name="checked">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="2">
-         <widget class="QCheckBox" name="m_depthCheckBox">
-          <property name="text">
-           <string>Depth</string>
-          </property>
-          <property name="checked">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-     </item>
-     <item row="1" column="0">
-      <widget class="QGroupBox" name="groupBox_2">
-       <property name="title">
-        <string>CBD Vectorial Data</string>
-       </property>
-       <property name="flat">
-        <bool>true</bool>
-       </property>
-       <layout class="QGridLayout" name="gridLayout_3">
-        <item row="0" column="0">
-         <layout class="QGridLayout" name="gridLayout_4">
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QGroupBox" name="groupBox_2">
+         <property name="title">
+          <string>CBD Vectorial Data</string>
+         </property>
+         <property name="flat">
+          <bool>true</bool>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_3">
           <item row="0" column="0">
-           <widget class="QLineEdit" name="m_cbdVecLineEdit">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QToolButton" name="m_cbdVecToolButton">
-            <property name="text">
-             <string>...</string>
-            </property>
-           </widget>
+           <layout class="QGridLayout" name="gridLayout_4">
+            <item row="0" column="0">
+             <widget class="QLineEdit" name="m_cbdVecLineEdit">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QToolButton" name="m_cbdVecToolButton">
+              <property name="text">
+               <string>...</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </item>
          </layout>
-        </item>
-       </layout>
-      </widget>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QGroupBox" name="groupBox_3">
+         <property name="title">
+          <string>Study Area Vectorial Data</string>
+         </property>
+         <property name="flat">
+          <bool>true</bool>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_5">
+          <item row="0" column="0">
+           <layout class="QGridLayout" name="gridLayout_6">
+            <item row="0" column="0">
+             <widget class="QLineEdit" name="m_studyAreaVecLineEdit">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QToolButton" name="m_studyAreaVecToolButton">
+              <property name="text">
+               <string>...</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
      </item>
-     <item row="2" column="0">
-      <widget class="QGroupBox" name="groupBox_3">
+     <item row="0" column="1">
+      <widget class="QGroupBox" name="groupBox_4">
        <property name="title">
-        <string>Study Area Vectorial Data</string>
+        <string>Metrics Result</string>
        </property>
        <property name="flat">
         <bool>true</bool>
        </property>
-       <layout class="QGridLayout" name="gridLayout_5">
+       <layout class="QGridLayout" name="gridLayout_9">
         <item row="0" column="0">
-         <layout class="QGridLayout" name="gridLayout_6">
-          <item row="0" column="0">
-           <widget class="QLineEdit" name="m_studyAreaVecLineEdit">
-            <property name="enabled">
-             <bool>false</bool>
+         <layout class="QGridLayout" name="gridLayout_8">
+          <item row="0" column="0" colspan="2">
+           <widget class="QTableWidget" name="m_metricsTableWidget">
+            <property name="minimumSize">
+             <size>
+              <width>300</width>
+              <height>0</height>
+             </size>
             </property>
            </widget>
           </item>
-          <item row="0" column="1">
-           <widget class="QToolButton" name="m_studyAreaVecToolButton">
+          <item row="1" column="0">
+           <spacer name="horizontalSpacer_2">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="1" column="1">
+           <widget class="QToolButton" name="m_exportMetricsInfoToolButton">
+            <property name="toolTip">
+             <string>Export Indexes Informations...</string>
+            </property>
             <property name="text">
              <string>...</string>
             </property>
@@ -162,82 +409,6 @@
       </widget>
      </item>
     </layout>
-   </item>
-   <item row="0" column="0">
-    <widget class="QGroupBox" name="groupBox_7">
-     <property name="title">
-      <string>Input Images</string>
-     </property>
-     <property name="flat">
-      <bool>true</bool>
-     </property>
-     <layout class="QGridLayout" name="gridLayout_14">
-      <item row="0" column="0">
-       <layout class="QGridLayout" name="gridLayout_15">
-        <item row="0" column="0" rowspan="3">
-         <widget class="QListWidget" name="m_imgFilesListWidget">
-          <property name="dragDropMode">
-           <enum>QAbstractItemView::InternalMove</enum>
-          </property>
-          <property name="defaultDropAction">
-           <enum>Qt::TargetMoveAction</enum>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QToolButton" name="m_removeImageToolButton">
-          <property name="text">
-           <string>...</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="1">
-         <spacer name="verticalSpacer_3">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeType">
-           <enum>QSizePolicy::Minimum</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item row="0" column="1">
-         <widget class="QToolButton" name="m_addImageToolButton">
-          <property name="text">
-           <string>...</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="label_7">
-        <property name="text">
-         <string>The expected input land cover classes are the following: </string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="label_8">
-        <property name="font">
-         <font>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="text">
-         <string>0 = no data, 1 = water, 2 = urban, 3 = other.</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </widget>
    </item>
   </layout>
  </widget>
@@ -252,9 +423,24 @@
   <tabstop>m_studyAreaVecLineEdit</tabstop>
   <tabstop>m_studyAreaVecToolButton</tabstop>
   <tabstop>m_proximityCheckBox</tabstop>
-  <tabstop>m_cohesionCheckBox</tabstop>
-  <tabstop>m_depthCheckBox</tabstop>
  </tabstops>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>m_proximityCheckBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>groupBox_5</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>155</x>
+     <y>531</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>247</x>
+     <y>530</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

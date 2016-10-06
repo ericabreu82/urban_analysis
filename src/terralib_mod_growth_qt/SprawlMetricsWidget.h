@@ -67,6 +67,12 @@ namespace te
 
           void onStudyAreaVectorialDataToolButtonClicked();
 
+          void onExportMetricsInfoToolButton();
+
+          void onAddThresholdToolButtonClicked();
+
+          void onRemoveThresholdToolButtonClicked();
+
           void execute();
 
         signals:

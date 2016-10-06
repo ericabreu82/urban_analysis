@@ -59,6 +59,9 @@ te::urban::qt::SprawlMetricsWidget::SprawlMetricsWidget(bool startAsPlugin, QWid
     m_ui->m_slopeRasterToolButton->setIcon(QIcon::fromTheme("folder"));
     m_ui->m_cbdVecToolButton->setIcon(QIcon::fromTheme("folder"));
     m_ui->m_studyAreaVecToolButton->setIcon(QIcon::fromTheme("folder"));
+    m_ui->m_exportMetricsInfoToolButton->setIcon(QIcon::fromTheme("document-save"));
+    m_ui->m_addThresholdToolButton->setIcon(QIcon::fromTheme("list-add"));
+    m_ui->m_removeThresholdToolButton->setIcon(QIcon::fromTheme("list-remove"));
   }
   else
   {
@@ -67,6 +70,9 @@ te::urban::qt::SprawlMetricsWidget::SprawlMetricsWidget(bool startAsPlugin, QWid
     m_ui->m_slopeRasterToolButton->setIcon(QIcon(":/images/folder.svg"));
     m_ui->m_cbdVecToolButton->setIcon(QIcon(":/images/folder.svg"));
     m_ui->m_studyAreaVecToolButton->setIcon(QIcon(":/images/folder.svg"));
+    m_ui->m_exportMetricsInfoToolButton->setIcon(QIcon(":/images/document-save.svg"));
+    m_ui->m_addThresholdToolButton->setIcon(QIcon(":/images/list-add.svg"));
+    m_ui->m_removeThresholdToolButton->setIcon(QIcon(":/images/list-remove.svg"));
   }
 
   //connects
@@ -75,6 +81,9 @@ te::urban::qt::SprawlMetricsWidget::SprawlMetricsWidget(bool startAsPlugin, QWid
   connect(m_ui->m_slopeRasterToolButton, SIGNAL(clicked()), this, SLOT(onSlopeRasterToolButtonClicked()));
   connect(m_ui->m_cbdVecToolButton, SIGNAL(clicked()), this, SLOT(onCBDVectorialDataToolButtonClicked()));
   connect(m_ui->m_studyAreaVecToolButton, SIGNAL(clicked()), this, SLOT(onStudyAreaVectorialDataToolButtonClicked()));
+  connect(m_ui->m_exportMetricsInfoToolButton, SIGNAL(clicked()), this, SLOT(onExportMetricsInfoToolButton()));
+  connect(m_ui->m_addThresholdToolButton, SIGNAL(clicked()), this, SLOT(onAddThresholdToolButtonClicked()));
+  connect(m_ui->m_removeThresholdToolButton, SIGNAL(clicked()), this, SLOT(onRemoveThresholdToolButtonClicked()));
 }
 
 te::urban::qt::SprawlMetricsWidget::~SprawlMetricsWidget()
@@ -141,6 +150,80 @@ void te::urban::qt::SprawlMetricsWidget::onStudyAreaVectorialDataToolButtonClick
 
     m_ui->m_studyAreaVecLineEdit->setText(fileName);
   }
+}
+
+void te::urban::qt::SprawlMetricsWidget::onExportMetricsInfoToolButton()
+{
+  QString fileName = QFileDialog::getSaveFileName(this, tr("Set Metrics Text File"), te::qt::widgets::GetFilePathFromSettings("urbanAnalysis_txt"), tr("Text File (*.txt *.TXT)"));
+
+  if (fileName.isEmpty())
+  {
+    QMessageBox::warning(this, tr("Urban Analysis"), tr("Metrics file not defined."));
+    return;
+  }
+
+  QFileInfo info(fileName);
+
+  te::qt::widgets::AddFilePathToSettings(info.absolutePath(), "urbanAnalysis_txt");
+
+  std::string logFile = fileName.toUtf8().constData();
+
+  //check index table
+  if (m_ui->m_metricsTableWidget->rowCount() == 0)
+  {
+    QMessageBox::warning(this, tr("Urban Analysis"), tr("Metrics not calculated."));
+    return;
+  }
+
+  //create output file
+  FILE* indexFile;
+  indexFile = fopen(logFile.c_str(), "a+"); // a+ (create + append)
+
+  if (indexFile == NULL)
+  {
+    QMessageBox::warning(this, tr("Urban Analysis"), tr("Error creating Metrics File."));
+    return;
+  }
+
+  fprintf(indexFile, "\t\tUrban Analysis - METRICS LOG INFORMATION \n\n");
+
+  for (int i = 0; i < m_ui->m_metricsTableWidget->rowCount(); ++i)
+  {
+    //std::string msg = "Image: " + m_ui->m_indexTableWidget->item(i, 0)->text().toStdString();
+    //msg += "\t\t Opennes: " + m_ui->m_indexTableWidget->item(i, 1)->text().toStdString();
+    //msg += "\t\t Edge: " + m_ui->m_indexTableWidget->item(i, 2)->text().toStdString();
+    //msg += "\n";
+
+    //fprintf(indexFile, msg.c_str());
+  }
+
+  fprintf(indexFile, "-------------------------------------------------------------------");
+
+  fclose(indexFile);
+}
+
+void te::urban::qt::SprawlMetricsWidget::onAddThresholdToolButtonClicked()
+{
+  int from = m_ui->m_fromSpinBox->value();
+  int to = m_ui->m_toSpinBox->value();
+
+  if (from == to || to < from)
+  {
+    QMessageBox::information(this, tr("Urban Analysis"), tr("Invalid threshold values."));
+    return;
+  }
+
+  QString value;
+  value.append(QString::number(from));
+  value.append(" / ");
+  value.append(QString::number(to));
+
+  m_ui->m_thresholdListWidget->addItem(value);
+}
+
+void te::urban::qt::SprawlMetricsWidget::onRemoveThresholdToolButtonClicked()
+{
+  qDeleteAll(m_ui->m_thresholdListWidget->selectedItems());
 }
 
 void te::urban::qt::SprawlMetricsWidget::execute()
