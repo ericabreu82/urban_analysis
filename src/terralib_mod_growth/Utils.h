@@ -78,6 +78,9 @@ namespace te
 
     typedef std::map<InputUrbanClasses, short> InputClassesMap;
 
+    typedef std::map<std::string, double> UrbanIndexes; //index name, index value
+    typedef std::map<std::string, UrbanIndexes> UrbanSummary; //file name, indexes
+
     struct UrbanRasters
     {
       UrbanRasters()

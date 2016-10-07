@@ -29,6 +29,8 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include "Config.h"
 #include "Utils.h"
 
+#include <terralib/geometry/Coord2D.h>
+
 #include <memory>
 #include <set>
 #include <string>
@@ -39,9 +41,8 @@ namespace te
 {
   namespace gm
   {
-    struct Coord2D;
+    class Geometry;
   }
-
   namespace rst
   {
     class Raster;
@@ -49,26 +50,6 @@ namespace te
 
   namespace urban
   {
-    /*
-    struct IndexesParams
-    {
-      std::string m_urbanizedArea; //urbanized area filename
-      std::string m_urbanFootprint; //urban footprint filename
-      std::string m_cdbFileName; //shape filename
-      std::string m_studyAreaFileName; //shape filename
-      std::string m_landCoverFileName; //raster filename
-      std::string m_slopeFileName;//raster filename
-      bool m_calculateProximity;
-      bool m_calculateCohesion;
-      bool m_calculateDepth;
-
-      IndexesParams()
-        : m_calculateProximity(true)
-        , m_calculateCohesion(true)
-        , m_calculateDepth(true)
-      {}
-    };*/
-
     struct IndexesParams
     {
       te::rst::Raster* m_urbanRaster; //urban classified raster
@@ -87,21 +68,20 @@ namespace te
       {}
     };
 
-
     //calculates the centroid of the urban pixels. it also calculates the total area of the urban pixels (classes = 1, 2, 4 and 5)
     TEGROWTHEXPORT void calculateUrbanCentroid(te::rst::Raster* urbanRaster, double& urbanArea, te::gm::Coord2D& centroid);
 
     //calculates the proximity index
-    TEGROWTHEXPORT std::map<std::string, double> calculateProximityIndex(te::rst::Raster* urbanRaster, te::rst::Raster* landCoverRaster, te::rst::Raster* slopeRaster, const te::gm::Coord2D& centroidCBD, const te::gm::Coord2D& centroidUrban, double radius, double urbanAreaHA);
+    TEGROWTHEXPORT UrbanIndexes calculateProximityIndex(te::rst::Raster* urbanRaster, te::rst::Raster* landCoverRaster, te::rst::Raster* slopeRaster, const te::gm::Coord2D& centroidCBD, const te::gm::Coord2D& centroidUrban, double radius, double urbanAreaHA);
 
     //calculates the cohesion index
-    TEGROWTHEXPORT std::map<std::string, double> calculateCohesionIndex(te::rst::Raster* urbanRaster, double radius);
+    TEGROWTHEXPORT UrbanIndexes calculateCohesionIndex(te::rst::Raster* urbanRaster, double radius);
 
     //calculates the depth and the girth indexes
-    TEGROWTHEXPORT std::map<std::string, double> calculateDepthIndex(te::rst::Raster* urbanRaster, double radius);
+    TEGROWTHEXPORT UrbanIndexes calculateDepthIndex(te::rst::Raster* urbanRaster, double radius);
 
     //calculates the depth and the girth indexes
-    TEGROWTHEXPORT std::map<std::string, double> calculateIndexes(const IndexesParams& params);
+    TEGROWTHEXPORT UrbanIndexes calculateIndexes(const IndexesParams& params);
   }
 }
 

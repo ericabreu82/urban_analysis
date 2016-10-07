@@ -71,7 +71,7 @@ void te::urban::calculateUrbanCentroid(te::rst::Raster* urbanRaster, double& urb
   urbanArea = size * onePixelArea;
 }
 
-std::map<std::string, double> te::urban::calculateProximityIndex(te::rst::Raster* urbanRaster, te::rst::Raster* landCoverRaster, te::rst::Raster* slopeRaster, const te::gm::Coord2D& centroidCBD, const te::gm::Coord2D& centroidUrban, double radius, double urbanAreaHA)
+te::urban::UrbanIndexes te::urban::calculateProximityIndex(te::rst::Raster* urbanRaster, te::rst::Raster* landCoverRaster, te::rst::Raster* slopeRaster, const te::gm::Coord2D& centroidCBD, const te::gm::Coord2D& centroidUrban, double radius, double urbanAreaHA)
 {
   double in_EAC = 0.;
   double in_nEAC = 0.;
@@ -181,7 +181,7 @@ std::map<std::string, double> te::urban::calculateProximityIndex(te::rst::Raster
   in_nEAC *= (onePixelArea * onePixelArea) / 10000.;
   double nExchangeIndex = in_nEAC / urbanAreaHA;
 
-  std::map<std::string, double> mapIndexes;
+  UrbanIndexes mapIndexes;
   mapIndexes["proximity.ProximityIndex"] = proximityIndex;
   mapIndexes["proximity.SpinIndex"] = spinIndex;
   mapIndexes["proximity.ExchangeIndex"] = exchangeIndex;
@@ -190,7 +190,7 @@ std::map<std::string, double> te::urban::calculateProximityIndex(te::rst::Raster
   return mapIndexes;
 }
 
-std::map<std::string, double> te::urban::calculateCohesionIndex(te::rst::Raster* urbanRaster, double radius)
+te::urban::UrbanIndexes te::urban::calculateCohesionIndex(te::rst::Raster* urbanRaster, double radius)
 {
   assert(urbanRaster);
 
@@ -200,9 +200,9 @@ std::map<std::string, double> te::urban::calculateCohesionIndex(te::rst::Raster*
   std::vector<te::gm::Coord2D> vecUrbanCoordinates;
   getUrbanCoordinates(urbanRaster, vecUrbanCoordinates);
 
+  std::size_t count = 0;
   double sumDistance = 0.;
   double sumDistanceSquare = 0.;
-  std::size_t totalSamples = 0;
 
   for (std::size_t s = 0; s < numSamples; ++s)
   {
@@ -214,6 +214,11 @@ std::map<std::string, double> te::urban::calculateCohesionIndex(te::rst::Raster*
 
       for (std::size_t j = 0; j < sampleSize; ++j)
       {
+        if (i == j)
+        {
+          continue;
+        }
+
         te::gm::Coord2D c2 = vecSubSet[j];
 
         double distance = TeDistance(c1, c2);
@@ -225,12 +230,13 @@ std::map<std::string, double> te::urban::calculateCohesionIndex(te::rst::Raster*
         
         sumDistance += distance;
         sumDistanceSquare += (distance * distance);
+        ++count;
       }
     }
   }
 
-  double averageDistance = sumDistance / totalSamples;
-  double averageDistanceSquare = sumDistanceSquare / totalSamples;
+  double averageDistance = (sumDistance / count);
+  double averageDistanceSquare = (sumDistanceSquare / count);
 
   double circleInterDistance = radius * 0.9054;
   double cohesionIndex = circleInterDistance / averageDistance;
@@ -238,14 +244,14 @@ std::map<std::string, double> te::urban::calculateCohesionIndex(te::rst::Raster*
   double circleInterDistanceSquare = radius * radius;
   double cohesionSquareIndex = circleInterDistanceSquare / averageDistanceSquare;
 
-  std::map<std::string, double> mapIndexes;
+  UrbanIndexes mapIndexes;
   mapIndexes["cohesion.CohesionIndex"] = cohesionIndex;
   mapIndexes["cohesion.CohesionIndexSquare"] = cohesionSquareIndex;
 
   return mapIndexes;
 }
 
-std::map<std::string, double> te::urban::calculateDepthIndex(te::rst::Raster* urbanRaster, double radius)
+te::urban::UrbanIndexes te::urban::calculateDepthIndex(te::rst::Raster* urbanRaster, double radius)
 {
   //1 - filter the nun-urban pixels and set them to 1. Urban pixels will be set to noDataValue
   std::vector<ReclassifyInfo> vecRemapInfo;
@@ -278,14 +284,14 @@ std::map<std::string, double> te::urban::calculateDepthIndex(te::rst::Raster* ur
   //calculate girth index(shape / circle)
   double girthIndex = max / radius; //girth of a circle is its radius
 
-  std::map<std::string, double> mapIndexes;
+  UrbanIndexes mapIndexes;
   mapIndexes["depth.Depth"] = depthIndex;
   mapIndexes["depth.Girth"] = girthIndex;
 
   return mapIndexes;
 }
 
-std::map<std::string, double> te::urban::calculateIndexes(const IndexesParams& params)
+te::urban::UrbanIndexes te::urban::calculateIndexes(const IndexesParams& params)
 {
   double urbanArea = 0.; //the total built-up area
   te::gm::Coord2D centroidUrban; //the centroid of the built-up area
@@ -328,7 +334,7 @@ std::map<std::string, double> te::urban::calculateIndexes(const IndexesParams& p
       te::rst::Raster* currentSlopeRaster = vecSlopeRasters[i];
       std::string currentThresholdText = vecSlopeThresholdTexts[i];
 
-      std::map<std::string, double> mapIndexes = calculateProximityIndex(params.m_urbanRaster, params.m_landCoverRaster, currentSlopeRaster, params.m_centroidCBD, centroidUrban, radius, urbanAreaHA);
+      UrbanIndexes mapIndexes = calculateProximityIndex(params.m_urbanRaster, params.m_landCoverRaster, currentSlopeRaster, params.m_centroidCBD, centroidUrban, radius, urbanAreaHA);
 
       mapFullIndexes["proximity.ProximityIndex_" + currentThresholdText] = mapIndexes["proximity.ProximityIndex"];;
       mapFullIndexes["proximity.SpinIndex_" + currentThresholdText] = mapIndexes["proximity.SpinIndex"];
@@ -340,14 +346,14 @@ std::map<std::string, double> te::urban::calculateIndexes(const IndexesParams& p
   //here we calculate the cohesion index
   if (params.m_calculateCohesion)
   {
-    std::map<std::string, double> mapIndexes = calculateCohesionIndex(params.m_urbanRaster, radius);
+    UrbanIndexes mapIndexes = calculateCohesionIndex(params.m_urbanRaster, radius);
     mapFullIndexes.insert(mapIndexes.begin(), mapIndexes.end());
   }
 
   //here we calculate the depth index
   if (params.m_calculateDepth)
   {
-    std::map<std::string, double> mapIndexes = calculateDepthIndex(params.m_urbanRaster, radius);
+    UrbanIndexes mapIndexes = calculateDepthIndex(params.m_urbanRaster, radius);
     mapFullIndexes.insert(mapIndexes.begin(), mapIndexes.end());
   }
 

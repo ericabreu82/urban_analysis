@@ -47,9 +47,6 @@ namespace te
 
   namespace urban
   {
-    typedef std::map<std::string, double> UrbanIndexes;
-    typedef std::map<std::string, UrbanIndexes> UrbanSummary;
-
     struct CalculateUrbanIndexesParams
     {
       std::string m_inputFileName;

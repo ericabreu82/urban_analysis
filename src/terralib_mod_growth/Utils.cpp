@@ -1144,12 +1144,14 @@ std::vector<te::gm::Coord2D> te::urban::getRandomCoordSubset(const std::vector<t
 {
   std::vector<te::gm::Coord2D> vecSubset;
 
+  std::size_t totalCandidates = vecUrbanCoords.size();
+
   for (std::size_t i = 0; i < subsetSize; ++i)
   {
     int randValue = rand();
     double factor = (double)randValue / RAND_MAX;
 
-    std::size_t randIndex = (std::size_t)(subsetSize * factor);
+    std::size_t randIndex = (std::size_t)(totalCandidates * factor);
     if (randIndex >= vecUrbanCoords.size())
     {
       break;

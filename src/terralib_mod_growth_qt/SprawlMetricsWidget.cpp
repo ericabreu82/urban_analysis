@@ -23,6 +23,7 @@ TerraLib Team at <terralib-team@terralib.org>.
 \brief This class represents the Sprawl Metrics Widget class.
 */
 
+#include "../terralib_mod_growth/SprawlMetrics.h"
 #include "../terralib_mod_growth/Utils.h"
 #include "SprawlMetricsWidget.h"
 #include "Utils.h"
@@ -230,14 +231,26 @@ void te::urban::qt::SprawlMetricsWidget::execute()
 {
   //check input parameters
 
-
   //add task viewer
   te::qt::widgets::ProgressViewerDialog* dlgViewer = new te::qt::widgets::ProgressViewerDialog(this);
   int dlgViewerId = te::common::ProgressManager::getInstance().addViewer(dlgViewer);
 
+  UrbanSummary urbanSummary;
   try
   {
+    for (int i = 0; i < m_ui->m_imgFilesListWidget->count(); ++i)
+    {
+      std::string inputFileName = m_ui->m_imgFilesListWidget->item(i)->text().toStdString();
 
+      std::auto_ptr<te::rst::Raster> raster = openRaster(inputFileName);
+
+      IndexesParams params;
+      params.m_urbanRaster = raster.get();
+      params.m_calculateProximity = false;
+
+      UrbanIndexes mapIndexes = calculateIndexes(params);
+      urbanSummary[inputFileName] = mapIndexes;
+    }
   }
   catch (const std::exception& e)
   {
@@ -264,6 +277,36 @@ void te::urban::qt::SprawlMetricsWidget::execute()
 
   te::common::ProgressManager::getInstance().removeViewer(dlgViewerId);
   delete dlgViewer;
+
+  //we show the calculated metrics
+  UrbanSummary::iterator itSummary = urbanSummary.begin();
+  while (itSummary != urbanSummary.end())
+  {
+    UrbanIndexes ui = itSummary->second;
+
+    std::string imageName = itSummary->first;
+    double opennes = ui["openness"];
+    double edge = ui["edgeIndex"];
+
+    int newrow = m_ui->m_metricsTableWidget->rowCount();
+    m_ui->m_metricsTableWidget->insertRow(newrow);
+
+    QTableWidgetItem* itemName = new QTableWidgetItem(QString::fromStdString(imageName));
+    itemName->setFlags(Qt::ItemIsEnabled);
+    m_ui->m_metricsTableWidget->setItem(newrow, 0, itemName);
+
+    QTableWidgetItem* itemOpennes = new QTableWidgetItem(QString::number(opennes));
+    itemName->setFlags(Qt::ItemIsEnabled);
+    m_ui->m_metricsTableWidget->setItem(newrow, 1, itemOpennes);
+
+    QTableWidgetItem* itemEdge = new QTableWidgetItem(QString::number(edge));
+    itemName->setFlags(Qt::ItemIsEnabled);
+    m_ui->m_metricsTableWidget->setItem(newrow, 2, itemEdge);
+
+    ++itSummary;
+  }
+
+  m_ui->m_metricsTableWidget->resizeColumnsToContents();
 
   QMessageBox::information(this, tr("Urban Analysis"), tr("The execution finished with success."));
 }
