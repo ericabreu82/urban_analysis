@@ -1499,6 +1499,75 @@ std::auto_ptr<te::rst::Raster> te::urban::calculateEuclideanDistance(te::rst::Ra
 {
   assert(inputRaster);
 
+  unsigned int numRows = inputRaster->getNumberOfRows();
+  unsigned int numColumns = inputRaster->getNumberOfColumns();
+  double inputNoDataValue = inputRaster->getBand(0)->getProperty()->m_noDataValue;
+
+  std::auto_ptr<te::rst::Raster> outputRaster = cloneRasterIntoMem(inputRaster, false, te::dt::DOUBLE_TYPE, std::numeric_limits<double>::max());
+
+  //we will first populate an adaptative kdtree index with the valid values from the input raster. 
+  //It will be used to find the nearest valid pixel from all non valid pixels in the raster
+  typedef te::sam::kdtree::AdaptativeNode<te::gm::Coord2D, std::vector<te::gm::Point>, te::gm::Point> KD_ADAPTATIVE_NODE;
+  typedef te::sam::kdtree::AdaptativeIndex<KD_ADAPTATIVE_NODE> KD_ADAPTATIVE_TREE;
+
+  // Adaptative K-d Tree
+  //typedef te::sam::kdtree::AdaptativeNode<te::gm::Coord2D, std::vector<te::gm::Point>, te::gm::Point> KD_ADAPTATIVE_NODE;
+  //typedef te::sam::kdtree::AdaptativeIndex<KD_ADAPTATIVE_NODE> KD_ADAPTATIVE_TREE;
+
+  std::vector<std::pair<te::gm::Coord2D, te::gm::Point> > dataset;
+  for (std::size_t currentRow = 0; currentRow < numRows; ++currentRow)
+  {
+    for (std::size_t currentColumn = 0; currentColumn < numColumns; ++currentColumn)
+    {
+      //gets the value of the current center pixel
+      double value = 0.;
+      inputRaster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, value);
+
+      //if the value is valid, we set the Euclidean Distance to 0
+      if (value != inputNoDataValue)
+      {
+        te::gm::Coord2D coord = inputRaster->getGrid()->gridToGeo((unsigned int)currentColumn, (unsigned int)currentRow);
+        te::gm::Point point = te::gm::Point(coord.x, coord.y, inputRaster->getSRID());
+
+        dataset.push_back(std::pair<te::gm::Coord2D, te::gm::Point>(coord, point));
+      }
+    }
+  }
+  
+  KD_ADAPTATIVE_TREE adaptativeTree(*inputRaster->getExtent());
+  adaptativeTree.build(dataset);
+
+  for (std::size_t currentRow = 0; currentRow < numRows; ++currentRow)
+  {
+    for (std::size_t currentColumn = 0; currentColumn < numColumns; ++currentColumn)
+    {
+      //if the source is 1, the distance is 0.0. So we can continue
+      double sourceValue = 0.;
+      inputRaster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, sourceValue);
+      if (sourceValue != inputNoDataValue)
+      {
+        outputRaster->setValue(currentColumn, currentRow, 0.0);
+        continue;
+      }
+
+      te::gm::Coord2D currentCoord = outputRaster->getGrid()->gridToGeo((unsigned int)currentColumn, (unsigned int)currentRow);
+
+      std::vector<te::gm::Point> points;
+      points.push_back(te::gm::Point(std::numeric_limits<double>::max(), std::numeric_limits<double>::max()));
+
+      std::vector<double> sqrDists;
+
+      //we search for the nearest source pixel from the current coord
+      adaptativeTree.nearestNeighborSearch(currentCoord, points, sqrDists, 1);
+
+      double outputValue = sqrDists[0];
+      outputRaster->setValue(currentColumn, currentRow, outputValue);
+    }
+  }
+
+  return outputRaster;
+
+  /*
   std::auto_ptr<te::rst::Raster> outputRaster = cloneRasterIntoMem(inputRaster, false, te::dt::DOUBLE_TYPE, std::numeric_limits<double>::max());
   double noDataValue = outputRaster->getBand(0)->getProperty()->m_noDataValue;
 
@@ -1608,6 +1677,7 @@ std::auto_ptr<te::rst::Raster> te::urban::calculateEuclideanDistance(te::rst::Ra
   }
 
   return outputRaster;
+  */
 }
 
 double te::urban::GetConstantPI()

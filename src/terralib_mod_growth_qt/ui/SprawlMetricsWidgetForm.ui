@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>683</width>
+    <width>718</width>
     <height>636</height>
    </rect>
   </property>
@@ -31,11 +31,14 @@
            <layout class="QGridLayout" name="gridLayout_11">
             <item row="0" column="0">
              <widget class="QCheckBox" name="m_proximityCheckBox">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
               <property name="text">
                <string>Proximity</string>
               </property>
               <property name="checked">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
              </widget>
             </item>

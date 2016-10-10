@@ -24,6 +24,7 @@ TerraLib Team at <terralib-team@terralib.org>.
 */
 
 #include "../terralib_mod_growth/SprawlMetrics.h"
+#include "../terralib_mod_growth/UrbanGrowth.h"
 #include "../terralib_mod_growth/Utils.h"
 #include "SprawlMetricsWidget.h"
 #include "Utils.h"
@@ -190,12 +191,17 @@ void te::urban::qt::SprawlMetricsWidget::onExportMetricsInfoToolButton()
 
   for (int i = 0; i < m_ui->m_metricsTableWidget->rowCount(); ++i)
   {
-    //std::string msg = "Image: " + m_ui->m_indexTableWidget->item(i, 0)->text().toStdString();
-    //msg += "\t\t Opennes: " + m_ui->m_indexTableWidget->item(i, 1)->text().toStdString();
-    //msg += "\t\t Edge: " + m_ui->m_indexTableWidget->item(i, 2)->text().toStdString();
-    //msg += "\n";
+    std::string msg;
+    for (int j = 0; j < m_ui->m_metricsTableWidget->columnCount(); ++j)
+    {
+      std::string header = m_ui->m_metricsTableWidget->horizontalHeaderItem(j)->text().toStdString();
+      std::string value = m_ui->m_metricsTableWidget->item(i, j)->text().toStdString();
 
-    //fprintf(indexFile, msg.c_str());
+      msg += header + ": " + value;
+      msg += "\t\t";
+    }
+    msg += "\n";
+    fprintf(indexFile, msg.c_str());
   }
 
   fprintf(indexFile, "-------------------------------------------------------------------");
@@ -229,7 +235,18 @@ void te::urban::qt::SprawlMetricsWidget::onRemoveThresholdToolButtonClicked()
 
 void te::urban::qt::SprawlMetricsWidget::execute()
 {
-  //check input parameters
+  //check input 
+  bool calculateProximityIndex = m_ui->m_proximityCheckBox->isChecked();
+  bool calculateCohesionIndex = m_ui->m_cohesionCheckBox->isChecked();
+  bool calculateDepthIndex = m_ui->m_depthCheckBox->isChecked();
+
+  double radius = 564;
+  InputClassesMap inputClassesMap;
+  inputClassesMap[INPUT_NODATA] = INPUT_NODATA;
+  inputClassesMap[INPUT_WATER] = INPUT_WATER;
+  inputClassesMap[INPUT_URBAN] = INPUT_URBAN;
+  inputClassesMap[INPUT_OTHER] = INPUT_OTHER;
+
 
   //add task viewer
   te::qt::widgets::ProgressViewerDialog* dlgViewer = new te::qt::widgets::ProgressViewerDialog(this);
@@ -240,16 +257,45 @@ void te::urban::qt::SprawlMetricsWidget::execute()
   {
     for (int i = 0; i < m_ui->m_imgFilesListWidget->count(); ++i)
     {
-      std::string inputFileName = m_ui->m_imgFilesListWidget->item(i)->text().toStdString();
+      QString qFileName(m_ui->m_imgFilesListWidget->item(i)->text());
+      QFileInfo qInputFileInfo(qFileName);
+      QString qBaseName = qInputFileInfo.baseName();
 
-      std::auto_ptr<te::rst::Raster> raster = openRaster(inputFileName);
+      std::string fileName = qFileName.toStdString();
+      std::string baseName = qBaseName.toStdString();
+      std::auto_ptr<te::rst::Raster> inputRaster = openRaster(fileName);
 
-      IndexesParams params;
-      params.m_urbanRaster = raster.get();
-      params.m_calculateProximity = false;
+      PrepareRasterParams prepareRasterParams;
+      prepareRasterParams.m_inputRaster = inputRaster.get();
+      prepareRasterParams.m_inputClassesMap = inputClassesMap;
+      prepareRasterParams.m_radius = radius;
+      prepareRasterParams.m_saveIntermediateFiles = false;
 
-      UrbanIndexes mapIndexes = calculateIndexes(params);
-      urbanSummary[inputFileName] = mapIndexes;
+      prepareRaster(&prepareRasterParams);
+
+      //we calculate the indexes for the urbanized area image
+      {
+        IndexesParams params;
+        params.m_urbanRaster = prepareRasterParams.m_result.m_urbanizedAreaRaster.get();
+        params.m_calculateProximity = false;
+        params.m_calculateCohesion = calculateCohesionIndex;
+        params.m_calculateDepth = calculateDepthIndex;
+
+        UrbanIndexes mapIndexes = calculateIndexes(params);
+        urbanSummary[baseName + "_urbanized_area"] = mapIndexes;
+      }
+
+      //and then we calculate the indexes for the urban footprint image
+      {
+        IndexesParams params;
+        params.m_urbanRaster = prepareRasterParams.m_result.m_urbanFootprintRaster.get();
+        params.m_calculateProximity = false;
+        params.m_calculateCohesion = calculateCohesionIndex;
+        params.m_calculateDepth = calculateDepthIndex;
+
+        UrbanIndexes mapIndexes = calculateIndexes(params);
+        urbanSummary[baseName + "_urban_footprint"] = mapIndexes;
+      }
     }
   }
   catch (const std::exception& e)
@@ -279,29 +325,54 @@ void te::urban::qt::SprawlMetricsWidget::execute()
   delete dlgViewer;
 
   //we show the calculated metrics
+  QStringList qStringList;
+  qStringList.append(tr("FileName"));
+  if (calculateProximityIndex)
+  {
+    qStringList.append(tr("Proximity"));
+    qStringList.append(tr("Spin"));
+    qStringList.append(tr("Exchange"));
+    qStringList.append(tr("Net Exchange"));
+  }
+  if (calculateCohesionIndex)
+  {
+    qStringList.append(tr("Cohesion"));
+    qStringList.append(tr("Cohesion Square"));
+  }
+  if (calculateDepthIndex)
+  {
+    qStringList.append(tr("Depth"));
+    qStringList.append(tr("Girth"));
+  }
+
+  m_ui->m_metricsTableWidget->setColumnCount(qStringList.size());
+  m_ui->m_metricsTableWidget->setHorizontalHeaderLabels(qStringList);
+  m_ui->m_metricsTableWidget->setRowCount(0);
+
   UrbanSummary::iterator itSummary = urbanSummary.begin();
   while (itSummary != urbanSummary.end())
   {
-    UrbanIndexes ui = itSummary->second;
+    UrbanIndexes urbanIndexes = itSummary->second;
+    std::string imageBaseName = itSummary->first;
 
-    std::string imageName = itSummary->first;
-    double opennes = ui["openness"];
-    double edge = ui["edgeIndex"];
-
+    //we add a new row to the output table
     int newrow = m_ui->m_metricsTableWidget->rowCount();
-    m_ui->m_metricsTableWidget->insertRow(newrow);
-
-    QTableWidgetItem* itemName = new QTableWidgetItem(QString::fromStdString(imageName));
+    m_ui->m_metricsTableWidget->setRowCount(newrow + 1);
+    QTableWidgetItem* itemName = new QTableWidgetItem(QString::fromStdString(imageBaseName));
     itemName->setFlags(Qt::ItemIsEnabled);
     m_ui->m_metricsTableWidget->setItem(newrow, 0, itemName);
 
-    QTableWidgetItem* itemOpennes = new QTableWidgetItem(QString::number(opennes));
-    itemName->setFlags(Qt::ItemIsEnabled);
-    m_ui->m_metricsTableWidget->setItem(newrow, 1, itemOpennes);
+    int newcolumn = 1;
+    UrbanIndexes::iterator itIndexes = urbanIndexes.begin();
+    while (itIndexes != urbanIndexes.end())
+    {
+      QTableWidgetItem* indexValueItem = new QTableWidgetItem(QString::number(itIndexes->second));
+      indexValueItem->setFlags(Qt::ItemIsEnabled);
+      m_ui->m_metricsTableWidget->setItem(newrow, newcolumn, indexValueItem);
 
-    QTableWidgetItem* itemEdge = new QTableWidgetItem(QString::number(edge));
-    itemName->setFlags(Qt::ItemIsEnabled);
-    m_ui->m_metricsTableWidget->setItem(newrow, 2, itemEdge);
+      ++newcolumn;
+      ++itIndexes;
+    }
 
     ++itSummary;
   }

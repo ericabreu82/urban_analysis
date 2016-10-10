@@ -71,6 +71,7 @@ namespace te
       PrepareRasterParams()
         : m_inputRaster(0)
         , m_radius(0)
+        , m_saveIntermediateFiles(true)
       {}
 
       te::rst::Raster* m_inputRaster;
@@ -79,6 +80,7 @@ namespace te
       std::string m_outputPath;
       std::string m_outputPrefix;
       UrbanRasters m_result;
+      bool m_saveIntermediateFiles;
     };
 
     struct CompareTimePeriodsParams
@@ -102,13 +104,13 @@ namespace te
     TEGROWTHEXPORT void classifyUrbanOpenArea(te::rst::Raster* urbanFootprintRaster, double radius);
 
     //step 4 - this reclassification analyses the entire raster and returns a binary image containing the areas lower than 100 hectares that are completely sorrounded by urban areas
-    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> identifyIsolatedOpenPatches(te::rst::Raster* raster, const std::string& outputPath, const std::string& outputPrefix);
+    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> identifyIsolatedOpenPatches(te::rst::Raster* raster, const std::string& outputPath, const std::string& outputPrefix, bool saveIntermediateFiles);
     
     //step 5 - add isoleted patches to map
     TEGROWTHEXPORT void addIsolatedOpenPatches(te::rst::Raster* urbanRaster, te::rst::Raster* isolatedOpenPatchesRaster);
 
     //steps 4 and 5
-    TEGROWTHEXPORT void classifyIsolatedOpenPatches(te::rst::Raster* raster, const std::string& outputPath, const std::string& outputPrefix);
+    TEGROWTHEXPORT void classifyIsolatedOpenPatches(te::rst::Raster* raster, const std::string& outputPath, const std::string& outputPrefix, bool saveIntermediateFiles);
 
     //the indexes calculation only considers the study area
     TEGROWTHEXPORT void calculateUrbanIndexes(CalculateUrbanIndexesParams* parms);

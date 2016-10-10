@@ -218,7 +218,7 @@ void te::urban::classifyUrbanOpenArea(te::rst::Raster* urbanFootprintRaster, dou
   logInfo("classifyUrbanOpenArea for  " + urbanFootprintRaster->getInfo()["URI"] + " executed in " + boost::lexical_cast<std::string>(timer.getElapsedTimeMinutes()) + " minutes");
 }
 
-std::auto_ptr<te::rst::Raster> te::urban::identifyIsolatedOpenPatches(te::rst::Raster* raster, const std::string& outputPath, const std::string& outputPrefix)
+std::auto_ptr<te::rst::Raster> te::urban::identifyIsolatedOpenPatches(te::rst::Raster* raster, const std::string& outputPath, const std::string& outputPrefix, bool saveIntermediateFiles)
 {
   //This function is used to get all the non-urban clusters that have area lesser than 200 hectare. 
   //This will get all nun-urban clusters that are inside urban clusters
@@ -237,7 +237,10 @@ std::auto_ptr<te::rst::Raster> te::urban::identifyIsolatedOpenPatches(te::rst::R
 
   std::auto_ptr<te::rst::Raster> binaryNonUrbanRaster = reclassify(raster, vecRemapInfo, SET_NEW_NODATA, 0);
   std::string binaryInvertedFilePath = outputPath + "/" + outputPrefix + "_binary_inverted.tif";
-  saveRaster(binaryInvertedFilePath, binaryNonUrbanRaster.get());
+  if (saveIntermediateFiles)
+  {
+    saveRaster(binaryInvertedFilePath, binaryNonUrbanRaster.get());
+  }
 
   //then we vectorize the result
   std::vector<te::gm::Geometry*> vecNonUrbanGeometries;
@@ -248,7 +251,10 @@ std::auto_ptr<te::rst::Raster> te::urban::identifyIsolatedOpenPatches(te::rst::R
   //export
   std::string vectorizedCandidatesFileName = outputPrefix + "_vectorized_candidates";
   std::string vectorizedCandidatesFilePath = outputPath + "/" + outputPrefix + "_vectorized_candidates.shp";
-  saveVector(vectorizedCandidatesFileName, vectorizedCandidatesFilePath, vecFixedNonUrbanGeometries, raster->getSRID());
+  if (saveIntermediateFiles)
+  {
+    saveVector(vectorizedCandidatesFileName, vectorizedCandidatesFilePath, vecFixedNonUrbanGeometries, raster->getSRID());
+  }
 
   te::rst::FillRaster(binaryNonUrbanRaster.get(), 0.);
 
@@ -262,7 +268,11 @@ std::auto_ptr<te::rst::Raster> te::urban::identifyIsolatedOpenPatches(te::rst::R
   {
     std::string vectorizedGapsFileName = outputPrefix + "_gaps";
     std::string vectorizedGapsFilePath = outputPath + "/" + outputPrefix + "_gaps.shp";
-    saveVector(vectorizedGapsFileName, vectorizedGapsFilePath, vecGaps, raster->getSRID());
+
+    if (saveIntermediateFiles)
+    {
+      saveVector(vectorizedGapsFileName, vectorizedGapsFilePath, vecGaps, raster->getSRID());
+    }
   }
 
   std::vector<double> vecClass;
@@ -313,11 +323,11 @@ void te::urban::addIsolatedOpenPatches(te::rst::Raster* urbanRaster, te::rst::Ra
   logInfo("addIsolatedOpenPatches for  " + urbanRaster->getInfo()["URI"] + " executed in " + boost::lexical_cast<std::string>(timer.getElapsedTimeMinutes()) + " minutes");
 }
 
-void te::urban::classifyIsolatedOpenPatches(te::rst::Raster* raster, const std::string& outputPath, const std::string& outputPrefix)
+void te::urban::classifyIsolatedOpenPatches(te::rst::Raster* raster, const std::string& outputPath, const std::string& outputPrefix, bool saveIntermediateFiles)
 {
   Timer timer;
 
-  std::auto_ptr<te::rst::Raster> isolatedOpenPatchesRaster = identifyIsolatedOpenPatches(raster, outputPath, outputPrefix);
+  std::auto_ptr<te::rst::Raster> isolatedOpenPatchesRaster = identifyIsolatedOpenPatches(raster, outputPath, outputPrefix, saveIntermediateFiles);
 
   addIsolatedOpenPatches(raster, isolatedOpenPatchesRaster.get());
 
@@ -438,6 +448,7 @@ void te::urban::prepareRaster(PrepareRasterParams* params)
   double radius = params->m_radius;
   const std::string& outputPath = params->m_outputPath;
   const std::string& outputPrefix = params->m_outputPrefix;
+  bool saveIntermediateFiles = params->m_saveIntermediateFiles;
 
   assert(inputRaster);
 
@@ -462,7 +473,10 @@ void te::urban::prepareRaster(PrepareRasterParams* params)
   classifyUrbanizedArea(&urbanizedParams);
 
   params->m_result.m_urbanizedAreaRaster.reset (urbanizedParams.m_outputRaster.release());
-  saveRaster(urbanizedAreaFileName, params->m_result.m_urbanizedAreaRaster.get());
+  if (saveIntermediateFiles)
+  {
+    saveRaster(urbanizedAreaFileName, params->m_result.m_urbanizedAreaRaster.get());
+  }
 
   //step 2 - classify the urban footprints
   ClassifyParams footprintParams;
@@ -472,22 +486,30 @@ void te::urban::prepareRaster(PrepareRasterParams* params)
   classifyUrbanFootprint(&footprintParams);
 
   params->m_result.m_urbanFootprintRaster.reset(footprintParams.m_outputRaster.release());
-  saveRaster(urbanFootprintsFileName, params->m_result.m_urbanFootprintRaster.get());
+  if (saveIntermediateFiles)
+  {
+    saveRaster(urbanFootprintsFileName, params->m_result.m_urbanFootprintRaster.get());
+  }
   
   //step 3 - classify fringe open areas
   classifyUrbanOpenArea(params->m_result.m_urbanFootprintRaster.get(), 100);
-  saveRaster(urbanFootprintsOpenAreaFileName, params->m_result.m_urbanFootprintRaster.get());
+  if (saveIntermediateFiles)
+  {
+    saveRaster(urbanFootprintsOpenAreaFileName, params->m_result.m_urbanFootprintRaster.get());
+  }
 
   //step 4 and 5- identify isolated patches and classify them into the given raster
-  boost::thread isolatedThread1(&classifyIsolatedOpenPatches, params->m_result.m_urbanizedAreaRaster.get(), outputPath, urbanizedPrefix);
-  boost::thread isolatedThread2(&classifyIsolatedOpenPatches, params->m_result.m_urbanFootprintRaster.get(), outputPath, footprintPrefix);
+  boost::thread isolatedThread1(&classifyIsolatedOpenPatches, params->m_result.m_urbanizedAreaRaster.get(), outputPath, urbanizedPrefix, saveIntermediateFiles);
+  boost::thread isolatedThread2(&classifyIsolatedOpenPatches, params->m_result.m_urbanFootprintRaster.get(), outputPath, footprintPrefix, saveIntermediateFiles);
 
   isolatedThread1.join();
   isolatedThread2.join();
 
-  //classifyIsolatedOpenPatches(params->m_result.m_urbanizedAreaRaster.get(), outputPath, urbanizedPrefix);
-  //classifyIsolatedOpenPatches(params->m_result.m_urbanFootprintRaster.get(), outputPath, footprintPrefix);
-
+  if (saveIntermediateFiles)
+  {
+    saveRaster(urbanizedIsolatedOpenPatchesFileName, params->m_result.m_urbanizedAreaRaster.get());
+    saveRaster(urbanFootprintsIsolatedOpenPatchesFileName, params->m_result.m_urbanFootprintRaster.get());
+  }
   saveRaster(urbanizedIsolatedOpenPatchesFileName, params->m_result.m_urbanizedAreaRaster.get());
   saveRaster(urbanFootprintsIsolatedOpenPatchesFileName, params->m_result.m_urbanFootprintRaster.get());
 }

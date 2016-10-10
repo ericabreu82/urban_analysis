@@ -256,11 +256,12 @@ te::urban::UrbanIndexes te::urban::calculateDepthIndex(te::rst::Raster* urbanRas
   //1 - filter the nun-urban pixels and set them to 1. Urban pixels will be set to noDataValue
   std::vector<ReclassifyInfo> vecRemapInfo;
   vecRemapInfo.push_back(ReclassifyInfo(OUTPUT_RURAL, 1));
-  vecRemapInfo.push_back(ReclassifyInfo(OUTPUT_SUBURBAN_ZONE_OPEN_AREA, OUTPUT_WATER, 1));
+  vecRemapInfo.push_back(ReclassifyInfo(OUTPUT_RURAL_OS, OUTPUT_WATER, 1));
   std::auto_ptr<te::rst::Raster> binaryNonUrbanRaster = reclassify(urbanRaster, vecRemapInfo, SET_NEW_NODATA, 0);
 
   //2 - calculates the euclidean distance between the noDataValues and the valid pixels
   std::auto_ptr<te::rst::Raster> distanceRaster = calculateEuclideanDistance(binaryNonUrbanRaster.get());
+  //saveRaster("D:/temp/miguel_fred/belem/depth.tif", distanceRaster.get());
 
   //3 - clip the region
 
