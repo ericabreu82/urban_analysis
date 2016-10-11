@@ -34,6 +34,7 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include <terralib/common/progress/ProgressManager.h>
 #include <terralib/dataaccess/utils/Utils.h>
 #include <terralib/raster/Band.h>
+#include <terralib/raster/BandProperty.h>
 #include <terralib/qt/widgets/progress/ProgressViewerDialog.h>
 #include <terralib/qt/widgets/utils/ScopedCursor.h>
 #include <terralib/qt/widgets/Utils.h>
@@ -235,6 +236,23 @@ void te::urban::qt::SprawlMetricsWidget::onRemoveThresholdToolButtonClicked()
 
 void te::urban::qt::SprawlMetricsWidget::execute()
 {
+  /*
+  std::string urbanizedAreaFileName = "D:/temp/miguel_fred/belem/belem_t0_urbanized_isolated_open_patches.tif";
+  std::auto_ptr<te::rst::Raster> urbanizedAreaRaster = openRaster(urbanizedAreaFileName);
+
+  std::vector<ReclassifyInfo> vecRemapInfo;
+  vecRemapInfo.push_back(ReclassifyInfo(urbanizedAreaRaster->getBand(0)->getProperty()->m_noDataValue, 1));
+  vecRemapInfo.push_back(ReclassifyInfo(OUTPUT_RURAL, 1));
+  vecRemapInfo.push_back(ReclassifyInfo(OUTPUT_RURAL_OS, OUTPUT_WATER, 1));
+  std::auto_ptr<te::rst::Raster> binaryNonUrbanRaster = reclassify(urbanizedAreaRaster.get(), vecRemapInfo, SET_NEW_NODATA, 0);
+  saveRaster("D:/temp/miguel_fred/belem/binaryNonUrban.tif", binaryNonUrbanRaster.get());
+
+  //2 - calculates the euclidean distance between the noDataValues and the valid pixels
+  std::auto_ptr<te::rst::Raster> distanceRaster = calculateEuclideanDistance(binaryNonUrbanRaster.get());
+  saveRaster("D:/temp/miguel_fred/belem/depth.tif", distanceRaster.get());
+
+  return;*/
+  
   //check input 
   bool calculateProximityIndex = m_ui->m_proximityCheckBox->isChecked();
   bool calculateCohesionIndex = m_ui->m_cohesionCheckBox->isChecked();

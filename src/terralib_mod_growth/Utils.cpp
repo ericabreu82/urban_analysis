@@ -1220,11 +1220,6 @@ std::auto_ptr<te::rst::Raster> te::urban::reclassify(te::rst::Raster* inputRaste
       inputRaster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, oldValue);
 
       //if the value is no data, we do not need to remap
-      if (sourceNoDataValue == oldValue)
-      {
-        outputRaster->setValue((unsigned int)currentColumn, (unsigned int)currentRow, newValue);
-        continue;
-      }
 
       bool isValueMissing = true;
       //here we do the remap. 
@@ -1559,8 +1554,9 @@ std::auto_ptr<te::rst::Raster> te::urban::calculateEuclideanDistance(te::rst::Ra
 
       //we search for the nearest source pixel from the current coord
       adaptativeTree.nearestNeighborSearch(currentCoord, points, sqrDists, 1);
+      te::gm::Coord2D foundCoord(points[0].getX(), points[0].getY());
 
-      double outputValue = sqrDists[0];
+      double outputValue = TeDistance(currentCoord, foundCoord);
       outputRaster->setValue(currentColumn, currentRow, outputValue);
     }
   }
