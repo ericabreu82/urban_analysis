@@ -33,6 +33,7 @@ TerraLib Team at <terralib-team@terralib.org>.
 //Terralib
 #include <terralib/common/progress/ProgressManager.h>
 #include <terralib/dataaccess/utils/Utils.h>
+#include <terralib/geometry/Utils.h>
 #include <terralib/raster/Band.h>
 #include <terralib/raster/BandProperty.h>
 #include <terralib/qt/widgets/progress/ProgressViewerDialog.h>
@@ -260,6 +261,7 @@ void te::urban::qt::SprawlMetricsWidget::execute()
 
   std::auto_ptr<te::rst::Raster> slopeRaster;
   std::auto_ptr<te::gm::Geometry> studyArea;
+  te::gm::Coord2D cbdCentroid;
 
   if (calculateProximityIndex)
   {
@@ -278,6 +280,12 @@ void te::urban::qt::SprawlMetricsWidget::execute()
     QString qSlopeFileName = m_ui->m_slopeLineEdit->text();
     std::string slopeFileName = qSlopeFileName.toStdString();
     slopeRaster = openRaster(slopeFileName);
+
+    QString qCbdFileName = m_ui->m_cbdVecLineEdit->text();
+    std::string cbdFileName = qCbdFileName.toStdString();
+    std::auto_ptr<te::da::DataSet> cbdDataSet = openVector(cbdFileName);
+    std::auto_ptr<te::gm::Geometry> cbdGeometry = dissolveDataSet(cbdDataSet.get());
+    cbdCentroid = te::gm::GetCentroid(cbdGeometry.get());
   }
   if (calculateDepthIndex || calculateProximityIndex)
   {
@@ -299,7 +307,6 @@ void te::urban::qt::SprawlMetricsWidget::execute()
   inputClassesMap[INPUT_WATER] = INPUT_WATER;
   inputClassesMap[INPUT_URBAN] = INPUT_URBAN;
   inputClassesMap[INPUT_OTHER] = INPUT_OTHER;
-
 
   //add task viewer
   te::qt::widgets::ProgressViewerDialog* dlgViewer = new te::qt::widgets::ProgressViewerDialog(this);
@@ -340,6 +347,7 @@ void te::urban::qt::SprawlMetricsWidget::execute()
         params.m_calculateDepth = calculateDepthIndex;
         params.m_slopeRaster = slopeRaster.get();
         params.m_studyArea = studyArea.get();
+        params.m_centroidCBD = cbdCentroid;
 
         UrbanIndexes mapIndexes = calculateIndexes(params);
         urbanSummary[baseName + "_urbanized_area"] = mapIndexes;
@@ -354,6 +362,7 @@ void te::urban::qt::SprawlMetricsWidget::execute()
         params.m_calculateDepth = calculateDepthIndex;
         params.m_slopeRaster = slopeRaster.get();
         params.m_studyArea = studyArea.get();
+        params.m_centroidCBD = cbdCentroid;
 
         UrbanIndexes mapIndexes = calculateIndexes(params);
         urbanSummary[baseName + "_urban_footprint"] = mapIndexes;

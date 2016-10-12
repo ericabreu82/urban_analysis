@@ -32,13 +32,13 @@
             <item row="0" column="0">
              <widget class="QCheckBox" name="m_proximityCheckBox">
               <property name="enabled">
-               <bool>false</bool>
+               <bool>true</bool>
               </property>
               <property name="text">
                <string>Proximity</string>
               </property>
               <property name="checked">
-               <bool>false</bool>
+               <bool>true</bool>
               </property>
              </widget>
             </item>
