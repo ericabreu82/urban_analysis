@@ -258,6 +258,41 @@ void te::urban::qt::SprawlMetricsWidget::execute()
   bool calculateCohesionIndex = m_ui->m_cohesionCheckBox->isChecked();
   bool calculateDepthIndex = m_ui->m_depthCheckBox->isChecked();
 
+  std::auto_ptr<te::rst::Raster> slopeRaster;
+  std::auto_ptr<te::gm::Geometry> studyArea;
+
+  if (calculateProximityIndex)
+  {
+    if (m_ui->m_slopeLineEdit->text().isEmpty())
+    {
+      QMessageBox::information(this, tr("Urban Analysis"), tr("To calculate proximity index, a slope raster must be given."));
+      return;
+    }
+
+    if (m_ui->m_cbdVecLineEdit->text().isEmpty())
+    {
+      QMessageBox::information(this, tr("Urban Analysis"), tr("To calculate proximity index, a CBD vector file must be given."));
+      return;
+    }
+
+    QString qSlopeFileName = m_ui->m_slopeLineEdit->text();
+    std::string slopeFileName = qSlopeFileName.toStdString();
+    slopeRaster = openRaster(slopeFileName);
+  }
+  if (calculateDepthIndex || calculateProximityIndex)
+  {
+    if (m_ui->m_studyAreaVecLineEdit->text().isEmpty())
+    {
+      QMessageBox::information(this, tr("Urban Analysis"), tr("To calculate proximity or cohesion indexes, a study area vector file be given."));
+      return;
+    }
+
+    QString qStudyAreaFileName = m_ui->m_studyAreaVecLineEdit->text();
+    std::string studyAreaFileName = qStudyAreaFileName.toStdString();
+    std::auto_ptr<te::da::DataSet> studyAreaDataSet = openVector(studyAreaFileName);
+    studyArea = dissolveDataSet(studyAreaDataSet.get());
+  }
+
   double radius = 564;
   InputClassesMap inputClassesMap;
   inputClassesMap[INPUT_NODATA] = INPUT_NODATA;
@@ -283,6 +318,11 @@ void te::urban::qt::SprawlMetricsWidget::execute()
       std::string baseName = qBaseName.toStdString();
       std::auto_ptr<te::rst::Raster> inputRaster = openRaster(fileName);
 
+      if (i == 0 && needNormalization(slopeRaster.get(), inputRaster.get()))
+      {
+        slopeRaster = normalizeRaster(slopeRaster.get(), inputRaster.get());
+      }
+
       PrepareRasterParams prepareRasterParams;
       prepareRasterParams.m_inputRaster = inputRaster.get();
       prepareRasterParams.m_inputClassesMap = inputClassesMap;
@@ -298,6 +338,8 @@ void te::urban::qt::SprawlMetricsWidget::execute()
         params.m_calculateProximity = false;
         params.m_calculateCohesion = calculateCohesionIndex;
         params.m_calculateDepth = calculateDepthIndex;
+        params.m_slopeRaster = slopeRaster.get();
+        params.m_studyArea = studyArea.get();
 
         UrbanIndexes mapIndexes = calculateIndexes(params);
         urbanSummary[baseName + "_urbanized_area"] = mapIndexes;
@@ -310,6 +352,8 @@ void te::urban::qt::SprawlMetricsWidget::execute()
         params.m_calculateProximity = false;
         params.m_calculateCohesion = calculateCohesionIndex;
         params.m_calculateDepth = calculateDepthIndex;
+        params.m_slopeRaster = slopeRaster.get();
+        params.m_studyArea = studyArea.get();
 
         UrbanIndexes mapIndexes = calculateIndexes(params);
         urbanSummary[baseName + "_urban_footprint"] = mapIndexes;

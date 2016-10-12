@@ -251,7 +251,7 @@ te::urban::UrbanIndexes te::urban::calculateCohesionIndex(te::rst::Raster* urban
   return mapIndexes;
 }
 
-te::urban::UrbanIndexes te::urban::calculateDepthIndex(te::rst::Raster* urbanRaster, double radius)
+te::urban::UrbanIndexes te::urban::calculateDepthIndex(te::rst::Raster* urbanRaster, te::gm::Geometry* studyArea, double radius)
 {
   //1 - filter the nun-urban pixels and set them to 1. Urban pixels will be set to noDataValue
   std::vector<ReclassifyInfo> vecRemapInfo;
@@ -264,6 +264,7 @@ te::urban::UrbanIndexes te::urban::calculateDepthIndex(te::rst::Raster* urbanRas
   //saveRaster("D:/temp/miguel_fred/belem/depth.tif", distanceRaster.get());
 
   //3 - clip the region
+  distanceRaster = clipRaster(distanceRaster.get(), studyArea);
 
   //4 - we filter all the values that are different from 0. To do this, we change the noDataValue and set it to 0
   distanceRaster->getBand(0)->getProperty()->m_noDataValue = 0.;
@@ -354,7 +355,7 @@ te::urban::UrbanIndexes te::urban::calculateIndexes(const IndexesParams& params)
   //here we calculate the depth index
   if (params.m_calculateDepth)
   {
-    UrbanIndexes mapIndexes = calculateDepthIndex(params.m_urbanRaster, radius);
+    UrbanIndexes mapIndexes = calculateDepthIndex(params.m_urbanRaster, params.m_studyArea, radius);
     mapFullIndexes.insert(mapIndexes.begin(), mapIndexes.end());
   }
 

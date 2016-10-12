@@ -177,7 +177,7 @@ std::auto_ptr<te::rst::Raster> te::urban::openRaster(const std::string& fileName
     throw te::common::Exception("The SRID of the openned raster is invalid. Error in function: openRaster");
   }
 
-  std::auto_ptr<te::rst::Raster> memRaster = cloneRasterIntoMem(rasterPointer.get(), true);
+  std::auto_ptr<te::rst::Raster> memRaster = cloneRasterIntoMem(rasterPointer.get(), true, rasterPointer->getBand(0)->getProperty()->getType());
   return memRaster;
 }
 
@@ -380,6 +380,9 @@ bool te::urban::needNormalization(te::rst::Raster* inputRaster, te::rst::Raster*
   std::size_t numRowsReference = referenceRaster->getNumberOfRows();
   std::size_t numColumnsReference = referenceRaster->getNumberOfColumns();
 
+  int inputSRID = inputRaster->getSRID();
+  int referenceSRID = referenceRaster->getSRID();
+
   bool normalize = false;
 
   //we check if we need to normalize the raster
@@ -393,6 +396,11 @@ bool te::urban::needNormalization(te::rst::Raster* inputRaster, te::rst::Raster*
     normalize = true;
   }
 
+  if (inputSRID != referenceSRID)
+  {
+    normalize = true;
+  }
+
   return normalize;
 }
 
@@ -400,6 +408,9 @@ std::auto_ptr<te::rst::Raster> te::urban::normalizeRaster(te::rst::Raster* input
 {
   assert(inputRaster);
   assert(referenceRaster);
+
+  double m_inputNoData = inputRaster->getBand(0)->getProperty()->m_noDataValue;
+  bool changeSRID = inputRaster->getSRID() != referenceRaster->getSRID();
 
   //we first clone the reference raster metadata. this raster will receive the values from the input raster
   std::auto_ptr<te::rst::Raster> normalizedRaster = cloneRasterIntoMem(referenceRaster, false);
@@ -415,16 +426,27 @@ std::auto_ptr<te::rst::Raster> te::urban::normalizeRaster(te::rst::Raster* input
   {
     for (unsigned int currentColumn = 0; currentColumn < numColumns; ++currentColumn)
     {
-      //we first the the spatial location of the current pixel
+      //we first the the spatial location of the current pixel (reference rater)
       te::gm::Coord2D refCoordGeo = normalizedRaster->getGrid()->gridToGeo((double)currentColumn, (double)currentRow);
 
-      //then we find out its position in the inputRaster
+      //if the SRIDs are different, we must transform the CS
+      if (changeSRID)
+      {
+        te::gm::Point point(refCoordGeo.x, refCoordGeo.y, normalizedRaster->getSRID());
+        point.transform(inputRaster->getSRID());
+
+        refCoordGeo.x = point.getX();
+        refCoordGeo.y = point.getY();
+      }
+
+      //then we find out its position in the inputRaster (source raster)
       te::gm::Coord2D inputCoordGrid = inputRaster->getGrid()->geoToGrid(refCoordGeo.getX(), refCoordGeo.getY());
+
       int inputColumn = te::rst::Round(inputCoordGrid.getX());
       int inputRow = te::rst::Round(inputCoordGrid.getY());
 
       //then we get the value from the input
-      double value = INPUT_NODATA;
+      double value = m_inputNoData;
       if (inputColumn >= 0 && inputColumn < (int)inputNumColumns && inputRow >= 0 && inputRow < (int)inputNumRows)
       {
         inputRaster->getValue((unsigned int)inputColumn, (unsigned int)inputRow, value);
@@ -1272,6 +1294,36 @@ std::auto_ptr<te::rst::Raster> te::urban::reclassify(te::rst::Raster* inputRaste
   return outputRaster;
 }
 
+std::auto_ptr<te::rst::Raster> te::urban::clipRaster(te::rst::Raster* inputRaster, te::gm::Geometry* clipArea)
+{
+  std::auto_ptr<te::rst::Raster> outputRaster = cloneRasterIntoMem(inputRaster, false);
+
+  te::gm::Polygon* polygon = dynamic_cast<te::gm::Polygon*>(clipArea);
+
+  te::rst::PolygonIterator<double> it = te::rst::PolygonIterator<double>::begin(inputRaster, polygon);
+  te::rst::PolygonIterator<double> itend = te::rst::PolygonIterator<double>::end(inputRaster, polygon);
+
+  while (it != itend)
+  {
+    unsigned int currentRow = it.getRow();
+    unsigned int currentColumn = it.getColumn();
+
+    double outputValue = outputRaster->getBand(0)->getProperty()->m_noDataValue;;
+    inputRaster->getValue(currentColumn, currentRow, outputValue);
+
+    te::gm::Coord2D coord = outputRaster->getGrid()->gridToGeo(currentColumn, currentRow);
+    te::gm::Point point(coord.getX(), coord.getY(), polygon->getSRID());
+
+    if (point.intersects(polygon))
+    {
+      outputRaster->setValue(currentColumn, currentRow, (double)outputValue);
+    }
+    ++it;
+  }
+
+  return outputRaster;
+}
+
 std::auto_ptr<te::da::DataSetType> te::urban::createDataSetType(std::string dataSetName, int srid)
 {
   std::auto_ptr<te::da::DataSetType> dsType(new te::da::DataSetType(dataSetName));
@@ -1359,8 +1411,9 @@ std::vector<te::gm::Geometry*> te::urban::fixGeometries(const std::vector<te::gm
 {
   //create slope raster
   std::vector< te::rst::BandProperty* > bandsProperties;
-  te::rst::BandProperty* bandProp = new te::rst::BandProperty(0, te::dt::DOUBLE_TYPE);
-  bandProp->m_noDataValue = -9999;
+  //te::rst::BandProperty* bandProp = new te::rst::BandProperty(0, te::dt::DOUBLE_TYPE);
+  te::rst::BandProperty* bandProp = new te::rst::BandProperty(0, te::dt::UCHAR_TYPE);
+  bandProp->m_noDataValue = -1;
   bandsProperties.push_back(bandProp);
 
   te::rst::Grid* grid = new te::rst::Grid(*(inputRst->getGrid()));
@@ -1368,13 +1421,7 @@ std::vector<te::gm::Geometry*> te::urban::fixGeometries(const std::vector<te::gm
   te::rst::Raster* outRaster = te::rst::RasterFactory::make(rasterDsType, grid, bandsProperties, rasterInfo);
 
   //initialize
-  for (unsigned int i = 0; i < outRaster->getNumberOfRows(); ++i)
-  {
-    for (unsigned int j = 0; j < outRaster->getNumberOfColumns(); ++j)
-    {
-      outRaster->setValue(j, i, -9999, 0);
-    }
-  }
+  te::rst::FillRaster(outRaster, bandProp->m_noDataValue);
 
   unsigned int nlines = outRaster->getNumberOfRows();
   unsigned int ncolumns = outRaster->getNumberOfColumns();
@@ -1412,17 +1459,23 @@ std::vector<te::gm::Geometry*> te::urban::fixGeometries(const std::vector<te::gm
   double rx = resx;
   double ry = resy;
 
+  std::cout << "Resolution[" << rx << " x " << ry << "]" << std::endl;
+  std::cout << "Dummy[" << rasterDummy << std::endl;
+
+  double radianToDegrees = 180. / GetConstantPI();
+
   //calculate slope
-  for (unsigned int line = 1; line < nlines - 1; line++)
+  for (unsigned int line = 1; line < nlines - 1; ++line)
   {
-    for (unsigned int column = 1; column < ncolumns - 1; column++)
+    for (unsigned int column = 1; column < ncolumns - 1; ++column)
     {
-      double value = rasterDummy;
+      double centerPixelValue = rasterDummy;
 
-      inputRst->getValue(column, line, value, 0);
+      inputRst->getValue(column, line, centerPixelValue, 0);
 
-      if (value != rasterDummy)
+      if (centerPixelValue != rasterDummy)
       {
+        double value = centerPixelValue;
         double z1 = 0, z2 = 0, z3 = 0, z4 = 0, z6 = 0, z7 = 0, z8 = 0, z9 = 0;
 
         inputRst->getValue(column - 1, line - 1, value, 0);
@@ -1430,11 +1483,19 @@ std::vector<te::gm::Geometry*> te::urban::fixGeometries(const std::vector<te::gm
         {
           z1 = value;
         }
+        else
+        {
+          z1 = centerPixelValue;
+        }
 
         inputRst->getValue(column, line - 1, value, 0);
         if (value != rasterDummy)
         {
           z2 = value;
+        }
+        else
+        {
+          z2 = centerPixelValue;
         }
 
         inputRst->getValue(column + 1, line - 1, value, 0);
@@ -1442,11 +1503,19 @@ std::vector<te::gm::Geometry*> te::urban::fixGeometries(const std::vector<te::gm
         {
           z3 = value;
         }
+        else
+        {
+          z3 = centerPixelValue;
+        }
 
         inputRst->getValue(column - 1, line, value, 0);
         if (value != rasterDummy)
         {
           z4 = value;
+        }
+        else
+        {
+          z4 = centerPixelValue;
         }
 
         inputRst->getValue(column + 1, line, value, 0);
@@ -1454,11 +1523,19 @@ std::vector<te::gm::Geometry*> te::urban::fixGeometries(const std::vector<te::gm
         {
           z6 = value;
         }
+        else
+        {
+          z6 = centerPixelValue;
+        }
 
         inputRst->getValue(column - 1, line + 1, value, 0);
         if (value != rasterDummy)
         {
           z7 = value;
+        }
+        else
+        {
+          z7 = centerPixelValue;
         }
 
         inputRst->getValue(column, line + 1, value, 0);
@@ -1466,18 +1543,28 @@ std::vector<te::gm::Geometry*> te::urban::fixGeometries(const std::vector<te::gm
         {
           z8 = value;
         }
+        else
+        {
+          z8 = centerPixelValue;
+        }
 
         inputRst->getValue(column + 1, line + 1, value, 0);
         if (value != rasterDummy)
         {
           z9 = value;
         }
+        else
+        {
+          z9 = centerPixelValue;
+        }
 
-        double d = (z3 + z6 + z9 - z1 - z4 - z7) / (6 * rx);
+        double d = (z3 + (2*z6) + z9 - z1 - (2*z4) - z7) / (8 * rx);
+        double e = (z7 + (2 * z8) + z9 - z1 - (2 * z2) - z3) / (8 * ry);
 
-        double e = (z1 + z2 + z3 - z7 - z8 - z9) / (6 * ry);
+        double riseRun = std::sqrt(d*d + e*e);
+        double slopeAngle = std::atan(riseRun) * radianToDegrees;
 
-        outRaster->setValue(column, line, (float)sqrt(d*d + e*e), 0);
+        outRaster->setValue(column, line, te::rst::Round(slopeAngle), 0);
       }
     }
 
@@ -1541,7 +1628,7 @@ std::auto_ptr<te::rst::Raster> te::urban::calculateEuclideanDistance(te::rst::Ra
       inputRaster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, sourceValue);
       if (sourceValue != inputNoDataValue)
       {
-        outputRaster->setValue(currentColumn, currentRow, 0.0);
+        outputRaster->setValue((unsigned int)currentColumn, (unsigned int)currentRow, 0.0);
         continue;
       }
 
@@ -1557,7 +1644,7 @@ std::auto_ptr<te::rst::Raster> te::urban::calculateEuclideanDistance(te::rst::Ra
       te::gm::Coord2D foundCoord(points[0].getX(), points[0].getY());
 
       double outputValue = TeDistance(currentCoord, foundCoord);
-      outputRaster->setValue(currentColumn, currentRow, outputValue);
+      outputRaster->setValue((unsigned int)currentColumn, (unsigned int)currentRow, outputValue);
     }
   }
 

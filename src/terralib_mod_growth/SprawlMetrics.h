@@ -78,7 +78,7 @@ namespace te
     TEGROWTHEXPORT UrbanIndexes calculateCohesionIndex(te::rst::Raster* urbanRaster, double radius);
 
     //calculates the depth and the girth indexes
-    TEGROWTHEXPORT UrbanIndexes calculateDepthIndex(te::rst::Raster* urbanRaster, double radius);
+    TEGROWTHEXPORT UrbanIndexes calculateDepthIndex(te::rst::Raster* urbanRaster, te::gm::Geometry* studyArea, double radius);
 
     //calculates the depth and the girth indexes
     TEGROWTHEXPORT UrbanIndexes calculateIndexes(const IndexesParams& params);

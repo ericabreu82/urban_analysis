@@ -233,6 +233,8 @@ namespace te
 
     TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> reclassify(te::rst::Raster* inputRaster, const std::vector<ReclassifyInfo>& vecMap, ReclassifyMissingValuesPolicy missingValuesPolicy, double noDataValue = 0.);
 
+    TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> clipRaster(te::rst::Raster* inputRaster, te::gm::Geometry* clipArea);
+
     /*! Function used to create the output dataset type */
     TEGROWTHEXPORT std::auto_ptr<te::da::DataSetType> createDataSetType(std::string dataSetName, int srid);
 
