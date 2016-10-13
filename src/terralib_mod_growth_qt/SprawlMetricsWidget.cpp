@@ -287,6 +287,7 @@ void te::urban::qt::SprawlMetricsWidget::execute()
     std::auto_ptr<te::gm::Geometry> cbdGeometry = dissolveDataSet(cbdDataSet.get());
 
     te::gm::Coord2D centroidCoord = te::gm::GetCentroid(cbdGeometry.get());
+    cbdCentroid = te::gm::Point(centroidCoord.x, centroidCoord.y, cbdGeometry->getSRID());
   }
   if (calculateDepthIndex || calculateProximityIndex)
   {
