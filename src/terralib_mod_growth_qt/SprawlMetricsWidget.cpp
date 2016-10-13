@@ -261,7 +261,7 @@ void te::urban::qt::SprawlMetricsWidget::execute()
 
   std::auto_ptr<te::rst::Raster> slopeRaster;
   std::auto_ptr<te::gm::Geometry> studyArea;
-  te::gm::Coord2D cbdCentroid;
+  te::gm::Point cbdCentroid;
 
   if (calculateProximityIndex)
   {
@@ -285,7 +285,8 @@ void te::urban::qt::SprawlMetricsWidget::execute()
     std::string cbdFileName = qCbdFileName.toStdString();
     std::auto_ptr<te::da::DataSet> cbdDataSet = openVector(cbdFileName);
     std::auto_ptr<te::gm::Geometry> cbdGeometry = dissolveDataSet(cbdDataSet.get());
-    cbdCentroid = te::gm::GetCentroid(cbdGeometry.get());
+
+    te::gm::Coord2D centroidCoord = te::gm::GetCentroid(cbdGeometry.get());
   }
   if (calculateDepthIndex || calculateProximityIndex)
   {
@@ -317,21 +318,21 @@ void te::urban::qt::SprawlMetricsWidget::execute()
   {
     for (int i = 0; i < m_ui->m_imgFilesListWidget->count(); ++i)
     {
-      QString qFileName(m_ui->m_imgFilesListWidget->item(i)->text());
-      QFileInfo qInputFileInfo(qFileName);
-      QString qBaseName = qInputFileInfo.baseName();
+      QString qLandCoverFileName(m_ui->m_imgFilesListWidget->item(i)->text());
+      QFileInfo qLandCoverFileInfo(qLandCoverFileName);
+      QString qBaseName = qLandCoverFileInfo.baseName();
 
-      std::string fileName = qFileName.toStdString();
+      std::string landCoverFileName = qLandCoverFileName.toStdString();
       std::string baseName = qBaseName.toStdString();
-      std::auto_ptr<te::rst::Raster> inputRaster = openRaster(fileName);
+      std::auto_ptr<te::rst::Raster> landCoverRaster = openRaster(landCoverFileName);
 
-      if (i == 0 && needNormalization(slopeRaster.get(), inputRaster.get()))
+      if (i == 0 && needNormalization(slopeRaster.get(), landCoverRaster.get()))
       {
-        slopeRaster = normalizeRaster(slopeRaster.get(), inputRaster.get());
+        slopeRaster = normalizeRaster(slopeRaster.get(), landCoverRaster.get());
       }
 
       PrepareRasterParams prepareRasterParams;
-      prepareRasterParams.m_inputRaster = inputRaster.get();
+      prepareRasterParams.m_inputRaster = landCoverRaster.get();
       prepareRasterParams.m_inputClassesMap = inputClassesMap;
       prepareRasterParams.m_radius = radius;
       prepareRasterParams.m_saveIntermediateFiles = false;
@@ -347,6 +348,7 @@ void te::urban::qt::SprawlMetricsWidget::execute()
         params.m_calculateDepth = calculateDepthIndex;
         params.m_slopeRaster = slopeRaster.get();
         params.m_studyArea = studyArea.get();
+        params.m_landCoverRaster = landCoverRaster.get();
         params.m_centroidCBD = cbdCentroid;
 
         UrbanIndexes mapIndexes = calculateIndexes(params);
@@ -362,6 +364,7 @@ void te::urban::qt::SprawlMetricsWidget::execute()
         params.m_calculateDepth = calculateDepthIndex;
         params.m_slopeRaster = slopeRaster.get();
         params.m_studyArea = studyArea.get();
+        params.m_landCoverRaster = landCoverRaster.get();
         params.m_centroidCBD = cbdCentroid;
 
         UrbanIndexes mapIndexes = calculateIndexes(params);

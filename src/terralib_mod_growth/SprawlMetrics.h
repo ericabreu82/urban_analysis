@@ -29,7 +29,7 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include "Config.h"
 #include "Utils.h"
 
-#include <terralib/geometry/Coord2D.h>
+#include <terralib/geometry/Point.h>
 
 #include <memory>
 #include <set>
@@ -53,7 +53,7 @@ namespace te
     struct IndexesParams
     {
       te::rst::Raster* m_urbanRaster; //urban classified raster
-      te::gm::Coord2D m_centroidCBD; //the centroid CBD
+      te::gm::Point m_centroidCBD; //the centroid CBD
       te::gm::Geometry* m_studyArea; //study area
       te::rst::Raster* m_landCoverRaster; //land cover raster
       te::rst::Raster* m_slopeRaster;//slope raster

@@ -309,6 +309,15 @@ te::urban::UrbanIndexes te::urban::calculateIndexes(const IndexesParams& params)
   //here we calculate the proximity index
   if (params.m_calculateProximity)
   {
+    te::gm::Point centroidCBD = params.m_centroidCBD;
+    if (params.m_urbanRaster->getSRID() != centroidCBD.getSRID())
+    {
+      centroidCBD.transform(params.m_urbanRaster->getSRID());
+    }
+
+    te::gm::Coord2D coordCentroidCBD(centroidCBD.getX(), centroidCBD.getY());
+
+
     //we calculate the slopes with a threshold of 15% and 30%
     double noDataValue = -1;
 
@@ -336,7 +345,7 @@ te::urban::UrbanIndexes te::urban::calculateIndexes(const IndexesParams& params)
       te::rst::Raster* currentSlopeRaster = vecSlopeRasters[i];
       std::string currentThresholdText = vecSlopeThresholdTexts[i];
 
-      UrbanIndexes mapIndexes = calculateProximityIndex(params.m_urbanRaster, params.m_landCoverRaster, currentSlopeRaster, params.m_centroidCBD, centroidUrban, radius, urbanAreaHA);
+      UrbanIndexes mapIndexes = calculateProximityIndex(params.m_urbanRaster, params.m_landCoverRaster, currentSlopeRaster, coordCentroidCBD, centroidUrban, radius, urbanAreaHA);
 
       mapFullIndexes["proximity.ProximityIndex_" + currentThresholdText] = mapIndexes["proximity.ProximityIndex"];;
       mapFullIndexes["proximity.SpinIndex_" + currentThresholdText] = mapIndexes["proximity.SpinIndex"];
