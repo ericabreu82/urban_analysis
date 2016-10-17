@@ -135,8 +135,15 @@ te::urban::UrbanIndexes te::urban::calculateProximityIndex(te::rst::Raster* urba
 
   //net exchange index
   std::set<double> fullDistanceListSorted;
-  fullDistanceListSorted.insert(urbanAreaDistanceVec.begin(), urbanAreaDistanceVec.end());
-  fullDistanceListSorted.insert(nonUrbanAreaDistanceVec.begin(), nonUrbanAreaDistanceVec.end());
+  for(std::size_t i = 0; i < urbanAreaDistanceVec.size(); ++i)
+  {
+    fullDistanceListSorted.insert(urbanAreaDistanceVec[i]);
+  }
+
+  for (std::size_t i = 0; i < nonUrbanAreaDistanceVec.size(); ++i)
+  {
+    fullDistanceListSorted.insert(nonUrbanAreaDistanceVec[i]);
+  }
 
   int areaPix = 0;
   double referenceDistance = 0.;
@@ -310,13 +317,7 @@ te::urban::UrbanIndexes te::urban::calculateIndexes(const IndexesParams& params)
   if (params.m_calculateProximity)
   {
     te::gm::Point centroidCBD = params.m_centroidCBD;
-    if (params.m_urbanRaster->getSRID() != centroidCBD.getSRID())
-    {
-      centroidCBD.transform(params.m_urbanRaster->getSRID());
-    }
-
     te::gm::Coord2D coordCentroidCBD(centroidCBD.getX(), centroidCBD.getY());
-
 
     //we calculate the slopes with a threshold of 15% and 30%
     double noDataValue = -1;
@@ -327,8 +328,8 @@ te::urban::UrbanIndexes te::urban::calculateIndexes(const IndexesParams& params)
     std::auto_ptr<te::rst::Raster> slopeRaster15 = reclassify(params.m_slopeRaster, vecReclassify15, SET_NEW_NODATA, 255);
 
     std::vector<ReclassifyInfo> vecReclassify30;
-    vecReclassify15.push_back(ReclassifyInfo(0, 30, 0));
-    vecReclassify15.push_back(ReclassifyInfo(30, std::numeric_limits<double>::max(), 1));
+    vecReclassify30.push_back(ReclassifyInfo(0, 30, 0));
+    vecReclassify30.push_back(ReclassifyInfo(30, std::numeric_limits<double>::max(), 1));
     std::auto_ptr<te::rst::Raster> slopeRaster30 = reclassify(params.m_slopeRaster, vecReclassify30, SET_NEW_NODATA, 255);
 
     std::vector<te::rst::Raster*> vecSlopeRasters;

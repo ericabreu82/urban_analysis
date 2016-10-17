@@ -230,7 +230,11 @@ std::auto_ptr<te::gm::Geometry> te::urban::dissolveDataSet(te::da::DataSet* data
   while (dataSet->moveNext())
   {
     std::auto_ptr<te::gm::Geometry> geometryPtr = dataSet->getGeometry(geometryIndex);
-    vecGeometries.push_back(geometryPtr.release());
+
+    std::vector<te::gm::Geometry*> vecSingleGeometry;
+    te::gm::Multi2Single(geometryPtr.release(), vecSingleGeometry);
+
+    vecGeometries.insert(vecGeometries.begin(), vecSingleGeometry.begin(), vecSingleGeometry.end());
   }
 
   if (vecGeometries.empty())
@@ -421,6 +425,10 @@ std::auto_ptr<te::rst::Raster> te::urban::normalizeRaster(te::rst::Raster* input
   unsigned int inputNumRows = inputRaster->getNumberOfRows();
   unsigned int inputNumColumns = inputRaster->getNumberOfColumns();
 
+  te::common::TaskProgress task("Normalizing Raster");
+  task.setTotalSteps((int)(numRows * numColumns));
+  task.useTimer(true);
+
   //then we normalize the input raster by copying its values to the normalized raster
   for (unsigned int currentRow = 0; currentRow < numRows; ++currentRow)
   {
@@ -454,6 +462,8 @@ std::auto_ptr<te::rst::Raster> te::urban::normalizeRaster(te::rst::Raster* input
 
       //finally we set value in the normalized raster
       normalizedRaster->setValue(currentColumn, currentRow, value);
+
+      task.pulse();
     }
   }
 

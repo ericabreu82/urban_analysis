@@ -237,23 +237,12 @@ void te::urban::qt::SprawlMetricsWidget::onRemoveThresholdToolButtonClicked()
 
 void te::urban::qt::SprawlMetricsWidget::execute()
 {
-  /*
-  std::string urbanizedAreaFileName = "D:/temp/miguel_fred/belem/belem_t0_urbanized_isolated_open_patches.tif";
-  std::auto_ptr<te::rst::Raster> urbanizedAreaRaster = openRaster(urbanizedAreaFileName);
+  //temporary initialization
+  m_ui->m_imgFilesListWidget->addItem("D:/temp/miguel_fred/sao_paulo/entrada/Class_SP_95_FIM__ready.tif");
+  m_ui->m_slopeLineEdit->setText("D:/temp/miguel_fred/sao_paulo/srtm/mosaico_sp_slope_rounded.tif");
+  m_ui->m_cbdVecLineEdit->setText("D:/temp/miguel_fred/sao_paulo/entrada/area_estudo_sp.shp");
+  m_ui->m_studyAreaVecLineEdit->setText("D:/temp/miguel_fred/sao_paulo/entrada/area_estudo_sp.shp");
 
-  std::vector<ReclassifyInfo> vecRemapInfo;
-  vecRemapInfo.push_back(ReclassifyInfo(urbanizedAreaRaster->getBand(0)->getProperty()->m_noDataValue, 1));
-  vecRemapInfo.push_back(ReclassifyInfo(OUTPUT_RURAL, 1));
-  vecRemapInfo.push_back(ReclassifyInfo(OUTPUT_RURAL_OS, OUTPUT_WATER, 1));
-  std::auto_ptr<te::rst::Raster> binaryNonUrbanRaster = reclassify(urbanizedAreaRaster.get(), vecRemapInfo, SET_NEW_NODATA, 0);
-  saveRaster("D:/temp/miguel_fred/belem/binaryNonUrban.tif", binaryNonUrbanRaster.get());
-
-  //2 - calculates the euclidean distance between the noDataValues and the valid pixels
-  std::auto_ptr<te::rst::Raster> distanceRaster = calculateEuclideanDistance(binaryNonUrbanRaster.get());
-  saveRaster("D:/temp/miguel_fred/belem/depth.tif", distanceRaster.get());
-
-  return;*/
-  
   //check input 
   bool calculateProximityIndex = m_ui->m_proximityCheckBox->isChecked();
   bool calculateCohesionIndex = m_ui->m_cohesionCheckBox->isChecked();
@@ -327,9 +316,20 @@ void te::urban::qt::SprawlMetricsWidget::execute()
       std::string baseName = qBaseName.toStdString();
       std::auto_ptr<te::rst::Raster> landCoverRaster = openRaster(landCoverFileName);
 
-      if (i == 0 && needNormalization(slopeRaster.get(), landCoverRaster.get()))
+      if (i == 0)
       {
-        slopeRaster = normalizeRaster(slopeRaster.get(), landCoverRaster.get());
+        if (needNormalization(slopeRaster.get(), landCoverRaster.get()))
+        {
+          slopeRaster = normalizeRaster(slopeRaster.get(), landCoverRaster.get());
+        }
+        if (cbdCentroid.getSRID() != landCoverRaster->getSRID())
+        {
+          cbdCentroid.transform(landCoverRaster->getSRID());
+        }
+        if (studyArea->getSRID() != landCoverRaster->getSRID())
+        {
+          studyArea->transform(landCoverRaster->getSRID());
+        }
       }
 
       PrepareRasterParams prepareRasterParams;
@@ -344,7 +344,6 @@ void te::urban::qt::SprawlMetricsWidget::execute()
       {
         IndexesParams params;
         params.m_urbanRaster = prepareRasterParams.m_result.m_urbanizedAreaRaster.get();
-        params.m_calculateProximity = false;
         params.m_calculateCohesion = calculateCohesionIndex;
         params.m_calculateDepth = calculateDepthIndex;
         params.m_slopeRaster = slopeRaster.get();
@@ -360,7 +359,6 @@ void te::urban::qt::SprawlMetricsWidget::execute()
       {
         IndexesParams params;
         params.m_urbanRaster = prepareRasterParams.m_result.m_urbanFootprintRaster.get();
-        params.m_calculateProximity = false;
         params.m_calculateCohesion = calculateCohesionIndex;
         params.m_calculateDepth = calculateDepthIndex;
         params.m_slopeRaster = slopeRaster.get();
