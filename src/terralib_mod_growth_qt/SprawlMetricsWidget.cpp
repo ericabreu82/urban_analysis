@@ -57,6 +57,8 @@ te::urban::qt::SprawlMetricsWidget::SprawlMetricsWidget(bool startAsPlugin, QWid
   // add controls
   m_ui->setupUi(this);
 
+  m_ui->m_reclassRadiusLineEdit->setValidator(new QDoubleValidator(this));
+
   if (m_startAsPlugin)
   {
     m_ui->m_addImageToolButton->setIcon(QIcon::fromTheme("list-add"));
@@ -246,6 +248,22 @@ void te::urban::qt::SprawlMetricsWidget::execute()
   m_ui->m_studyAreaVecLineEdit->setText("D:/temp/miguel_fred/sao_paulo/entrada/area_estudo_sp.shp");
   */
   std::vector< std::pair<int, int> > vecSlopeThresholds;
+
+  //get radius value
+  if (m_ui->m_reclassRadiusLineEdit->text().isEmpty() == true)
+  {
+    QMessageBox::warning(this, tr("Urban Analysis"), tr("Radius value not defined."));
+    return;
+  }
+
+  bool converted = false;
+  double radius = m_ui->m_reclassRadiusLineEdit->text().toDouble(&converted);
+
+  if (converted == false)
+  {
+    QMessageBox::warning(this, tr("Urban Analysis"), tr("Invalid radius value."));
+    return;
+  }
  
   //check input 
   bool calculateProximityIndex = m_ui->m_proximityCheckBox->isChecked();
@@ -315,7 +333,6 @@ void te::urban::qt::SprawlMetricsWidget::execute()
     studyArea = dissolveDataSet(studyAreaDataSet.get());
   }
 
-  double radius = 564;
   InputClassesMap inputClassesMap;
   inputClassesMap[INPUT_NODATA] = INPUT_NODATA;
   inputClassesMap[INPUT_WATER] = INPUT_WATER;

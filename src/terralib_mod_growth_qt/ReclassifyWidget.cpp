@@ -264,7 +264,7 @@ void te::urban::qt::ReclassifyWidget::execute()
 
   if (m_ui->m_reclassRadiusLineEdit->text().isEmpty() == true)
   {
-    QMessageBox::warning(this, tr("Urban Analysis"), tr("Select input vector data."));
+    QMessageBox::warning(this, tr("Urban Analysis"), tr("Radius value not defined."));
     return;
   }
 
