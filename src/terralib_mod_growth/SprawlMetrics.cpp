@@ -334,7 +334,7 @@ te::urban::UrbanIndexes te::urban::calculateIndexes(const IndexesParams& params)
 
       std::auto_ptr<te::rst::Raster> slopeRaster = reclassify(params.m_slopeRaster, vecReclassify, SET_NEW_NODATA, 255);
       std::string strStart = boost::lexical_cast<std::string>(vecSlopeThresholds[i].first);
-      std::string strEnd = boost::lexical_cast<std::string>(vecSlopeThresholds[i].first);
+      std::string strEnd = boost::lexical_cast<std::string>(vecSlopeThresholds[i].second);
 
       std::string thresholdText = "(" + strStart + "% - " + strEnd + "%)";
 
