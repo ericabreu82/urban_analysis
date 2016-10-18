@@ -1324,10 +1324,7 @@ std::auto_ptr<te::rst::Raster> te::urban::clipRaster(te::rst::Raster* inputRaste
     te::gm::Coord2D coord = outputRaster->getGrid()->gridToGeo(currentColumn, currentRow);
     te::gm::Point point(coord.getX(), coord.getY(), polygon->getSRID());
 
-    if (point.intersects(polygon))
-    {
-      outputRaster->setValue(currentColumn, currentRow, (double)outputValue);
-    }
+    outputRaster->setValue(currentColumn, currentRow, (double)outputValue);
     ++it;
   }
 
@@ -1625,6 +1622,10 @@ std::auto_ptr<te::rst::Raster> te::urban::calculateEuclideanDistance(te::rst::Ra
       }
     }
   }
+
+  te::common::TaskProgress task("Calculating euclidean distance");
+  task.setTotalSteps((int)(numRows * numColumns));
+  task.useTimer(true);
   
   KD_ADAPTATIVE_TREE adaptativeTree(*inputRaster->getExtent());
   adaptativeTree.build(dataset);
@@ -1633,6 +1634,8 @@ std::auto_ptr<te::rst::Raster> te::urban::calculateEuclideanDistance(te::rst::Ra
   {
     for (std::size_t currentColumn = 0; currentColumn < numColumns; ++currentColumn)
     {
+      //task.pulse();
+
       //if the source is 1, the distance is 0.0. So we can continue
       double sourceValue = 0.;
       inputRaster->getValue((unsigned int)currentColumn, (unsigned int)currentRow, sourceValue);
