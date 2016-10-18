@@ -57,6 +57,7 @@ namespace te
       te::gm::Geometry* m_studyArea; //study area
       te::rst::Raster* m_landCoverRaster; //land cover raster
       te::rst::Raster* m_slopeRaster;//slope raster
+      std::vector< std::pair<int, int> > m_vecSlopeThresholds; //a vector containing the threshold range <threshold init, threshold end>
       bool m_calculateProximity;
       bool m_calculateCohesion;
       bool m_calculateDepth;

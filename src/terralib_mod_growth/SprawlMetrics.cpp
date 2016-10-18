@@ -42,6 +42,9 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include <terralib/raster/RasterSummaryManager.h>
 #include <terralib/raster/Utils.h>
 
+// Boost
+#include <boost/lexical_cast.hpp>
+
 void te::urban::calculateUrbanCentroid(te::rst::Raster* urbanRaster, double& urbanArea, te::gm::Coord2D& centroid)
 {
   assert(urbanRaster);
@@ -316,42 +319,31 @@ te::urban::UrbanIndexes te::urban::calculateIndexes(const IndexesParams& params)
   //here we calculate the proximity index
   if (params.m_calculateProximity)
   {
+    std::vector< std::pair<int, int> > vecSlopeThresholds = params.m_vecSlopeThresholds;
     te::gm::Point centroidCBD = params.m_centroidCBD;
     te::gm::Coord2D coordCentroidCBD(centroidCBD.getX(), centroidCBD.getY());
 
     //we calculate the slopes with a threshold of 15% and 30%
     double noDataValue = -1;
-
-    std::vector<ReclassifyInfo> vecReclassify15;
-    vecReclassify15.push_back(ReclassifyInfo(0, 15, 0));
-    vecReclassify15.push_back(ReclassifyInfo(15, std::numeric_limits<double>::max(), 1));
-    std::auto_ptr<te::rst::Raster> slopeRaster15 = reclassify(params.m_slopeRaster, vecReclassify15, SET_NEW_NODATA, 255);
-
-    std::vector<ReclassifyInfo> vecReclassify30;
-    vecReclassify30.push_back(ReclassifyInfo(0, 30, 0));
-    vecReclassify30.push_back(ReclassifyInfo(30, std::numeric_limits<double>::max(), 1));
-    std::auto_ptr<te::rst::Raster> slopeRaster30 = reclassify(params.m_slopeRaster, vecReclassify30, SET_NEW_NODATA, 255);
-
-    std::vector<te::rst::Raster*> vecSlopeRasters;
-    std::vector<std::string> vecSlopeThresholdTexts;
-
-    vecSlopeRasters.push_back(slopeRaster15.get());
-    vecSlopeThresholdTexts.push_back("15%");
-
-    vecSlopeRasters.push_back(slopeRaster30.get());
-    vecSlopeThresholdTexts.push_back("30%");
-
-    for(std::size_t i = 0; i < vecSlopeRasters.size(); ++i)
+    
+    for(std::size_t i = 0; i < vecSlopeThresholds.size(); ++i)
     {
-      te::rst::Raster* currentSlopeRaster = vecSlopeRasters[i];
-      std::string currentThresholdText = vecSlopeThresholdTexts[i];
+      std::vector<ReclassifyInfo> vecReclassify;
+      vecReclassify.push_back(ReclassifyInfo(vecSlopeThresholds[i].first, vecSlopeThresholds[i].second, 0));
+      vecReclassify.push_back(ReclassifyInfo(vecSlopeThresholds[i].second, std::numeric_limits<double>::max(), 1));
 
-      UrbanIndexes mapIndexes = calculateProximityIndex(params.m_urbanRaster, params.m_landCoverRaster, currentSlopeRaster, coordCentroidCBD, centroidUrban, radius, urbanAreaHA);
+      std::auto_ptr<te::rst::Raster> slopeRaster = reclassify(params.m_slopeRaster, vecReclassify, SET_NEW_NODATA, 255);
+      std::string strStart = boost::lexical_cast<std::string>(vecSlopeThresholds[i].first);
+      std::string strEnd = boost::lexical_cast<std::string>(vecSlopeThresholds[i].first);
 
-      mapFullIndexes["proximity.ProximityIndex_" + currentThresholdText] = mapIndexes["proximity.ProximityIndex"];;
-      mapFullIndexes["proximity.SpinIndex_" + currentThresholdText] = mapIndexes["proximity.SpinIndex"];
-      mapFullIndexes["proximity.ExchangeIndex_" + currentThresholdText] = mapIndexes["proximity.ExchangeIndex"];
-      mapFullIndexes["proximity.NetExchangeIndex_" + currentThresholdText] = mapIndexes["proximity.NetExchangeIndex"];
+      std::string thresholdText = "(" + strStart + "% - " + strEnd + "%)";
+
+      UrbanIndexes mapIndexes = calculateProximityIndex(params.m_urbanRaster, params.m_landCoverRaster, slopeRaster.get(), coordCentroidCBD, centroidUrban, radius, urbanAreaHA);
+
+      mapFullIndexes["proximity.ProximityIndex_" + thresholdText] = mapIndexes["proximity.ProximityIndex"];;
+      mapFullIndexes["proximity.SpinIndex_" + thresholdText] = mapIndexes["proximity.SpinIndex"];
+      mapFullIndexes["proximity.ExchangeIndex_" + thresholdText] = mapIndexes["proximity.ExchangeIndex"];
+      mapFullIndexes["proximity.NetExchangeIndex_" + thresholdText] = mapIndexes["proximity.NetExchangeIndex"];
     }
   }
 

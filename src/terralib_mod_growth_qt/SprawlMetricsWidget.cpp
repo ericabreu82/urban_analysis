@@ -31,6 +31,7 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include "ui_SprawlMetricsWidgetForm.h"
 
 //Terralib
+#include <terralib/common/StringUtils.h>
 #include <terralib/common/progress/ProgressManager.h>
 #include <terralib/dataaccess/utils/Utils.h>
 #include <terralib/geometry/Utils.h>
@@ -238,11 +239,14 @@ void te::urban::qt::SprawlMetricsWidget::onRemoveThresholdToolButtonClicked()
 void te::urban::qt::SprawlMetricsWidget::execute()
 {
   //temporary initialization
+  /*
   m_ui->m_imgFilesListWidget->addItem("D:/temp/miguel_fred/sao_paulo/entrada/Class_SP_95_FIM__ready.tif");
   m_ui->m_slopeLineEdit->setText("D:/temp/miguel_fred/sao_paulo/entrada/mosaico_sp_slope_rounded.tif");
   m_ui->m_cbdVecLineEdit->setText("D:/temp/miguel_fred/sao_paulo/entrada/area_estudo_sp.shp");
   m_ui->m_studyAreaVecLineEdit->setText("D:/temp/miguel_fred/sao_paulo/entrada/area_estudo_sp.shp");
-
+  */
+  std::vector< std::pair<int, int> > vecSlopeThresholds;
+ 
   //check input 
   bool calculateProximityIndex = m_ui->m_proximityCheckBox->isChecked();
   bool calculateCohesionIndex = m_ui->m_cohesionCheckBox->isChecked();
@@ -266,6 +270,12 @@ void te::urban::qt::SprawlMetricsWidget::execute()
       return;
     }
 
+    if (m_ui->m_thresholdListWidget->count() == 0)
+    {
+      QMessageBox::information(this, tr("Urban Analysis"), tr("To calculate proximity index, you must enter with at least one threshold."));
+      return;
+    }
+
     QString qSlopeFileName = m_ui->m_slopeLineEdit->text();
     std::string slopeFileName = qSlopeFileName.toStdString();
     slopeRaster = openRaster(slopeFileName);
@@ -277,6 +287,19 @@ void te::urban::qt::SprawlMetricsWidget::execute()
 
     te::gm::Coord2D centroidCoord = te::gm::GetCentroid(cbdGeometry.get());
     cbdCentroid = te::gm::Point(centroidCoord.x, centroidCoord.y, cbdGeometry->getSRID());
+
+    for (int i = 0; i < m_ui->m_thresholdListWidget->count(); ++i)
+    {
+      QString qText = m_ui->m_thresholdListWidget->item(i)->text();
+      QStringList qStringList = qText.split("/");
+      QString initThreshold = qStringList.at(0).trimmed();
+      QString endThreshold = qStringList.at(1).trimmed();
+      int init = initThreshold.toInt();
+      int end = endThreshold.toInt();
+      std::pair<int, int> pairThreshold(init, end);
+
+      vecSlopeThresholds.push_back(pairThreshold);
+    }
   }
   if (calculateDepthIndex || calculateProximityIndex)
   {
@@ -350,6 +373,7 @@ void te::urban::qt::SprawlMetricsWidget::execute()
         params.m_studyArea = studyArea.get();
         params.m_landCoverRaster = landCoverRaster.get();
         params.m_centroidCBD = cbdCentroid;
+        params.m_vecSlopeThresholds = vecSlopeThresholds;
 
         UrbanIndexes mapIndexes = calculateIndexes(params);
         urbanSummary[baseName + "_urbanized_area"] = mapIndexes;
@@ -365,6 +389,7 @@ void te::urban::qt::SprawlMetricsWidget::execute()
         params.m_studyArea = studyArea.get();
         params.m_landCoverRaster = landCoverRaster.get();
         params.m_centroidCBD = cbdCentroid;
+        params.m_vecSlopeThresholds = vecSlopeThresholds;
 
         UrbanIndexes mapIndexes = calculateIndexes(params);
         urbanSummary[baseName + "_urban_footprint"] = mapIndexes;
@@ -409,7 +434,11 @@ void te::urban::qt::SprawlMetricsWidget::execute()
     UrbanIndexes::iterator itIndexes = urbanIndexes.begin();
     while (itIndexes != urbanIndexes.end())
     {
-      qStringList.append(QString::fromStdString(itIndexes->first));
+      std::string fullColumnName = itIndexes->first;
+      std::vector<std::string> vecTokens;
+      te::common::Tokenize(fullColumnName, vecTokens, ".");
+
+      qStringList.append(QString::fromStdString(vecTokens[1]));
       ++itIndexes;
     }
 
