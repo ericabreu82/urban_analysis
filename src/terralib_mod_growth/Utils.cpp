@@ -49,6 +49,7 @@ TerraLib Team at <terralib-team@terralib.org>.
 #include <terralib/raster/RasterSummaryManager.h>
 #include <terralib/raster/Utils.h>
 #include <terralib/sam/kdtree.h>
+#include <terralib/srs/Converter.h>
 #include <terralib/srs/Datum.h>
 #include <terralib/srs/Ellipsoid.h>
 #include <terralib/srs/GeographicCoordinateSystem.h>
@@ -429,6 +430,12 @@ std::auto_ptr<te::rst::Raster> te::urban::normalizeRaster(te::rst::Raster* input
   task.setTotalSteps((int)(numRows * numColumns));
   task.useTimer(true);
 
+  //for performance purposes
+  std::auto_ptr<te::srs::Converter> converter(new te::srs::Converter());
+
+  converter->setSourceSRID(normalizedRaster->getSRID());
+  converter->setTargetSRID(inputRaster->getSRID());
+
   //then we normalize the input raster by copying its values to the normalized raster
   for (unsigned int currentRow = 0; currentRow < numRows; ++currentRow)
   {
@@ -440,11 +447,7 @@ std::auto_ptr<te::rst::Raster> te::urban::normalizeRaster(te::rst::Raster* input
       //if the SRIDs are different, we must transform the CS
       if (changeSRID)
       {
-        te::gm::Point point(refCoordGeo.x, refCoordGeo.y, normalizedRaster->getSRID());
-        point.transform(inputRaster->getSRID());
-
-        refCoordGeo.x = point.getX();
-        refCoordGeo.y = point.getY();
+        converter->convert(refCoordGeo.x, refCoordGeo.y);
       }
 
       //then we find out its position in the inputRaster (source raster)
@@ -470,7 +473,7 @@ std::auto_ptr<te::rst::Raster> te::urban::normalizeRaster(te::rst::Raster* input
   return normalizedRaster;
 }
 
-std::vector<short> te::urban::getPixelsWithinRadious(te::rst::Raster* raster, size_t referenceRow, size_t referenceColumn, double radius, const boost::numeric::ublas::matrix<bool>& mask)
+void te::urban::getPixelsWithinRadious(te::rst::Raster* raster, size_t referenceRow, size_t referenceColumn, double radius, const boost::numeric::ublas::matrix<bool>& mask, std::vector<double>& vecPixels)
 {
   std::size_t numRows = raster->getNumberOfRows();
   std::size_t numColumns = raster->getNumberOfColumns();
@@ -483,7 +486,7 @@ std::vector<short> te::urban::getPixelsWithinRadious(te::rst::Raster* raster, si
   std::size_t localNumRows = mask.size1();
   std::size_t localNumColumns = mask.size2();
 
-  std::vector<short> vecPixels;
+  vecPixels.clear();
   vecPixels.reserve(localNumRows * localNumColumns);
 
   int rasterRow = ((int)referenceRow - maskSizeInPixels);
@@ -513,11 +516,9 @@ std::vector<short> te::urban::getPixelsWithinRadious(te::rst::Raster* raster, si
       double value = 0;
       raster->getValue(rasterColumn, rasterRow, value);
 
-      vecPixels.push_back((short)value);
+      vecPixels.push_back(value);
     }
   }
-
-  return vecPixels;
 }
 
 std::vector<short> te::urban::getAdjacentPixels(te::rst::Raster* raster, size_t referenceRow, size_t referenceColumn)
@@ -565,7 +566,7 @@ std::vector<short> te::urban::getAdjacentPixels(te::rst::Raster* raster, size_t 
   return vecPixels;
 }
 
-double te::urban::calculateUrbanizedArea(short centerPixelValue, const InputClassesMap& inputClassesMap, const std::vector<short>& vecPixels, double& permUrb)
+double te::urban::calculateUrbanizedArea(short centerPixelValue, const InputClassesMap& inputClassesMap, const std::vector<double>& vecPixels, double& permUrb)
 {
   permUrb = 0.;
 
@@ -591,7 +592,7 @@ double te::urban::calculateUrbanizedArea(short centerPixelValue, const InputClas
 
   for (std::size_t i = 0; i < size; ++i)
   {
-    short currentValue = vecPixels[i];
+    short currentValue = (short)vecPixels[i];
     if (currentValue != InputWater && currentValue != InputUrban && currentValue != InputOther)
     {
       continue;
@@ -646,7 +647,7 @@ double te::urban::calculateUrbanizedArea(short centerPixelValue, const InputClas
   return OUTPUT_NO_DATA;
 }
 
-double te::urban::calculateUrbanFootprint(short centerPixelValue, const InputClassesMap& inputClassesMap, const std::vector<short>& vecPixels, double& permUrb)
+double te::urban::calculateUrbanFootprint(short centerPixelValue, const InputClassesMap& inputClassesMap, const std::vector<double>& vecPixels, double& permUrb)
 {
   //INPUT CLASSES
   //NO_DATA = 0
@@ -670,7 +671,7 @@ double te::urban::calculateUrbanFootprint(short centerPixelValue, const InputCla
 
   for (std::size_t i = 0; i < size; ++i)
   {
-    double currentValue = vecPixels[i];
+    short currentValue = (short)vecPixels[i];
     if (currentValue != InputWater && currentValue != InputUrban && currentValue != InputOther)
     {
       continue;
@@ -713,7 +714,7 @@ double te::urban::calculateUrbanFootprint(short centerPixelValue, const InputCla
   return OUTPUT_NO_DATA;
 }
 
-double te::urban::calculateUrbanOpenArea(short centerPixelValue, const std::vector<short>& vecPixels)
+double te::urban::calculateUrbanOpenArea(short centerPixelValue, const std::vector<double>& vecPixels)
 {
   //INPUT CLASSES
   //NO_DATA = 0
@@ -1596,14 +1597,14 @@ std::auto_ptr<te::rst::Raster> te::urban::calculateEuclideanDistance(te::rst::Ra
 
   //we will first populate an adaptative kdtree index with the valid values from the input raster. 
   //It will be used to find the nearest valid pixel from all non valid pixels in the raster
-  typedef te::sam::kdtree::AdaptativeNode<te::gm::Coord2D, std::vector<te::gm::Point>, te::gm::Point> KD_ADAPTATIVE_NODE;
+  typedef te::sam::kdtree::AdaptativeNode<te::gm::Coord2D, std::vector<te::gm::Coord2D>, te::gm::Coord2D> KD_ADAPTATIVE_NODE;
   typedef te::sam::kdtree::AdaptativeIndex<KD_ADAPTATIVE_NODE> KD_ADAPTATIVE_TREE;
 
   // Adaptative K-d Tree
   //typedef te::sam::kdtree::AdaptativeNode<te::gm::Coord2D, std::vector<te::gm::Point>, te::gm::Point> KD_ADAPTATIVE_NODE;
   //typedef te::sam::kdtree::AdaptativeIndex<KD_ADAPTATIVE_NODE> KD_ADAPTATIVE_TREE;
 
-  std::vector<std::pair<te::gm::Coord2D, te::gm::Point> > dataset;
+  std::vector<std::pair<te::gm::Coord2D, te::gm::Coord2D> > dataset;
   for (std::size_t currentRow = 0; currentRow < numRows; ++currentRow)
   {
     for (std::size_t currentColumn = 0; currentColumn < numColumns; ++currentColumn)
@@ -1615,10 +1616,10 @@ std::auto_ptr<te::rst::Raster> te::urban::calculateEuclideanDistance(te::rst::Ra
       //if the value is valid, we set the Euclidean Distance to 0
       if (value != inputNoDataValue)
       {
-        te::gm::Coord2D coord = inputRaster->getGrid()->gridToGeo((unsigned int)currentColumn, (unsigned int)currentRow);
-        te::gm::Point point = te::gm::Point(coord.x, coord.y, inputRaster->getSRID());
+        te::gm::Coord2D coordKey = inputRaster->getGrid()->gridToGeo((unsigned int)currentColumn, (unsigned int)currentRow);
+        te::gm::Coord2D coordValue(coordKey);
 
-        dataset.push_back(std::pair<te::gm::Coord2D, te::gm::Point>(coord, point));
+        dataset.push_back(std::pair<te::gm::Coord2D, te::gm::Coord2D>(coordKey, coordValue));
       }
     }
   }
@@ -1634,7 +1635,7 @@ std::auto_ptr<te::rst::Raster> te::urban::calculateEuclideanDistance(te::rst::Ra
   {
     for (std::size_t currentColumn = 0; currentColumn < numColumns; ++currentColumn)
     {
-      //task.pulse();
+      task.pulse();
 
       //if the source is 1, the distance is 0.0. So we can continue
       double sourceValue = 0.;
@@ -1647,14 +1648,14 @@ std::auto_ptr<te::rst::Raster> te::urban::calculateEuclideanDistance(te::rst::Ra
 
       te::gm::Coord2D currentCoord = outputRaster->getGrid()->gridToGeo((unsigned int)currentColumn, (unsigned int)currentRow);
 
-      std::vector<te::gm::Point> points;
-      points.push_back(te::gm::Point(std::numeric_limits<double>::max(), std::numeric_limits<double>::max()));
+      std::vector<te::gm::Coord2D> points;
+      points.push_back(te::gm::Coord2D(std::numeric_limits<double>::max(), std::numeric_limits<double>::max()));
 
       std::vector<double> sqrDists;
 
       //we search for the nearest source pixel from the current coord
       adaptativeTree.nearestNeighborSearch(currentCoord, points, sqrDists, 1);
-      te::gm::Coord2D foundCoord(points[0].getX(), points[0].getY());
+      te::gm::Coord2D foundCoord(points[0]);
 
       double outputValue = TeDistance(currentCoord, foundCoord);
       outputRaster->setValue((unsigned int)currentColumn, (unsigned int)currentRow, outputValue);

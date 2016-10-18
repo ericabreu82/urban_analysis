@@ -187,19 +187,19 @@ namespace te
     TEGROWTHEXPORT std::auto_ptr<te::rst::Raster> normalizeRaster(te::rst::Raster* inputRaster, te::rst::Raster* referenceRaster);
 
     //!< Returns all the pixels within the given radius
-    TEGROWTHEXPORT std::vector<short> getPixelsWithinRadious(te::rst::Raster* raster, std::size_t referenceRow, std::size_t referenceColumn, double radius, const boost::numeric::ublas::matrix<bool>& mask);
+    TEGROWTHEXPORT void getPixelsWithinRadious(te::rst::Raster* raster, std::size_t referenceRow, std::size_t referenceColumn, double radius, const boost::numeric::ublas::matrix<bool>& mask, std::vector<double>& vecPixels);
 
     //!< Returns all the adjacent pixels
     TEGROWTHEXPORT std::vector<short> getAdjacentPixels(te::rst::Raster* raster, std::size_t referenceRow, std::size_t referenceColumn);
 
     //Calculate the urbanized area value based in the value of center pixel and in the value of the adjacent pixels
-    TEGROWTHEXPORT double calculateUrbanizedArea(short centerPixelValue, const InputClassesMap& inputClassesMap, const std::vector<short>& vecPixels, double& permUrb);
+    TEGROWTHEXPORT double calculateUrbanizedArea(short centerPixelValue, const InputClassesMap& inputClassesMap, const std::vector<double>& vecPixels, double& permUrb);
 
     //Calculate the urban footprint value based in the value of center pixel and in the value of the adjacent pixels
-    TEGROWTHEXPORT double calculateUrbanFootprint(short centerPixelValue, const InputClassesMap& inputClassesMap, const std::vector<short>& vecPixels, double& permUrb);
+    TEGROWTHEXPORT double calculateUrbanFootprint(short centerPixelValue, const InputClassesMap& inputClassesMap, const std::vector<double>& vecPixels, double& permUrb);
 
     //Calculate the urban open area value based in the value of center pixel and in the value of the adjacent pixels
-    TEGROWTHEXPORT double calculateUrbanOpenArea(short centerPixelValue, const std::vector<short>& vecPixels);
+    TEGROWTHEXPORT double calculateUrbanOpenArea(short centerPixelValue, const std::vector<double>& vecPixels);
 
     TEGROWTHEXPORT bool calculateEdge(te::rst::Raster* raster, const InputClassesMap& inputClassesMap, std::size_t column, std::size_t line);
 

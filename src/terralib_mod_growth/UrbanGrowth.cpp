@@ -67,6 +67,8 @@ void te::urban::classifyUrbanizedArea(ClassifyParams* params)
   task.setTotalSteps((int)(numRows * numColumns));
   task.useTimer(true);
 
+  std::vector<double> vecPixels;
+
   for (std::size_t currentRow = 0; currentRow < numRows; ++currentRow)
   {
     for (std::size_t currentColumn = 0; currentColumn < numColumns; ++currentColumn)
@@ -85,7 +87,8 @@ void te::urban::classifyUrbanizedArea(ClassifyParams* params)
       else if (centerPixel == InputUrban || centerPixel == InputOther)
       {
         //gets the pixels surrounding pixels that intersects the given radious
-        std::vector<short> vecPixels = getPixelsWithinRadious(inputRaster, currentRow, currentColumn, radius, mask);
+        vecPixels.clear();
+         getPixelsWithinRadious(inputRaster, currentRow, currentColumn, radius, mask, vecPixels);
 
         double permUrb = 0.;
         value = calculateUrbanizedArea((short)centerPixel, inputClassesMap, vecPixels, permUrb);
@@ -133,6 +136,7 @@ void te::urban::classifyUrbanFootprint(ClassifyParams* params)
   task.setTotalSteps((int)(numRows * numColumns));
   task.useTimer(true);
 
+  std::vector<double> vecPixels;
   for (std::size_t currentRow = 0; currentRow < numRows; ++currentRow)
   {
     for (std::size_t currentColumn = 0; currentColumn < numColumns; ++currentColumn)
@@ -156,7 +160,8 @@ void te::urban::classifyUrbanFootprint(ClassifyParams* params)
       else if (centerPixel == InputUrban)
       {
         //gets the pixels surrounding pixels that intersects the given radious
-        std::vector<short> vecPixels = getPixelsWithinRadious(inputRaster, currentRow, currentColumn, radius, mask);
+        vecPixels.clear();
+        getPixelsWithinRadious(inputRaster, currentRow, currentColumn, radius, mask, vecPixels);
 
         double permUrb = 0.;
         value = calculateUrbanFootprint((short)centerPixel, inputClassesMap, vecPixels, permUrb);
@@ -192,6 +197,8 @@ void te::urban::classifyUrbanOpenArea(te::rst::Raster* urbanFootprintRaster, dou
   task.setTotalSteps((int)(numRows * numColumns));
   task.useTimer(true);
 
+  std::vector<double> vecPixels;
+
   for (std::size_t currentRow = 0; currentRow < numRows; ++currentRow)
   {
     for (std::size_t currentColumn = 0; currentColumn < numColumns; ++currentColumn)
@@ -204,7 +211,8 @@ void te::urban::classifyUrbanOpenArea(te::rst::Raster* urbanFootprintRaster, dou
       if (centerPixel == OUTPUT_URBANIZED_OS)
       {
         //gets the pixels surrounding pixels that intersects the given radious
-        std::vector<short> vecPixels = getPixelsWithinRadious(urbanFootprintRaster, currentRow, currentColumn, radius, mask);
+        vecPixels.clear();
+        getPixelsWithinRadious(urbanFootprintRaster, currentRow, currentColumn, radius, mask, vecPixels);
 
         value = calculateUrbanOpenArea((short)centerPixel, vecPixels);
 
@@ -232,6 +240,7 @@ std::auto_ptr<te::rst::Raster> te::urban::identifyIsolatedOpenPatches(te::rst::R
 
   //we first need to create a binary image containing only the non urban pixels
   std::vector<ReclassifyInfo> vecRemapInfo;
+  vecRemapInfo.push_back(ReclassifyInfo(OUTPUT_NO_DATA, 1));
   vecRemapInfo.push_back(ReclassifyInfo(OUTPUT_RURAL, 1));
   vecRemapInfo.push_back(ReclassifyInfo(OUTPUT_SUBURBAN_ZONE_OPEN_AREA, OUTPUT_WATER, 1));
 
@@ -382,6 +391,8 @@ void te::urban::calculateUrbanIndexes(CalculateUrbanIndexesParams* params)
   te::rst::PolygonIterator<double> it = te::rst::PolygonIterator<double>::begin(inputRaster, limitPolygon);
   te::rst::PolygonIterator<double> itend = te::rst::PolygonIterator<double>::end(inputRaster, limitPolygon);
 
+  std::vector<double> vecPixels;
+
   while (it != itend)
   {
     unsigned int currentRow = it.getRow();
@@ -400,7 +411,8 @@ void te::urban::calculateUrbanIndexes(CalculateUrbanIndexesParams* params)
     }
 
     //gets the pixels surrounding pixels that intersects the given radious
-    std::vector<short> vecPixels = getPixelsWithinRadious(inputRaster, currentRow, currentColumn, radius, mask);
+    vecPixels.clear();
+    getPixelsWithinRadious(inputRaster, currentRow, currentColumn, radius, mask, vecPixels);
 
     double permUrb = 0.;
     double value = calculateUrbanizedArea((short)centerPixel, inputClassesMap, vecPixels, permUrb);

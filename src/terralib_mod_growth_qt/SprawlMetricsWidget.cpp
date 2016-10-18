@@ -239,7 +239,7 @@ void te::urban::qt::SprawlMetricsWidget::execute()
 {
   //temporary initialization
   m_ui->m_imgFilesListWidget->addItem("D:/temp/miguel_fred/sao_paulo/entrada/Class_SP_95_FIM__ready.tif");
-  m_ui->m_slopeLineEdit->setText("D:/temp/miguel_fred/sao_paulo/srtm/mosaico_sp_slope_rounded.tif");
+  m_ui->m_slopeLineEdit->setText("D:/temp/miguel_fred/sao_paulo/entrada/mosaico_sp_slope_rounded.tif");
   m_ui->m_cbdVecLineEdit->setText("D:/temp/miguel_fred/sao_paulo/entrada/area_estudo_sp.shp");
   m_ui->m_studyAreaVecLineEdit->setText("D:/temp/miguel_fred/sao_paulo/entrada/area_estudo_sp.shp");
 
@@ -400,29 +400,28 @@ void te::urban::qt::SprawlMetricsWidget::execute()
   //we show the calculated metrics
   QStringList qStringList;
   qStringList.append(tr("FileName"));
-  if (calculateProximityIndex)
+
+  UrbanSummary::iterator itSummary = urbanSummary.begin();
+  while (itSummary != urbanSummary.end())
   {
-    qStringList.append(tr("Proximity"));
-    qStringList.append(tr("Spin"));
-    qStringList.append(tr("Exchange"));
-    qStringList.append(tr("Net Exchange"));
-  }
-  if (calculateCohesionIndex)
-  {
-    qStringList.append(tr("Cohesion"));
-    qStringList.append(tr("Cohesion Square"));
-  }
-  if (calculateDepthIndex)
-  {
-    qStringList.append(tr("Depth"));
-    qStringList.append(tr("Girth"));
+    UrbanIndexes urbanIndexes = itSummary->second;
+
+    UrbanIndexes::iterator itIndexes = urbanIndexes.begin();
+    while (itIndexes != urbanIndexes.end())
+    {
+      qStringList.append(QString::fromStdString(itIndexes->first));
+      ++itIndexes;
+    }
+
+    //we just want the the columns names at this point. So we can break the loop
+    break;
   }
 
   m_ui->m_metricsTableWidget->setColumnCount(qStringList.size());
   m_ui->m_metricsTableWidget->setHorizontalHeaderLabels(qStringList);
   m_ui->m_metricsTableWidget->setRowCount(0);
 
-  UrbanSummary::iterator itSummary = urbanSummary.begin();
+  itSummary = urbanSummary.begin();
   while (itSummary != urbanSummary.end())
   {
     UrbanIndexes urbanIndexes = itSummary->second;
