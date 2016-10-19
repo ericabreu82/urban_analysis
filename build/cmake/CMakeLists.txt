@@ -28,8 +28,8 @@ endif()
 
 # variables that control the system versioning
 set(URBANANALYSIS_VERSION_MAJOR 1)
-set(URBANANALYSIS_VERSION_MINOR 1)
-set(URBANANALYSIS_VERSION_PATCH 2)
+set(URBANANALYSIS_VERSION_MINOR 2)
+set(URBANANALYSIS_VERSION_PATCH 0)
 set(URBANANALYSIS_VERSION_STATUS "rc")
 set(URBANANALYSIS_VERSION_STRING "${URBANANALYSIS_VERSION_MAJOR}.${URBANANALYSIS_VERSION_MINOR}.${URBANANALYSIS_VERSION_PATCH}-${URBANANALYSIS_VERSION_STATUS}")
 set(URBANANALYSIS_VERSION "0x050000")
@@ -90,23 +90,7 @@ include_directories(${terralib_DIR}
  add_subdirectory(urbanAnalysis_app)
  add_subdirectory(urbanAnalysis_plugin)
 
-# Track dependencies
-#MACRO ( TeGetPlugins _plugins )
-#  foreach(plugin ${TERRALIB_PLUGINS})
-#    get_target_property(_loc ${plugin} LOCATION_RELEASE)
-#    list(APPEND ${_plugins} ${_loc})
-    
-#    get_target_property(_locd ${plugin} LOCATION_DEBUG)
-#    list(APPEND ${_plugins} ${_locd})
-#  endforeach()
-#ENDMACRO(TeGetPlugins)
-
 TeInstallQt5Plugins()
-#TeInstallQt5Plugins("qgif;qico;qjpeg;qmng;qtiff;qsvg;qsvgicon;qsqlite;qwindows;qcocoa")  
-
-#set(_teplugins "")
-
-#TeGetPlugins (_teplugins)
 
 if(WIN32)
   get_filename_component(_uaShare ${URBANANALYSIS_ABSOLUTE_ROOT_DIR}/share/terralib DIRECTORY)
@@ -151,10 +135,10 @@ set(CPACK_GENERATOR NSIS)
 set(CPACK_PACKAGE_NAME "UrbanAnalysis")
 set(CPACK_PACKAGE_VENDOR "Terralib3rdParty")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Urban Analysis")
-set(CPACK_PACKAGE_VERSION "1.1.2")
+set(CPACK_PACKAGE_VERSION "1.2.0")
 set(CPACK_PACKAGE_VERSION_MAJOR "1")
-set(CPACK_PACKAGE_VERSION_MINOR "1")
-set(CPACK_PACKAGE_VERSION_PATCH "2")
+set(CPACK_PACKAGE_VERSION_MINOR "2")
+set(CPACK_PACKAGE_VERSION_PATCH "0")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "Urban Analysis")
 SET(CPACK_NSIS_MODIFY_PATH OFF)
 
