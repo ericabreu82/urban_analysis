@@ -1393,7 +1393,9 @@ std::vector<te::gm::Geometry*> te::urban::fixGeometries(const std::vector<te::gm
   {
     if (vecGeometries[t]->isValid())
     {
-      result.push_back((te::gm::Geometry*)vecGeometries[t]->clone());
+      te::gm::Geometry* fixedGeometry = (te::gm::Geometry*)vecGeometries[t]->clone();
+      fixedGeometry->setSRID(fixedGeometry->getSRID()); // a workaroung to ensure that all 'parts' of the geometry have the SRID set
+      result.push_back(fixedGeometry);
     }
     else
     {
@@ -1407,7 +1409,9 @@ std::vector<te::gm::Geometry*> te::urban::fixGeometries(const std::vector<te::gm
 
       for (std::size_t j = 0; j < vecSingleGeoms.size(); ++j)
       {
-        result.push_back((te::gm::Geometry*)vecSingleGeoms[j]->clone());
+        te::gm::Geometry* fixedGeometry = (te::gm::Geometry*)vecSingleGeoms[j]->clone();
+        fixedGeometry->setSRID(fixedGeometry->getSRID()); // a workaroung to ensure that all 'parts' of the geometry have the SRID set
+        result.push_back(fixedGeometry);
       }
     }
   }

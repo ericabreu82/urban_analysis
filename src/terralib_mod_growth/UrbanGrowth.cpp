@@ -522,8 +522,6 @@ void te::urban::prepareRaster(PrepareRasterParams* params)
     saveRaster(urbanizedIsolatedOpenPatchesFileName, params->m_result.m_urbanizedAreaRaster.get());
     saveRaster(urbanFootprintsIsolatedOpenPatchesFileName, params->m_result.m_urbanFootprintRaster.get());
   }
-  saveRaster(urbanizedIsolatedOpenPatchesFileName, params->m_result.m_urbanizedAreaRaster.get());
-  saveRaster(urbanFootprintsIsolatedOpenPatchesFileName, params->m_result.m_urbanFootprintRaster.get());
 }
 
 void te::urban::compareRasterPeriods(CompareTimePeriodsParams* params)
