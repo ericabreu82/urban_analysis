@@ -271,7 +271,6 @@ te::urban::UrbanIndexes te::urban::calculateDepthIndex(te::rst::Raster* urbanRas
 
   //2 - calculates the euclidean distance between the noDataValues and the valid pixels
   std::auto_ptr<te::rst::Raster> distanceRaster = calculateEuclideanDistance(binaryNonUrbanRaster.get());
-  //saveRaster("D:/temp/miguel_fred/belem/depth.tif", distanceRaster.get());
 
   //3 - clip the region
   distanceRaster = clipRaster(distanceRaster.get(), studyArea);
