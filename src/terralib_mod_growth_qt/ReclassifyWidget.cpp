@@ -32,6 +32,8 @@ TerraLib Team at <terralib-team@terralib.org>.
 //Terralib
 #include <terralib/common/STLUtils.h>
 #include <terralib/common/progress/ProgressManager.h>
+#include <terralib/geometry/Geometry.h>
+#include <terralib/geometry/Utils.h>
 #include <terralib/raster/Band.h>
 #include <terralib/qt/widgets/progress/ProgressViewerDialog.h>
 #include <terralib/qt/widgets/utils/ScopedCursor.h>
@@ -396,9 +398,17 @@ void te::urban::qt::ReclassifyWidget::execute()
       {
         referenceRaster = inputRaster.get();
         
-        if (geometryLimit.get() != 0 && geometryLimit->getSRID() != inputRaster->getSRID())
+        if (geometryLimit.get() != 0)
         {
-          geometryLimit->transform(inputRaster->getSRID());
+          if (geometryLimit->getSRID() != inputRaster->getSRID())
+          {
+            geometryLimit->transform(inputRaster->getSRID());
+          }
+          //here we clip the limit using the box of the raster
+          
+          std::auto_ptr<te::gm::Geometry> clipArea(te::gm::GetGeomFromEnvelope(inputRaster->getExtent(), inputRaster->getSRID()));
+          geometryLimit.reset(geometryLimit->intersection(clipArea.get()));
+          geometryLimit->setSRID(inputRaster->getSRID());
         }
       }
       else
