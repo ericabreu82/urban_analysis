@@ -265,6 +265,7 @@ te::urban::UrbanIndexes te::urban::calculateDepthIndex(te::rst::Raster* urbanRas
 {
   //1 - filter the nun-urban pixels and set them to 1. Urban pixels will be set to noDataValue
   std::vector<ReclassifyInfo> vecRemapInfo;
+  vecRemapInfo.push_back(ReclassifyInfo(OUTPUT_NO_DATA, 1));
   vecRemapInfo.push_back(ReclassifyInfo(OUTPUT_RURAL, 1));
   vecRemapInfo.push_back(ReclassifyInfo(OUTPUT_RURAL_OS, OUTPUT_WATER, 1));
   std::auto_ptr<te::rst::Raster> binaryNonUrbanRaster = reclassify(urbanRaster, vecRemapInfo, SET_NEW_NODATA, 0);
@@ -335,7 +336,7 @@ te::urban::UrbanIndexes te::urban::calculateIndexes(const IndexesParams& params)
       std::string strStart = boost::lexical_cast<std::string>(vecSlopeThresholds[i].first);
       std::string strEnd = boost::lexical_cast<std::string>(vecSlopeThresholds[i].second);
 
-      std::string thresholdText = "(" + strStart + "% - " + strEnd + "%)";
+      std::string thresholdText = "(" + strStart + "%-" + strEnd + "%)";
 
       UrbanIndexes mapIndexes = calculateProximityIndex(params.m_urbanRaster, params.m_landCoverRaster, slopeRaster.get(), coordCentroidCBD, centroidUrban, radius, urbanAreaHA);
 

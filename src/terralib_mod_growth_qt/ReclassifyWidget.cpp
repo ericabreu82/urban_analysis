@@ -404,8 +404,8 @@ void te::urban::qt::ReclassifyWidget::execute()
           {
             geometryLimit->transform(inputRaster->getSRID());
           }
-          //here we clip the limit using the box of the raster
-          
+
+          //here we clip the limit using the box of the raster          
           std::auto_ptr<te::gm::Geometry> clipArea(te::gm::GetGeomFromEnvelope(inputRaster->getExtent(), inputRaster->getSRID()));
           geometryLimit.reset(geometryLimit->intersection(clipArea.get()));
           geometryLimit->setSRID(inputRaster->getSRID());

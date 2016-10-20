@@ -358,7 +358,7 @@ void te::urban::qt::SprawlMetricsWidget::execute()
 
       if (i == 0)
       {
-        if (needNormalization(slopeRaster.get(), landCoverRaster.get()))
+        if (slopeRaster.get() != 0 && needNormalization(slopeRaster.get(), landCoverRaster.get()))
         {
           slopeRaster = normalizeRaster(slopeRaster.get(), landCoverRaster.get());
         }
@@ -366,9 +366,17 @@ void te::urban::qt::SprawlMetricsWidget::execute()
         {
           cbdCentroid.transform(landCoverRaster->getSRID());
         }
-        if (studyArea->getSRID() != landCoverRaster->getSRID())
+        if (studyArea.get() != 0)
         {
-          studyArea->transform(landCoverRaster->getSRID());
+          if (studyArea->getSRID() != landCoverRaster->getSRID())
+          {
+            studyArea->transform(landCoverRaster->getSRID());
+          }          
+
+          //here we clip the limit using the box of the raster          
+          std::auto_ptr<te::gm::Geometry> clipArea(te::gm::GetGeomFromEnvelope(landCoverRaster->getExtent(), landCoverRaster->getSRID()));
+          studyArea.reset(studyArea->intersection(clipArea.get()));
+          studyArea->setSRID(landCoverRaster->getSRID());
         }
       }
 
