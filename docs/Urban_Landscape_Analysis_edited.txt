@@ -1,0 +1,424 @@
+# Name: Jason Parent
+# Date: January 2009
+# Purpose: 1) Create raster layers depicing manifestations of urban sprawl for two time periods: T1 (earlier time period) and T2 (later time period).
+#          2) Calculate metrics to quantify compactness and change in compactness of urban spatial structure.
+
+
+# SCRIPT MAIN
+
+try:
+
+    # Import system modules...
+    import arcgisscripting, time, sys, os, math, UGA_helper
+
+    #-------------------------------------------------------------------------
+    # SET UP GEOPROCESSOR...
+
+    gp = arcgisscripting.create()
+
+    # Allow output files to be overwritten...
+    gp.OverwriteOutput = 1
+
+    # Check any necessary licenses...
+    gp.CheckOutExtension("spatial")
+
+    # Load required toolboxes...
+    gp.AddToolbox("C:/Program Files/ArcGIS/ArcToolbox/Toolboxes/Conversion Tools.tbx")              # Conversion tools
+    gp.AddToolbox("C:/Program Files/ArcGIS/ArcToolbox/Toolboxes/Data Management Tools.tbx")         # Data management tools
+    gp.AddToolbox("C:/Program Files/ArcGIS/ArcToolbox/Toolboxes/Analysis Tools.tbx")
+    gp.AddToolbox("C:/Program Files/ArcGIS/ArcToolbox/Toolboxes/Spatial Analyst Tools.tbx")
+
+    ##studyArea = r"C:\Projects\US_cities_3dates\Plock_and_Tacoma\Tacoma\tacoma_studyarea.shp"
+    ##lcLst = "C:\\Projects\\US_cities_3dates\\Plock_and_Tacoma\\Tacoma\\tacoma_lc_t0.img;C:\\Projects\\US_cities_3dates\\Plock_and_Tacoma\\Tacoma\\tacoma_lc_t1.img;C:\\Projects\\US_cities_3dates\\Plock_and_Tacoma\\Tacoma\\tacoma_lc_t2.img"
+    ##outWksp = r"C:\Projects\US_cities_3dates\Plock_and_Tacoma\Tacoma\UGA"
+
+    studyArea = sys.argv[1]
+    lcLst = sys.argv[2]
+    outWksp = sys.argv[3]
+
+    lcLst = lcLst.split(";")
+
+    if not os.path.exists(outWksp):
+        os.makedirs(outWksp)
+        
+    txtWksp = "%s\\TxtFiles" % outWksp
+    if not os.path.exists(txtWksp):
+        os.makedirs(txtWksp)
+          
+
+    # name of project temp folder...
+    tempWksp = "%s\\UGA_Temp" % (outWksp)
+
+    if not os.path.exists(tempWksp):
+        os.makedirs(tempWksp)
+
+    gp.OutputCoordinateSystem = studyArea
+    spatRef = gp.describe(studyArea).SpatialReference
+
+
+    #-------------------------------------------------------------------------
+    # DETERMINE CELL SIZE AND UNITS...
+
+    desc = gp.describe(lcLst[0])    # describe t1 land cover
+    cellsize = desc.MeanCellHeight  # cell size
+    units = desc.SpatialReference.LinearUnitName    # units
+
+    # Note: output units are the same as the input units
+
+    # correction factor (to convert meters to feet)...
+    if "Foot" in units:
+        cf = 3.2808
+    elif "Meter" in units:
+        cf = 1  # no correction needed
+    else:
+        print "Cannot analyze %s: input data do not have units of meters or feet." % city
+        gp.AddMessage("Cannot analyze %s: input data do not have units of meters or feet." % city)
+        sys.exit(0)
+
+    del desc
+
+        
+    #-------------------------------------------------------------------------  
+    # STUDY AREA EXTENT (DETERMINE FROM CITY BOUNDARY)...
+
+    #----------------------------
+    # Skip if study area is multi-part...
+    cur = gp.searchcursor(studyArea)
+    row = cur.next()
+
+    if row.GetValue("Shape").PartCount > 1:
+        print "\n\n\tMulti-part study area...unable to analyze\n\n"
+        gp.AddMessage("\n\n\tMulti-part study area...unable to analyze\n\n")
+        sys.exit(1)  
+        
+
+    del cur,row
+    #----------------------------
+    # GET STUDY AREA EXTENT...
+
+    extent = gp.describe(studyArea).Extent   # extent of shape
+    bndCoord = extent.split(" ")    # get bounding coordinates for shape
+    bndCoord_SA = []
+    for bnd in bndCoord:
+        bndCoord_SA.append(float(bnd))
+
+    extent = gp.describe(lcLst[0]).Extent   # extent of land cover
+    bndCoord = extent.split(" ")    # get bounding coordinates for land cover
+    bndCoord_lc = []
+    for bnd in bndCoord:
+        bndCoord_lc.append(float(bnd))
+
+
+    # use the intersection of the land cover and study area for the extent...
+
+    if bndCoord_SA[0] > bndCoord_lc[0]: Xmin = bndCoord_SA[0]
+    else: Xmin = bndCoord_lc[0]
+
+    if bndCoord_SA[1] > bndCoord_lc[1]: Ymin = bndCoord_SA[1]
+    else: Ymin = bndCoord_lc[1]
+
+    if bndCoord_SA[2] < bndCoord_lc[2]: Xmax = bndCoord_SA[2]
+    else: Xmax = bndCoord_lc[2]
+
+    if bndCoord_SA[3] < bndCoord_lc[3]: Ymax = bndCoord_SA[3]
+    else: Ymax = bndCoord_lc[3]
+
+
+    # extend bounding coordinates by 100 m in all directions...
+    bndCoord = [Xmin-100*cf,Ymin-100*cf,Xmax+100*cf,Ymax+100*cf]        
+
+    # use t1 land cover as snap raster...
+    gp.extent = "%s %s %s %s %s" %(bndCoord[0],bndCoord[1],bndCoord[2],bndCoord[3],lcLst[0])
+
+
+    #-------------------------------------------------------------------------
+    # GET STUDY AREA VERTEX COORDINATES - ONLY SINGLE-PART FEATURE
+    # WITH NO GAPS ALLOWED...
+
+    studyArea_pntLst = []
+    cur = gp.SearchCursor(studyArea)
+    row = cur.next()
+    fArray = row.GetValue('Shape').GetPart()
+    pArray = fArray.next()
+    while pArray:
+        pLst = []
+        pnt = pArray.next()
+        while pnt:
+            x,y = pnt.X, pnt.Y
+            pLst.append([x,y])
+            pnt = pArray.next()
+        studyArea_pntLst.append(pLst)
+        pArray = fArray.next()
+
+    del cur,row,pnt       
+
+    #-------------------------------------------------------------------------
+    # CLASS DEFINITIONS...
+
+    # urban landscape pixel values...
+    UA_classDct = {0: 'NoData',1:'Urban built-up', 2:'Suburban built-up', 3:'Rural built-up', 4:'Urbanized open land', 5:'Captured open land', 6:'Rural open land',7:'Water'}
+    UF_classDct = {0: 'NoData',1:'Urban built-up', 2:'Suburban built-up', 3:'Rural built-up', 4:'Fringe open land', 5:'Captured open land', 6:'Rural open land',7:'Water'}
+    ND_classDct = {0: 'NoData',1:'Infill', 2:'Extension', 3:'Leapfrog'}
+
+
+
+    #---------------------------------------------------------
+    # TIME PERIOD ANALYSES...
+
+    t = 0   # initial time
+
+    # for each land cover...
+    for lc in lcLst:
+         
+        print "Analyzing t%s" % t
+        
+        landcover = lcLst[t]
+
+        # convert land cover raster to ASCII file...
+        lcTxtFile = "%s\\lcFile_%s.txt" % (tempWksp,t)
+        gp.RasterToASCII_conversion(landcover, lcTxtFile)
+
+        # create txt file for urbanLandscape...
+        urbClasses_txt = "%s\\urban_classified_%s.txt" % (tempWksp,t)
+
+        #------------------------------------------------------------
+        # CREATE URBAN LANDSCAPE MAP...
+
+        s = time.clock()
+
+        # set neighborhood radius...
+        window_r = 564 * cf  # map units
+        window_r = int(round(window_r / cellsize,0))   # pixels
+
+        for analysisType in ["urbanized area","urban footprint"]:
+
+            print "\tcalculating %s" % analysisType
+            gp.AddMessage("\tcalculating %s" % analysisType)
+
+            if analysisType == "urbanized area":
+                # create urban landscape txt file using custom module...
+                edge_index, openness, inStudy_lst = UGA_helper.urbAreaClasses(lcTxtFile,urbClasses_txt,window_r,studyArea_pntLst)
+
+            elif analysisType == "urban footprint":
+                # create urban landscape txt file using custom module...
+                edge_index, openness, inStudy_lst = UGA_helper.urbFtptClasses(lcTxtFile,urbClasses_txt,window_r,studyArea_pntLst)
+
+                gp.AddMessage("\n t%s EDGE INDEX is %s" % (t,edge_index))
+                gp.AddMessage("\n t%s OPENNESS INDEX is %s\n" % (t,openness))
+                              
+
+             
+
+            e = time.clock()
+            print "\tBuilt up area classified in %s minutes" % ((e-s)/60)
+            gp.AddMessage("\tBuilt up area classified in %s minutes" % ((e-s)/60))
+
+
+            #-----------------------------------------
+            # CLASSIFY FRINGE OPEN AREA (Open land within 100 meters of built-up land)
+
+            if analysisType == "urban footprint":
+
+                s = time.clock()
+
+                # buffer distance...
+                window_r = 100 * cf
+                window_r = int(round(window_r / cellsize,0))
+                
+                # create txt file for urbanLandscape...
+                urb_edgeOpen_txt = "%s\\urb_edgeOpen_%s.txt" % (tempWksp,t)
+
+                UGA_helper.urbOpenArea(urbClasses_txt,urb_edgeOpen_txt,window_r)
+
+                e = time.clock()
+                print "\tFringe open area is %s minutes" % ((e-s)/60)
+                gp.AddMessage("\tFringe open area is %s minutes" % ((e-s)/60))
+
+
+               
+            #------------------------------------------------------------
+            # CREATE INITIAL URBAN LANDSCAPE IMAGE - isolated open patches not identified...
+
+            urbLndscp_img = "%s\\urbLandscape_%s.img" % (tempWksp,t)
+            
+            if analysisType == "urbanized area":
+                urb_edgeOpen_txt = urbClasses_txt
+                
+
+            gp.ASCIIToRaster_conversion (urb_edgeOpen_txt, urbLndscp_img, "INTEGER")
+
+            
+
+            #------------------------------------------------------------
+            # IDENTIFY ISOLATED OPEN PATCHES (Patches surrounded by built-up area
+            # and urbanized / fringe open land and less than 200 hectares)...
+
+            s = time.clock()
+
+            gp.workspace = tempWksp        
+
+            gp.Reclassify_sa (urbLndscp_img,"Value","1 2 1;4 1","urbArea.img", "NODATA")
+
+            gp.RasterToPolygon_conversion ("urbArea.img", "urbArea.shp", "NO_SIMPLIFY")
+
+            gp.Union_analysis ("urbArea.shp", "gapsFilled.shp", "", "", "NO_GAPS")
+
+            gp.AddField_management("gapsFilled.shp","patch","short")
+
+            cur = gp.UpdateCursor("gapsFilled.shp")
+            row = cur.next()
+
+			//Captured open space
+            while row:
+                area = row.GetValue("Shape").Area /cf**2 / 10000
+                gap = row.GetValue("FID_urbare")
+                if gap == -1 and area < 200:
+                    row.patch = 1
+                    cur.UpdateRow(row)
+                row = cur.next()
+            del cur,row
+                
+            
+            gp.MakeFeatureLayer("gapsFilled.shp","gaps_lyr","patch = 1")
+               
+            #-----------------------------
+            # ADD ISOLATED PATCHES TO MAP...
+
+            gp.PolygonToRaster_conversion ("gaps_lyr", "GRIDCODE", "gaps.img", "", "", cellsize) 
+
+            gp.delete_management("gaps_lyr")
+
+            # convert land cover raster to ASCII file...
+            gapTxtFile = "%s\\gaps_%s.txt" % (tempWksp,t)
+            gp.RasterToASCII_conversion("gaps.img", gapTxtFile)
+
+            if analysisType == "urbanized area": 
+                urbLndscp_txt = "%s\\urbArea_%s.txt" % (txtWksp,t)
+            elif analysisType == "urban footprint": 
+                urbLndscp_txt = "%s\\urbFtpt_%s.txt" % (txtWksp,t)
+            
+
+            UGA_helper.isolated_open(gapTxtFile, urb_edgeOpen_txt, urbLndscp_txt)        
+           
+
+            if analysisType == "urbanized area": 
+                urbLndscp_img = "%s\\urbArea_t%s.img" % (outWksp,t)
+                class_dct = UA_classDct
+            elif analysisType == "urban footprint": 
+                urbLndscp_img = "%s\\urbFootprint_t%s.img" % (outWksp,t)
+                class_dct = UF_classDct
+
+              
+            gp.ASCIIToRaster_conversion (urbLndscp_txt, urbLndscp_img, "INTEGER")        
+
+            gp.DefineProjection_management (urbLndscp_img, spatRef)
+
+            e = time.clock()
+            print "\tOpen patches identified in %s minutes" % ((e-s)/60)
+            gp.AddMessage("\tOpen patches identified in %s minutes" % ((e-s)/60))
+
+            #--------------------------------------
+            # GET LIST OF POINTS IN URBANIZED AREA. CALCULATE AREAS OF URBAN LANDSCAPE CLASSES
+
+            # convert urban landscape raster to ASCII file...
+            if analysisType == "urbanized area": 
+                urbLndscp_txt = "%s\\urbArea_%s.txt" % (txtWksp,t)
+            if analysisType == "urban footprint": 
+                urbLndscp_txt = "%s\\urbFootprint_%s.txt" % (txtWksp,t)
+                
+            gp.RasterToASCII_conversion(urbLndscp_img, urbLndscp_txt)
+            
+            # clip urban landscape to study area...
+            urbLndscp_clp_txt = UGA_helper.Extract_to_StudyArea(urbLndscp_txt,inStudy_lst)
+
+            # calculate class areas...
+            urban_BA, suburban_BA, rural_BA, urban_OA, isolated_OA, rural_OA = UGA_helper.classAreas(urbLndscp_clp_txt)
+
+            urban_BA *= (cellsize / cf)**2 / 10000      # class area in hectares
+            suburban_BA *= (cellsize / cf)**2 / 10000   # class area in hectares
+            rural_BA *= (cellsize / cf)**2 / 10000      # class area in hectares
+            urban_OA *= (cellsize / cf)**2 / 10000      # class area in hectares
+            isolated_OA *= (cellsize / cf)**2 / 10000   # class area in hectares
+            rural_OA *= (cellsize / cf)**2 / 10000   # class area in hectares
+            
+            area_dct = {1:urban_BA, 2:suburban_BA, 3:rural_BA, 4:urban_OA, 5:isolated_OA, 6:rural_OA}
+
+            #-----------------------------------------------------------
+            # UPDATE ATTRIBUTE TABLE...
+
+            gp.addField_management(urbLndscp_img, "CATEGORY", "text","","","20")
+            gp.addField_management(urbLndscp_img, "HECTARES", "double")
+             
+            cur = gp.updatecursor(urbLndscp_img)
+            row = cur.next()
+
+            while row:
+
+                value = row.GetValue("VALUE")
+                row.CATEGORY = class_dct[value]
+                area = area_dct.get(value)
+                if area != None:
+                    row.HECTARES = area
+                cur.UpdateRow(row)
+                row = cur.next()
+            del cur,row
+
+            print "\tAttribute table updated..."
+            gp.AddMessage("\tAttribute table updated...")
+
+
+        # NEW DEVELOPMENT...
+        if t > 0:
+
+            print "\n\tAnalyzing new development between t%s and t%s" % (t-1,t)
+
+            s = time.clock()
+                
+            urbArea_t0 = "%s\\TxtFiles\\urbArea_%s_clp.txt" % (outWksp,t-1)
+            urbArea_t1 = "%s\\TxtFiles\\urbArea_%s_clp.txt" % (outWksp,t)  
+            urbFtpt_t0 = "%s\\TxtFiles\\urbFootprint_%s_clp.txt" % (outWksp,t-1)
+            newDev_txt = "%s\\TxtFiles\\newDev_t%s_t%s.txt" % (outWksp,t-1,t)
+
+
+            UGA_helper.NewDevelopment(urbArea_t0,urbArea_t1,urbFtpt_t0, tempWksp, newDev_txt,gp)
+
+            newDev_img = "%s\\New_Development_t%s_t%s.img" % (outWksp,t-1,t)
+            gp.ASCIIToRaster_conversion (newDev_txt, newDev_img)
+
+            gp.addField_management(newDev_img, "CATEGORY", "text", "","","10")
+            gp.addField_management(newDev_img, "HECTARES", "double")
+       
+            cur = gp.updatecursor(newDev_img)
+            row = cur.next()
+
+            while row:
+                value = row.GetValue("Value")
+                area = row.GetValue("COUNT")
+                area = area*float(cellsize)**2 / 10000
+                row.CATEGORY = ND_classDct[value]
+                row.HECTARES = area
+                cur.UpdateRow(row)
+            
+                row = cur.next()
+
+            del cur,row
+
+            gp.DefineProjection_management (newDev_img, spatRef)
+
+            e = time.clock()
+            print "New development analysis completed in %s minutes" % ((e-s)/60)
+            gp.AddMessage("New development analysis completed in %s minutes" % ((e-s)/60))
+
+        # next time period...
+        t += 1
+            
+    gp.delete_management(tempWksp)
+        
+except:
+    import traceback
+    tb = sys.exc_info()[2]
+    tbinfo = traceback.format_tb(tb)[0]
+
+    gp.AddError(tbinfo)
+    gp.AddError(sys.exc_type)
+    gp.AddError(sys.exc_value)

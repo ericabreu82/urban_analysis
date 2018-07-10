@@ -1,0 +1,338 @@
+# Name: Jason Parent
+# Date: January 2009
+# Purpose: 1) Create raster layers depicing manifestations of urban sprawl for two time periods: T1 (earlier time period) and T2 (later time period).
+#          2) Calculate metrics to quantify compactness and change in compactness of urban spatial structure.
+
+
+
+import UGA_helper
+
+
+#---------------------------------------------------------
+#---------------------------------------------------------
+# SCRIPT MAIN
+
+# Import system modules...
+import arcgisscripting, time,sys,os,math, traceback
+
+#-------------------------------------------------------------------------
+# SET UP GEOPROCESSOR...
+
+
+try:
+
+
+    gp = arcgisscripting.create()
+
+    # Allow output files to be overwritten...
+    gp.OverwriteOutput = 1
+
+    # Check any necessary licenses...
+    gp.CheckOutExtension("spatial")
+
+    # Load required toolboxes...
+    gp.AddToolbox("C:/Program Files/ArcGIS/ArcToolbox/Toolboxes/Conversion Tools.tbx")              # Conversion tools
+    gp.AddToolbox("C:/Program Files/ArcGIS/ArcToolbox/Toolboxes/Data Management Tools.tbx")         # Data management tools
+    gp.AddToolbox("C:/Program Files/ArcGIS/ArcToolbox/Toolboxes/Analysis Tools.tbx")
+    gp.AddToolbox("C:/Program Files/ArcGIS/ArcToolbox/Toolboxes/Spatial Analyst Tools.tbx")
+
+
+     
+    ##in_folder = r"C:\Projects\Python_Scripts\UGA_tool\Data"
+    in_folder = r"C:\Projects\Python_Scripts\UGA_tool\Output"
+
+    cellsize = 28.5
+    cf = 1
+
+
+
+    # script arguments
+##    citywksp = r"C:\Temp\Belem\Anna"
+##    CBD = r"C:\Temp\Belem\Anna\belem_cbd.shp"
+##    studyArea = r"C:\Temp\Belem\Anna\belem_study_area.shp"
+##    lc = r"C:\Temp\Belem\Anna\t85.img"
+##    t = 1
+
+    citywksp = sys.argv[1]
+    CBD = sys.argv[2]
+    studyArea = sys.argv[3]
+    lc = sys.argv[4]
+    t = int(sys.argv[5])
+
+    # derived parameters
+    slope = "%s\slope" % citywksp
+    urbAreaTxt = "%s\\Results\\TxtFiles\\urbarea_%s_clp.txt" % (citywksp, t-1) 
+    urbArea_img = "%s\\Results\\urbArea_t%s.img" % (citywksp, t-1) 
+    urbFtpt_img = "%s\\Results\\urbFootprint_t%s.img" % (citywksp, t-1)
+    urbFtptTxt = "%s\\Results\\TxtFiles\\urbFootprint_%s_clp.txt" % (citywksp, t-1)
+
+
+    
+
+    
+
+
+    # name of project temp folder...
+    tempWksp = "C:\\Temp\\ULA"
+
+    if not os.path.exists(tempWksp):
+        os.makedirs(tempWksp)
+
+    gp.workspace = tempWksp
+
+    gp.extent = urbArea_img
+
+    #--------------------
+    ## CONVERT SLOPE TO TXT FILE...
+
+    gp.extent = urbArea_img
+    gp.ExtractByMask_sa (slope, studyArea, "C:\\Temp\\slope.img")
+
+    gp.Reclassify_sa("C:\\Temp\\slope.img", "VALUE", "0 15 0;15 99999 1", "slope15.img")
+    gp.Reclassify_sa("C:\\Temp\\slope.img", "VALUE", "0 30 0;30 99999 1", "slope30.img")
+
+    slopeTxt15 = "C:\\Temp\\slope15.txt"
+    slopeTxt30 = "C:\\Temp\\slope30.txt"
+    
+    gp.RasterToASCII_conversion ("slope15.img", slopeTxt15)
+    gp.RasterToASCII_conversion ("slope30.img", slopeTxt30)
+
+    
+
+    # convert lc raster to text file...
+    ##gp.Int_sa (lc, "C:\\Temp\\lc_int") 
+    lcTxt = "%s\\lcTxt.txt" % tempWksp    
+    gp.RasterToASCII_conversion(lc, lcTxt)
+
+    cur = gp.SearchCursor(CBD)
+    row = cur.next()
+    center = row.GetValue("Shape").TrueCentroid
+    center = center.split(" ")
+    X_CBD = float(center[0])
+    Y_CBD = float(center[1])
+
+    del cur,row,center
+
+
+
+
+    #-------------------------------------------
+    # IF MEMORY IS A PROBLEM...
+
+    ##            cellsize = "100"
+    ##
+    ##            urbArea_clp_img = "%s\\urbArea_clp.img" % tempWksp
+    ##            gp.ASCIIToRaster_conversion (urbAreaTxt, urbArea_clp_img, "INTEGER")
+    ##            urbArea_loRes_img = "%s\\urbArea_loRes.img" % tempWksp
+    ##            gp.Resample_management (urbArea_clp_img, urbArea_loRes_img, cellsize, "NEAREST")
+    ##            urbArea_loRes_txt = "%s\\urbArea_loRes.txt" % tempWksp
+    ##            gp.RasterToASCII_conversion (urbArea_loRes_img, urbArea_loRes_txt)
+    ##            urbAreaTxt = urbArea_loRes_txt
+    ##
+    ##            lc_img = "%s\\lc_clp.img" % tempWksp
+    ##            gp.ASCIIToRaster_conversion (lcTxt, lc_img, "INTEGER")
+    ##            lc_loRes_img = "%s\\lc_loRes.img" % tempWksp
+    ##            gp.snapraster = urbArea_clp_img
+    ##            gp.Resample_management (lc_img, lc_loRes_img, cellsize, "NEAREST")
+    ##            lc_loRes_txt = "%s\\lc_loRes.txt" % tempWksp
+    ##            gp.RasterToASCII_conversion (lc_loRes_img, lc_loRes_txt)
+    ##            lcTxt = lc_loRes_txt
+    ##
+    ##            slp_img = "%s\\slp.img" % tempWksp
+    ##            gp.ASCIIToRaster_conversion (slopeTxt, slp_img, "INTEGER")
+    ##            slp_loRes_img = "%s\\slp_loRes.img" % tempWksp
+    ##            gp.snapraster = urbArea_clp_img
+    ##            gp.Resample_management (slp_img, slp_loRes_img, cellsize, "NEAREST")
+    ##            slp_loRes_txt = "%s\\slp_loRes.txt" % tempWksp
+    ##            gp.RasterToASCII_conversion (slp_loRes_img, slp_loRes_txt)
+    ##            slopeTxt = slp_loRes_txt
+    ##
+    ##            urbFtpt_clp_img = "%s\\urbFtpt_clp.img" % tempWksp
+    ##            gp.ASCIIToRaster_conversion (urbFtptTxt, urbFtpt_clp_img, "INTEGER")
+    ##            urbFtpt_loRes_img = "%s\\urbFtpt_loRes.img" % tempWksp
+    ##            gp.Resample_management (urbFtpt_clp_img, urbFtpt_loRes_img, cellsize, "NEAREST")
+    ##            urbFtpt_loRes_txt = "%s\\urbFtpt_loRes.txt" % tempWksp
+    ##            gp.RasterToASCII_conversion (urbFtpt_loRes_img, urbFtpt_loRes_txt)
+    ##            urbFtptTxt = urbFtpt_loRes_txt
+    ##
+    ##            cellsize = float(cellsize)
+    #-------------------------------------------
+
+
+
+    for analysisType in ["urbanized area", "urban footprint"]:
+        
+        print "\n%s METRICS:" % analysisType.upper()
+        gp.AddMessage("\nANALYZING THE %s" % analysisType.upper())
+
+        #-----------------------------
+        # get list of urbanized area points...
+        if analysisType == "urbanized area":
+            urbArea, Xcentroid, Ycentroid = UGA_helper.urbAreaLst(urbAreaTxt)
+        elif analysisType == "urban footprint":
+            urbArea, Xcentroid, Ycentroid = UGA_helper.urbAreaLst(urbFtptTxt)
+           
+        urbArea = urbArea * cellsize**2
+        r = (urbArea/math.pi)**.5
+        urbArea_ha = urbArea / 10000
+
+
+       
+        #-------------------------------------
+        # Proximity and Exchange Index...
+
+        for slopeThres in [15,30]:
+
+            if slopeThres == 15:
+                slopeTxt = slopeTxt15
+                print "\tMETRICS WITH SLOPE THRESHOLD OF 15%..."
+                gp.AddMessage("\n\tMETRICS WITH SLOPE THRESHOLD OF 15%...")
+            elif slopeThres == 30:
+                slopeTxt = slopeTxt30
+                print "\tMETRICS WITH SLOPE THRESHOLD OF 30%..."
+                gp.AddMessage("\n\tMETRICS WITH SLOPE THRESHOLD OF 30%...")
+
+            if analysisType == "urbanized area":
+                D_to_Center, D_to_Center_sqr, in_EAC, in_nEAC = UGA_helper.proximity(urbAreaTxt, lcTxt, slopeTxt, [X_CBD,Y_CBD], [Xcentroid,Ycentroid], r)
+            elif analysisType == "urban footprint":
+                D_to_Center, D_to_Center_sqr, in_EAC, in_nEAC = UGA_helper.proximity(urbFtptTxt, lcTxt, slopeTxt, [X_CBD,Y_CBD], [Xcentroid,Ycentroid], r)
+               
+            # proximity index (circle / shape)...
+            circD = r * (2.0/3.0)   # avg distance to center for equal area circle...       
+            ProximityIndex = circD / D_to_Center
+                
+
+            # Spin index (circle / shape)...
+            circ_MOI = .5 * r**2    # moment of inertia for equal area circle...
+            SpinIndex = circ_MOI / D_to_Center_sqr
+            
+
+            # Exchange index...
+            in_EAC *= (cellsize / cf)**2 / 10000      # class area in hectares
+            ExchangeIndex = in_EAC / urbArea_ha
+            
+
+            # Net Exchange index...
+            in_nEAC *= (cellsize / cf)**2 / 10000
+            nExchangeIndex = in_nEAC / urbArea_ha
+            
+          
+                   
+            print "\tProximity Index = %s" % (ProximityIndex)
+            print "\tSpin Index = %s" % (SpinIndex)
+            print "\tExchange Index = %s" % (ExchangeIndex)
+            print "\tNet Exchange Index = %s" % (nExchangeIndex)
+
+            gp.AddMessage("\t\tProximity Index = %s" % (ProximityIndex))
+            gp.AddMessage("\t\tSpin Index = %s" % (SpinIndex))
+            gp.AddMessage("\t\tExchange Index = %s" % (ExchangeIndex))
+            gp.AddMessage("\t\tNet Exchange Index = %s\n" % (nExchangeIndex))
+
+
+        #-------------------------------------
+        # Cohesion Index...
+
+        s = time.clock()
+
+        if analysisType == "urbanized area":
+            urbLndscp_clp_txt = urbAreaTxt
+        elif analysisType == "urban footprint":
+            urbLndscp_clp_txt = urbFtptTxt
+
+
+        shp_interD, shp_interDsqr = UGA_helper.interpointDistance(urbLndscp_clp_txt)
+
+        circ_interD = r * .9054
+        Cohesion_Index = circ_interD / shp_interD
+        
+        circ_interDsqr = r**2
+        CohesionSqr_Index = circ_interDsqr / shp_interDsqr
+
+        e = time.clock()
+        print "\tCohesion Index = %s" % (Cohesion_Index)
+        print "\tCohesion Squared Index = %s" % (CohesionSqr_Index)
+       
+        gp.AddMessage("\tCohesion Index = %s" % (Cohesion_Index))
+        gp.AddMessage("\tCohesion Squared Index = %s" % (CohesionSqr_Index))
+
+
+
+
+
+        #-------------------------------------
+        # Depth Index
+
+        # get non urbanized area...
+        if analysisType == "urbanized area":
+            gp.Reclassify_sa (urbArea_img,"Value","0 1;1 2 NoData; 3 1;4 5 NoData;6 7 1","urbArea_1.img", "NODATA")
+        elif analysisType == "urban footprint":
+            gp.Reclassify_sa (urbFtpt_img,"Value","0 1;1 2 NoData; 3 1;4 5 NoData;6 7 1","urbArea_1.img", "NODATA")
+
+        # get distance from non-urbanized area...
+        gp.EucDistance_sa ("urbArea_1.img", "d_urbArea.img", "", cellsize) 
+
+
+        gp.ExtractByMask_sa ("d_urbArea.img", studyArea, "d_urbArea_clp.img")
+
+        gp.Reclassify_sa ("d_urbArea_clp.img","Value","0 NoData","d_urbArea_clp2.img", "DATA")
+
+
+        shp_depth = gp.GetRasterProperties("d_urbArea_clp2.img", "MEAN")
+        shp_girth = gp.GetRasterProperties("d_urbArea_clp2.img", "MAXIMUM")
+
+         # depth for equal area circle...
+        circ_depth = r / 3
+
+        # calculate depth index (shape / circle)...
+        depthIndex = shp_depth / circ_depth
+
+        # calculate girth index (shape / circle)...
+        girthIndex = shp_girth / r      # girth of a circle is its radius
+
+        print "\tGirth Index = %s" % (girthIndex)
+        print "\tDepth Index = %s" % (depthIndex)
+
+
+        gp.AddMessage("\tGirth Index = %s" % (girthIndex))
+        gp.AddMessage("\tDepth Index = %s\n" % (depthIndex))
+
+
+
+    #-------------------------------------------------
+    #-------------------------------------------------
+    #-------------------------------------------------
+
+    gp.delete_management("C:\\Temp\\slope.img")
+
+    try:
+        gp.delete_management(tempWksp)
+    except: pass
+
+except:
+
+    
+    tb = sys.exc_info()[2]
+    tbinfo = traceback.format_tb(tb)[0]
+
+    pymsg = tbinfo + "\n" + str(sys.exc_type)+ ": " + str(sys.exc_value)
+
+    gp.AddError(pymsg)
+
+    print pymsg
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
